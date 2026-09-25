@@ -1,0 +1,43 @@
+# 依赖与包管理器缓存
+node_modules/
+.pnpm-store/
+.npm/
+
+# 构建产物与工具缓存
+dist/
+.vite/
+.vite-temp/
+.eslintcache
+*.tsbuildinfo
+vite.config.*.timestamp-*
+vitest.config.*.timestamp-*
+
+# 测试产物
+coverage/
+test-results/
+playwright-report/
+.vitest/
+
+# 本地环境变量；保留可共享的配置示例
+.env
+.env.*
+!.env.example
+!.env.*.example
+!.env.template
+!.env.*.template
+
+# 日志、临时文件与私人设备读取样本
+*.log
+logs/
+/tmp/
+/temp/
+private-captures/
+
+# 编辑器与操作系统临时文件
+.idea/
+.DS_Store
+Thumbs.db
+Desktop.ini
+*.swp
+*.swo
+*~
