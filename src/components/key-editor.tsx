@@ -1,8 +1,6 @@
 import { useI18n } from '@/i18n/use-i18n';
 import { KEY_NAMES, ENGLISH_KEY_NAMES } from '@/i18n/key-names';
-import { layerMessage } from '@/i18n/core';
 import { Plus } from 'lucide-react';
-import { PHYSICAL_KEYS } from '@/protocol';
 import { useAppStore } from '@/store/context';
 import { isLocked } from '@/store/app-store';
 import { Button } from './ui/button';
@@ -23,6 +21,7 @@ export function KeyEditor() {
   const { t, locale } = useI18n();
   const keyNames = locale === 'en' ? ENGLISH_KEY_NAMES : KEY_NAMES;
   const profile = useAppStore((state) => state.profile);
+  const model = useAppStore((state) => state.model);
   const key = useAppStore((state) => state.key);
   const layer = useAppStore((state) => state.layer);
   const form = useAppStore((state) => state.form);
@@ -45,11 +44,11 @@ export function KeyEditor() {
       <div className="inspector-heading">
         <div>
           <p className="eyebrow">
-            {t('editor.position', { position: String(key + 1).padStart(2, '0'), layer: layerMessage(layer) })}
+            {t('editor.position', { position: String(key + 1).padStart(2, '0'), layer: model.layers[layer] })}
           </p>
-          <h2>{PHYSICAL_KEYS[key]}</h2>
+          <h2>{model.keys[key].label}</h2>
         </div>
-        <span className="keycap-preview">{PHYSICAL_KEYS[key]}</span>
+        <span className="keycap-preview">{model.keys[key].label}</span>
       </div>
       {!profile && <p className="muted">{t('editor.empty')}</p>}
       <form
@@ -172,7 +171,7 @@ export function KeyEditor() {
         <p className="field-hint">
           {profile?.lights
             ? t('lighting.staged')
-            : version && !version.includes('RGB')
+            : version && !model.capabilities(version).perKeyRGB
               ? t('lighting.unsupported')
               : t('lighting.unavailable')}
         </p>

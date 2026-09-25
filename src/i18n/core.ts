@@ -52,9 +52,6 @@ export function translate<K extends MessageKey>(locale: Locale, key: K, ...args:
 export function isLocale(value: unknown): value is Locale {
   return value === 'zh-CN' || value === 'en';
 }
-export function layerMessage(layer: number): Message {
-  return msg((['layer.normal', 'layer.rightFn', 'layer.leftFn'] as const)[layer] ?? 'layer.normal');
-}
 /** Historic backup reasons are stored strings. Unknown/custom reasons are never rewritten. */
 export function backupReason(reason: string): Message {
   if (reason === zhCN['backup.read']) return msg('backup.read');

@@ -37,7 +37,7 @@ test('the language control changes the UI and remembers the choice on reload', a
   expect(screen.getByText('USB is unavailable in this environment')).toBeInTheDocument();
   expect(screen.getByText(/This browser does not support WebHID/)).toBeInTheDocument();
   expect(document.documentElement.lang).toBe('en');
-  expect(document.title).toBe('ATOM66 — Keyboard configurator');
+  expect(document.title).toBe('NIZ — Keyboard configurator');
   expect(window.localStorage.getItem(localeStorageKey)).toBe('en');
   view.unmount();
   const reloaded = application(null, undefined, { locale: browserLocale() });
@@ -68,7 +68,7 @@ test('help, validation errors and close controls are translated', async () => {
   render(<App store={store} />);
   fireEvent.click(screen.getByRole('button', { name: 'Open help' }));
   let dialog = screen.getByRole('dialog', { name: 'Help' });
-  expect(within(dialog).getByText(/All nine groups are preserved/)).toBeInTheDocument();
+  expect(within(dialog).getByText(/Extended groups are preserved/)).toBeInTheDocument();
   fireEvent.click(within(dialog).getByRole('button', { name: 'Close' }));
   await act(() => actions.demo());
   fireEvent.change(screen.getByLabelText(/Key sequence/), { target: { value: 'unrecognized-key' } });

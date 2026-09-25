@@ -1,6 +1,8 @@
 import { msg, type Message } from '../i18n/core';
 import type { HIDAccess } from '../types/hid';
 import type { ModelContext } from '../model-tools';
+import { isRecord } from '../protocol';
+import { supportedModels } from '../devices';
 
 declare global {
   interface Navigator {
@@ -30,7 +32,11 @@ export function downloadJSON(label: string, data: unknown) {
   );
   const link = document.createElement('a');
   link.href = url;
-  link.download = `ATOM66-${label}-${new Date().toISOString().replace(/[:.]/g, '-')}.json`;
+  const modelId = isRecord(data)
+    ? (data.format === 'atom66-macos' || data.format === 'atom66-read-capture' ? 'atom66' : data.model)
+    : undefined;
+  const name = supportedModels.find((model) => model.id === modelId)?.name ?? 'NIZ';
+  link.download = `${name}-${label}-${new Date().toISOString().replace(/[:.]/g, '-')}.json`;
   document.body.append(link);
   link.click();
   link.remove();

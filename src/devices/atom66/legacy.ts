@@ -1,6 +1,7 @@
-import { msg } from './i18n/core.ts';
-import type { DecodedDefinition, DeviceIdentity } from './protocol';
-import { Profile, parseKey, assert, integer, MAX_FILE_SIZE, encodeDefinition } from './protocol';
+import { msg } from '../../i18n/core.ts';
+import type { DecodedDefinition, DeviceIdentity } from '../../protocol';
+import { Profile, parseKey, assert, integer, MAX_FILE_SIZE, encodeDefinition } from '../../protocol';
+import { atom66 } from './model';
 
 function attribute(node: Element | undefined, name: string, max: number, fallback?: number) {
   const raw = node?.getAttribute(name);
@@ -135,9 +136,9 @@ export function importWindowsProfile(
         def.interval = custom ? 0 : attribute(list, 'Delay', 65535, 30);
       }
     }
-    records[index] = encodeDefinition(def, index);
+    records[index] = encodeDefinition(def, index, atom66);
   }
-  const profile = Profile.fromReports(records.flat());
+  const profile = Profile.fromReports(records.flat(), atom66);
   profile.version = version;
   profile.identity = { ...identity };
   profile.legacyXML = text;

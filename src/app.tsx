@@ -57,11 +57,11 @@ function Header() {
     <header className="app-header">
       <div className="brand">
         <span className="brand-mark" aria-hidden="true">
-          66
+          N
         </span>
         <div>
           <h1>
-            ATOM66 <span>Web</span>
+            NIZ <span>Web</span>
           </h1>
           <p>{t('app.subtitle')}</p>
         </div>

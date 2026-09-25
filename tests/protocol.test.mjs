@@ -2,8 +2,6 @@ import { test } from 'vitest';
 import assert from 'node:assert/strict';
 import {
   Profile,
-  PHYSICAL_KEYS,
-  ROW_WIDTHS,
   parseKey,
   encodeDefinition,
   decodeDefinition,
@@ -14,13 +12,14 @@ import {
   mergeImported,
   equalBytes,
 } from '../src/protocol.ts';
+import { atom66 } from '../src/devices/atom66/model.ts';
 import { EditorState } from '../src/editor.ts';
 import { fixture, macro } from './helpers.ts';
 
 test('physical layout has exactly 66 keys in five rows', () => {
-  assert.equal(PHYSICAL_KEYS.length, 66);
+  assert.equal(atom66.keyCount, 66);
   assert.deepEqual(
-    ROW_WIDTHS.map((row) => row.length),
+    atom66.rows.map((row) => row.length),
     [15, 14, 13, 13, 11],
   );
 });

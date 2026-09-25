@@ -85,7 +85,7 @@ test('help uses a labelled dialog and can be dismissed', () => {
   render(<App store={store} />);
   fireEvent.click(screen.getByRole('button', { name: '打开使用说明' }));
   const dialog = screen.getByRole('dialog', { name: '使用说明' });
-  expect(within(dialog).getByText(/九组记录完整保留/)).toBeInTheDocument();
+  expect(within(dialog).getByText(/扩展组记录完整保留/)).toBeInTheDocument();
   fireEvent.click(within(dialog).getByRole('button', { name: '关闭' }));
   expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
 });

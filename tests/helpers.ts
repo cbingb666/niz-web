@@ -51,16 +51,17 @@ export class FakeDevice extends EventTarget implements ConfigDevice {
   constructor(profile = fixture()) {
     super();
     this.profile = profile.clone();
-    this.vendorId = 0x0483;
-    this.productId = 0x522a;
-    this.productName = 'ATOM66 fixture';
+    const filter = profile.model.filters.at(-1)!;
+    this.vendorId = filter.vendorId;
+    this.productId = filter.productId;
+    this.productName = `${profile.model.name} fixture`;
     this.opened = false;
     this.sent = [];
     this.openCount = 0;
     this.collections = [
       {
-        usagePage: 0x8c,
-        usage: 1,
+        usagePage: filter.usagePage,
+        usage: filter.usage,
         children: [],
         inputReports: [{ reportId: 0, items: [{ reportSize: 8, reportCount: 64 }] }],
         outputReports: [{ reportId: 0, items: [{ reportSize: 8, reportCount: 64 }] }],
@@ -112,16 +113,16 @@ export class FakeDevice extends EventTarget implements ConfigDevice {
       this.emit(end);
     }
     if (op === 0xe3) {
-      const bytes = new Uint8Array(264),
+      const bytes = new Uint8Array(this.profile.model.keyCount * 4),
         view = new DataView(bytes.buffer);
       this.profile.counters.forEach((n, i) => view.setUint32(i * 4, n, true));
       this.bytes(bytes, 0xe3);
     }
-    if (op === 0xe2) this.bytes(this.profile.lights ?? new Uint8Array(198), 0xe0);
+    if (op === 0xe2) this.bytes(this.profile.lights ?? new Uint8Array(this.profile.model.keyCount * 3), 0xe0);
     if (op === 0xf1) this.keyBuffer = [];
     if (op === 0xf0 && this.keyBuffer) this.keyBuffer.push(r);
     if (op === 0xf6 && this.keyBuffer) {
-      const newProfile = Profile.fromReports(this.keyBuffer);
+      const newProfile = Profile.fromReports(this.keyBuffer, this.profile.model);
       newProfile.version = this.profile.version;
       newProfile.identity = this.profile.identity;
       newProfile.counters = this.profile.counters;

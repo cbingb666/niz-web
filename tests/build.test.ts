@@ -31,10 +31,10 @@ test('production is one offline HTML with hash CSP and HID permissions', async (
     try {
       await vi.waitFor(() => expect(dom.window.document.querySelectorAll('.key')).toHaveLength(66));
       await vi.waitFor(() => expect(dom.window.document.documentElement.lang).toBe('en'));
-      expect(dom.window.document.title).toBe('ATOM66 — Keyboard configurator');
+      expect(dom.window.document.title).toBe('NIZ — Keyboard configurator');
       expect(
         dom.window.document.querySelector('meta[name="description"]')?.getAttribute('content'),
-      ).toContain('Configure your NIZ ATOM66');
+      ).toContain('Configure supported NIZ');
       expect(dom.window.document.getElementById('root')?.textContent).toContain('Connect keyboard');
       expect(errors).toEqual([]);
     } finally {

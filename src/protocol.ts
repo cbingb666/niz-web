@@ -1,5 +1,6 @@
 import { KEY_NAMES, ENGLISH_KEY_NAMES } from './i18n/key-names.ts';
 import { msg, renderMessage, joinMessages, type Message } from './i18n/core.ts';
+import { defaultModel, supportedModels, type KeyboardModel } from './devices/index.ts';
 export interface KeyDefinition {
   type: number;
   keys: number[];
@@ -10,8 +11,7 @@ export interface KeyDefinition {
 }
 export type DecodedDefinition = Required<KeyDefinition>;
 export type DeviceIdentity = Record<string, unknown>;
-export interface ProfileJSON {
-  format: 'atom66-macos';
+export type ProfileJSON = {
   schema: 1;
   version: string;
   identity: DeviceIdentity;
@@ -19,7 +19,7 @@ export interface ProfileJSON {
   counters: number[];
   lights?: string;
   legacyXML?: string;
-}
+} & ({ format: 'atom66-macos'; model?: 'atom66' } | { format: 'niz-web'; model: string });
 export interface SequenceOptions {
   type: number;
   interval?: number;
@@ -29,29 +29,11 @@ export interface SequenceOptions {
 export function isRecord(input: unknown): input is Record<string, unknown> {
   return !!input && typeof input === 'object' && !Array.isArray(input);
 }
-// NIZ wire format ported from the local macOS implementation and original DLL.
+// NIZ EC wire format ported from the local macOS implementation and original DLL.
 // All byte offsets exclude Windows' extra Report ID byte; WebHID uses reportId=0.
-export const VENDOR_ID = 0x0483;
-export const PRODUCT_IDS = [0x502a, 0x512a, 0x522a];
-export const USAGE_PAGE = 0x8c;
-export const USAGE = 1;
-export const KEYS_PER_GROUP = 66;
-export const EDITABLE_RECORDS = 198;
 export const MAX_REPORTS = 8192;
 export const MAX_FILE_SIZE = 4 * 1024 * 1024;
-export const LAYERS = ['普通层', '右 Fn', '左 Fn'];
 export { KEY_NAMES } from './i18n/key-names.ts';
-export const PHYSICAL_KEYS =
-  "Esc|1|2|3|4|5|6|7|8|9|0|-|=|\\|`|Tab|Q|W|E|R|T|Y|U|I|O|P|[|]|⌫|Caps|A|S|D|F|G|H|J|K|L|;|'|Return|Shift|Z|X|C|V|B|N|M|,|.|/|Shift / ↑|R Fn|Ctrl|Win|Alt|L Fn|Space|Alt|Menu|Ctrl|←|↓|→".split(
-    '|',
-  );
-export const ROW_WIDTHS: number[][] = [
-  Array(15).fill(1),
-  [1.5, ...Array(12).fill(1), 1.5],
-  [1.75, ...Array(11).fill(1), 2.25],
-  [2.25, ...Array(10).fill(1), 1.75, 1],
-  [1.25, 1.25, 1.25, 1.25, 4, 1, 1, 1, 1, 1, 1],
-];
 export class ProtocolError extends Error {
   details: Record<string, unknown>;
   rawReports?: Uint8Array[];
@@ -131,16 +113,16 @@ export function command(op: number) {
   bytes[1] = op;
   return bytes;
 }
-export function encodeDefinition(def: KeyDefinition, index: number) {
-  integer(index, 593, msg('field.record'));
+export function encodeDefinition(def: KeyDefinition, index: number, model: KeyboardModel = defaultModel) {
+  integer(index, model.maxRecords - 1, msg('field.record'));
   const type = integer(def.type, 4, msg('field.type'));
   assert(Array.isArray(def.keys) && (type === 0 || def.keys.length > 0), msg('error.sequenceRequired'));
   const max = type === 0 ? 58 : type === 1 ? 56 : 2048;
   assert(def.keys.length <= max, msg('error.sequenceLength', { max }));
   def.keys.forEach((key) => integer(key, 255, msg('field.keyCode')));
   const header = command(0xf0);
-  header[2] = Math.floor(index / 66) + 1;
-  header[3] = (index % 66) + 1;
+  header[2] = Math.floor(index / model.keyCount) + 1;
+  header[3] = (index % model.keyCount) + 1;
   header[4] = type;
   if (type < 2) {
     if (type === 0) header[5] = def.keys.length;
@@ -213,13 +195,15 @@ export function decodeDefinition(reports: Uint8Array[]): DecodedDefinition {
   return def;
 }
 export class Profile {
+  readonly model: KeyboardModel;
   records: Uint8Array[][];
   version: string;
   identity: DeviceIdentity;
   counters: number[];
   lights: Uint8Array | null;
   legacyXML: string | null;
-  constructor(records: Uint8Array[][]) {
+  constructor(records: Uint8Array[][], model: KeyboardModel = defaultModel) {
+    this.model = model;
     this.records = records;
     this.version = '';
     this.identity = {};
@@ -227,23 +211,23 @@ export class Profile {
     this.lights = null;
     this.legacyXML = null;
   }
-  static fromReports(reports: Uint8Array[]) {
+  static fromReports(reports: Uint8Array[], model: KeyboardModel = defaultModel) {
     assert(
-      Array.isArray(reports) && reports.length >= 198 && reports.length <= MAX_REPORTS,
+      Array.isArray(reports) && reports.length >= model.editableRecords && reports.length <= MAX_REPORTS,
       msg('error.completeGroups'),
     );
     reports.forEach((r) => assert(r instanceof Uint8Array && r.length === 64, msg('error.reportSize')));
-    const groups = Math.max(3, ...reports.map((r) => r[2]));
-    assert(groups === 3 || groups === 9, msg('error.groupCount'));
-    const records: (Uint8Array[] | null)[] = Array.from({ length: groups * 66 }, () => null);
+    const groups = Math.max(model.layers.length, ...reports.map((r) => r[2]));
+    assert(model.groupCounts.includes(groups), msg('error.groupCount'));
+    const records: (Uint8Array[] | null)[] = Array.from({ length: groups * model.keyCount }, () => null);
     for (let i = 0; i < reports.length;) {
       const b = reports[i];
       assert(
-        b[0] === 0 && b[1] === 0xf0 && b[2] >= 1 && b[2] <= groups && b[3] >= 1 && b[3] <= 66 && b[4] <= 4,
+        b[0] === 0 && b[1] === 0xf0 && b[2] >= 1 && b[2] <= groups && b[3] >= 1 && b[3] <= model.keyCount && b[4] <= 4,
         msg('error.packetFormat', { packet: i + 1, group: b[2], key: b[3], type: b[4] }),
         { packet: i, header: hex(b.slice(0, 16)) },
       );
-      const index = (b[2] - 1) * 66 + b[3] - 1;
+      const index = (b[2] - 1) * model.keyCount + b[3] - 1;
       assert(records[index] === null, msg('error.duplicateRecord'));
       const size = b[9] * 256 + b[10],
         count = b[4] < 2 ? 1 : Math.ceil(size / 53);
@@ -259,10 +243,10 @@ export class Profile {
       records.every((record) => record !== null),
       msg('error.missingRecords'),
     );
-    return new Profile(records);
+    return new Profile(records, model);
   }
   get groupCount() {
-    return this.records.length / 66;
+    return this.records.length / this.model.keyCount;
   }
   get reports() {
     return this.records.flatMap((group) => group.map((r) => r.slice()));
@@ -272,26 +256,30 @@ export class Profile {
     return decodeDefinition(this.records[index]);
   }
   setDefinition(index: number, def: KeyDefinition, { syncFn = true } = {}) {
-    integer(index, 197, msg('field.editablePosition'));
-    const reports = encodeDefinition(def, index);
+    const { keyCount, editableRecords, layers, fn } = this.model;
+    integer(index, editableRecords - 1, msg('field.editablePosition'));
+    const reports = encodeDefinition(def, index, this.model);
     this.records[index] = reports;
-    if (syncFn && def.type === 0 && def.keys.length === 1 && [156, 166].includes(def.keys[0]))
-      for (let layer = 0; layer < 3; layer++)
-        this.records[layer * 66 + (index % 66)] = encodeDefinition(def, layer * 66 + (index % 66));
+    if (syncFn && def.type === 0 && def.keys.length === 1 && fn.codes.includes(def.keys[0]))
+      for (let layer = 0; layer < layers.length; layer++) {
+        const position = layer * keyCount + (index % keyCount);
+        this.records[position] = encodeDefinition(def, position, this.model);
+      }
   }
   summary(index: number) {
     const def = this.definition(index);
-    if (!def.keys.length) return index >= 66 ? '未设置' : '无功能';
+    if (!def.keys.length) return index >= this.model.keyCount ? '未设置' : '无功能';
     if (def.type >= 2) return `宏 · ${def.keys.length} 步`;
     return def.keys.map(keyName).join(' + ');
   }
   differences(other: Profile) {
+    assert(this.model.id === other.model.id, msg('error.modelMismatch'));
     assert(this.records.length === other.records.length, msg('error.groupMismatch'));
     const changed = [];
     for (let i = 0; i < this.records.length; i++) {
-      // The extra six groups are opaque. Check every byte, not only decoded fields.
+      // Non-editable groups are opaque. Check every byte, not only decoded fields.
       const same =
-        i < EDITABLE_RECORDS
+        i < this.model.editableRecords
           ? JSON.stringify(this.definition(i)) === JSON.stringify(other.definition(i))
           : this.records[i].length === other.records[i].length &&
             this.records[i].every((r, j) => equalBytes(r, other.records[i][j]));
@@ -300,14 +288,15 @@ export class Profile {
     return changed;
   }
   validateForWriting() {
-    Profile.fromReports(this.reports);
+    Profile.fromReports(this.reports, this.model);
+    const { keyCount, layers, fn: fnRules } = this.model;
     let hasFn = false;
-    for (let key = 0; key < 66; key++) {
+    for (let key = 0; key < keyCount; key++) {
       const d = this.definition(key);
-      if (d.type === 0 && d.keys.length === 1 && [156, 166].includes(d.keys[0])) {
+      if (d.type === 0 && d.keys.length === 1 && fnRules.codes.includes(d.keys[0])) {
         hasFn = true;
-        for (let layer = 1; layer < 3; layer++) {
-          const fn = this.definition(layer * 66 + key);
+        for (let layer = 1; layer < layers.length; layer++) {
+          const fn = this.definition(layer * keyCount + key);
           assert(
             fn.type === 0 && fn.keys.length === 1 && fn.keys[0] === d.keys[0],
             msg('error.fnConsistency'),
@@ -315,11 +304,13 @@ export class Profile {
         }
       }
     }
-    assert(hasFn, msg('error.fnRequired'));
+    assert(!fnRules.required || hasFn, msg('error.fnRequired'));
   }
   toJSON() {
     const data: ProfileJSON = {
-      format: 'atom66-macos',
+      ...(this.model.id === 'atom66'
+        ? { format: 'atom66-macos' as const }
+        : { format: 'niz-web' as const, model: this.model.id }),
       schema: 1,
       version: this.version,
       identity: this.identity,
@@ -330,29 +321,36 @@ export class Profile {
     if (this.legacyXML) data.legacyXML = this.legacyXML;
     return data;
   }
-  static fromJSON(input: unknown) {
+  static fromJSON(input: unknown, models = supportedModels) {
     if (typeof input === 'string') {
       assert(input.length <= MAX_FILE_SIZE, msg('error.fileSize'));
       input = JSON.parse(input);
     }
     assert(
       isRecord(input) &&
-        input.format === 'atom66-macos' &&
+        (input.format === 'atom66-macos' || input.format === 'niz-web') &&
         input.schema === 1 &&
         Array.isArray(input.reports),
       msg('error.profileFormat'),
     );
+    const modelId = input.format === 'atom66-macos' ? 'atom66' : input.model;
+    assert(input.model === undefined || input.model === modelId, msg('error.modelMismatch'));
+    const model = models.find((candidate) => candidate.id === modelId);
+    assert(model, msg('error.profileModel'));
     assert(input.reports.length <= MAX_REPORTS, msg('error.reportLimit'));
-    const p = Profile.fromReports(input.reports.map(unhex));
+    const p = Profile.fromReports(input.reports.map(unhex), model);
     assert(typeof input.version === 'string' && isRecord(input.identity), msg('error.identity'));
-    assert(Array.isArray(input.counters) && [0, 66].includes(input.counters.length), msg('error.counters'));
+    assert(
+      Array.isArray(input.counters) && [0, model.keyCount].includes(input.counters.length),
+      msg('error.counters'),
+    );
     input.counters.forEach((n) => integer(n, 0xffffffff, msg('field.counter')));
     p.version = input.version;
     p.identity = { ...input.identity };
     p.counters = [...input.counters];
     if (input.lights != null) {
       p.lights = unhex(input.lights);
-      assert(p.lights.length === 198, msg('error.lightsLength'));
+      assert(p.lights.length === model.keyCount * 3, msg('error.lightsLength'));
     }
     if (input.legacyXML != null) {
       assert(typeof input.legacyXML === 'string', msg('error.legacyAttachment'));
@@ -361,38 +359,48 @@ export class Profile {
     return p;
   }
   clone() {
-    return Profile.fromJSON(this.toJSON());
+    return Profile.fromJSON(this.toJSON(), [this.model]);
   }
 }
 export function mergeImported(imported: Profile, baseline: Profile | null) {
   const p = imported.clone();
   if (!baseline) return p;
+  assert(p.model.id === baseline.model.id, msg('error.modelMismatch'));
   assert(p.version === baseline.version, msg('error.firmwareImport'));
-  if (p.records.length === 198 && baseline.records.length === 594)
-    p.records.push(...baseline.records.slice(198).map((g) => g.map((r) => r.slice())));
+  const editable = p.model.editableRecords;
+  if (p.records.length === editable && baseline.records.length > editable)
+    p.records.push(...baseline.records.slice(editable).map((g) => g.map((r) => r.slice())));
   assert(p.records.length === baseline.records.length, msg('error.importGroups'));
   p.identity = { ...baseline.identity };
   p.counters = [...baseline.counters];
-  if (!p.lights || !baseline.version.includes('RGB')) p.lights = baseline.lights?.slice() ?? null;
+  if (!p.lights || !baseline.model.capabilities(baseline.version).perKeyRGB)
+    p.lights = baseline.lights?.slice() ?? null;
   return p;
 }
-export function demoProfile() {
-  const records = Array.from({ length: 198 }, (_, i) => encodeDefinition({ type: 0, keys: [] }, i));
-  const p = new Profile(records);
+export function demoProfile(model: KeyboardModel = defaultModel) {
+  const records = Array.from({ length: model.editableRecords }, (_, i) =>
+    encodeDefinition({ type: 0, keys: [] }, i, model),
+  );
+  const p = new Profile(records, model);
   p.version = '离线演示 · 非设备当前配置';
-  const keys = [
-    1, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 41, 14, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39,
-    40, 27, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65,
-    66, 156, 67, 68, 69, 166, 70, 71, 73, 74, 88, 89, 90,
-  ];
-  keys.forEach((code, i) => p.setDefinition(i, { type: 0, keys: [code] }));
-  for (let layer = 1; layer < 3; layer++)
-    for (let key = 1; key <= 12; key++) p.setDefinition(layer * 66 + key, { type: 0, keys: [key + 1] });
+  model.demoKeys.forEach((keys, layer) =>
+    keys.forEach((code, key) => {
+      if (code) p.setDefinition(layer * model.keyCount + key, { type: 0, keys: [code] });
+    }),
+  );
   return p;
 }
-export function makeCapture(version: string, identity: DeviceIdentity, reports: Uint8Array[], error = '') {
+export function makeCapture(
+  version: string,
+  identity: DeviceIdentity,
+  reports: Uint8Array[],
+  error = '',
+  model: KeyboardModel = defaultModel,
+) {
   return {
-    format: 'atom66-read-capture',
+    ...(model.id === 'atom66'
+      ? { format: 'atom66-read-capture' }
+      : { format: 'niz-read-capture', model: model.id }),
     schema: 1,
     capturedAt: Date.now() / 1000,
     version,

@@ -1,6 +1,6 @@
 import { test } from 'vitest';
 import assert from 'node:assert/strict';
-import { importWindowsProfile } from '../src/legacy.ts';
+import { importWindowsProfile } from '../src/devices/atom66/legacy.ts';
 import { Profile } from '../src/protocol.ts';
 
 // Semantic XML fixture, not a replacement browser XML parser. Production uses

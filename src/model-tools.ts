@@ -15,7 +15,7 @@ export interface ModelContext {
 }
 export interface ModelDependencies {
   editor: EditorState;
-  session: Pick<HIDSession, 'state' | 'version'>;
+  session: Pick<HIDSession, 'state' | 'version'> & Partial<Pick<HIDSession, 'model'>>;
   canStage(): boolean;
   onStaged(): void;
 }
@@ -43,6 +43,10 @@ export function modelTools(
       execute(input) {
         object(input, []);
         return {
+          model: editor.model.id,
+          deviceModel: session.model?.id ?? null,
+          keyCount: editor.model.keyCount,
+          layers: editor.model.layers.map((label) => renderMessage(label, locale)),
           connection: session.state,
           firmware: session.version,
           profileLoaded: !!editor.profile,
@@ -61,12 +65,12 @@ export function modelTools(
       inputSchema: {
         type: 'object',
         properties: {
-          layer: { type: 'integer', minimum: 0, maximum: 2 },
+          layer: { type: 'integer', minimum: 0, maximum: editor.model.layers.length - 1 },
           keys: {
             type: 'array',
-            items: { type: 'integer', minimum: 0, maximum: 65 },
+            items: { type: 'integer', minimum: 0, maximum: editor.model.keyCount - 1 },
             minItems: 1,
-            maxItems: 66,
+            maxItems: editor.model.keyCount,
           },
         },
         required: ['layer', 'keys'],
@@ -75,18 +79,18 @@ export function modelTools(
       annotations: { readOnlyHint: true, untrustedContentHint: true },
       execute(input) {
         object(input, ['layer', 'keys']);
-        const layer = integer(input.layer, 2, msg('field.toolLayer'));
+        const layer = integer(input.layer, editor.model.layers.length - 1, msg('field.toolLayer'));
         assert(editor.profile, msg('error.toolProfile'));
         assert(
-          Array.isArray(input.keys) && input.keys.length > 0 && input.keys.length <= 66,
+          Array.isArray(input.keys) && input.keys.length > 0 && input.keys.length <= editor.model.keyCount,
           msg('error.toolKeys'),
         );
         const profile = editor.profile;
         return {
           layer,
           keys: input.keys.map((key: unknown) => {
-            const position = integer(key, 65, msg('field.toolKey'));
-            return { key: position, definition: profile.definition(layer * 66 + position) };
+            const position = integer(key, editor.model.keyCount - 1, msg('field.toolKey'));
+            return { key: position, definition: profile.definition(layer * editor.model.keyCount + position) };
           }),
         };
       },
@@ -101,12 +105,12 @@ export function modelTools(
           edits: {
             type: 'array',
             minItems: 1,
-            maxItems: 198,
+            maxItems: editor.model.editableRecords,
             items: {
               type: 'object',
               properties: {
-                layer: { type: 'integer', minimum: 0, maximum: 2 },
-                key: { type: 'integer', minimum: 0, maximum: 65 },
+                layer: { type: 'integer', minimum: 0, maximum: editor.model.layers.length - 1 },
+                key: { type: 'integer', minimum: 0, maximum: editor.model.keyCount - 1 },
                 type: { type: 'integer', minimum: 0, maximum: 4 },
                 sequence: { type: 'string', maxLength: 65536 },
                 interval: { type: 'integer', minimum: 0, maximum: 65535 },
@@ -126,13 +130,13 @@ export function modelTools(
         object(input, ['edits']);
         assert(canStage(), msg('error.toolBusy'));
         assert(
-          Array.isArray(input.edits) && input.edits.length > 0 && input.edits.length <= 198,
+          Array.isArray(input.edits) && input.edits.length > 0 && input.edits.length <= editor.model.editableRecords,
           msg('error.toolEdits'),
         );
         const edits = input.edits.map((edit: unknown) => {
           object(edit, ['layer', 'key', 'type', 'sequence', 'interval', 'cycles', 'customDelay']);
-          const layer = integer(edit.layer, 2, msg('field.toolLayer')),
-            key = integer(edit.key, 65, msg('field.toolKey')),
+          const layer = integer(edit.layer, editor.model.layers.length - 1, msg('field.toolLayer')),
+            key = integer(edit.key, editor.model.keyCount - 1, msg('field.toolKey')),
             type = integer(edit.type, 4, msg('field.toolType'));
           assert(
             typeof edit.sequence === 'string' && edit.sequence.length <= 65536,
@@ -143,7 +147,7 @@ export function modelTools(
           if (edit.interval !== undefined) integer(edit.interval, 65535, msg('field.interval'));
           if (edit.cycles !== undefined) integer(edit.cycles, 255, msg('field.cycles'), 1);
           return {
-            index: layer * 66 + key,
+            index: layer * editor.model.keyCount + key,
             definition: parseSequence(edit.sequence, {
               type,
               interval:

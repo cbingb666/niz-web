@@ -1,6 +1,6 @@
-# ATOM66 Web
+# NIZ Web
 
-ATOM66 配置工具的纯 Web 移植测试版。浏览器通过 WebHID 直接访问键盘的 USB 配置接口：没有本地 USB 中转程序、后端服务或云端配置存储。界面采用 React + TypeScript（strict）+ Vite + shadcn/ui，应用状态由 Zustand 管理；所有运行时代码随网页打包，不使用 CDN。目前仅保留 Web 版作为在用版本，源码位于项目根目录；官方原版软件按型号统一收集在 `drivers/`。
+NIZ 键盘配置工具的纯 Web 移植测试版，**目前仅支持 ATOM66**。浏览器通过 WebHID 直接访问键盘的 USB 配置接口：没有本地 USB 中转程序、后端服务或云端配置存储。界面采用 React + TypeScript（strict）+ Vite + shadcn/ui，应用状态由 Zustand 管理；所有运行时代码随网页打包，不使用 CDN。目前仅保留 Web 版作为在用版本，源码位于项目根目录；官方原版软件按型号统一收集在 `drivers/`。
 
 ## 目录结构
 
@@ -13,11 +13,11 @@ ATOM66 配置工具的纯 Web 移植测试版。浏览器通过 WebHID 直接访
 │   ├── i18n/            # 中英文文案、按键名称与语言偏好
 │   ├── types/           # WebHID 配置接口类型
 │   ├── lib/             # 浏览器环境、下载与样式工具
-│   ├── protocol.ts     # 报文解析与配置模型
+│   ├── devices/         # 型号定义、识别注册表；atom66/ 含布局及 .pro 转换
+│   ├── protocol.ts     # NIZ EC 报文解析与带型号归属的配置
 │   ├── hid.ts          # 设备通信、连接状态与写入保护
 │   ├── editor.ts       # 独立于 React 的编辑模型
 │   ├── storage.ts      # IndexedDB 事务备份
-│   ├── legacy.ts       # Windows .pro 转换
 │   └── model-tools.ts  # 可选 WebMCP 页面工具
 ├── scripts/             # 单文件构建插件与私人样本回放
 ├── tests/               # Vitest：协议、状态、React 交互与产物测试
@@ -28,7 +28,24 @@ ATOM66 配置工具的纯 Web 移植测试版。浏览器通过 WebHID 直接访
 └── dist/index.html      # 构建生成的独立网页
 ```
 
-后续型号的官方软件放入 `drivers/<型号>/`，同一型号有多个版本时再按版本或日期分目录，具体约定见 [drivers/README.md](drivers/README.md)。此目录只收集原始资料，不意味着网页已经支持相应型号；当前协议实现仍针对 ATOM66。
+后续型号的官方软件放入 `drivers/<型号>/`，同一型号有多个版本时再按版本或日期分目录，具体约定见 [drivers/README.md](drivers/README.md)。此目录只收集原始资料，不意味着网页已经支持相应型号；当前注册表只包含 ATOM66。
+
+## 型号扩展
+
+`src/devices/atom66/model.ts` 集中维护 ATOM66 的 USB 筛选条件、固件识别、物理布局、编辑层、允许的配置组数、Fn 规则、计数 / RGB 能力及演示内容。`src/devices/model.ts` 定义这些信息的接口，并从布局和层数推导键数及记录范围；`src/devices/index.ts` 是受支持型号的唯一注册入口。
+
+连接时先筛选 USB 配置接口，再读取固件，在候选型号中唯一匹配。未知或匹配多个型号的设备不会继续读取配置。`HIDSession` 保存识别出的型号；`Profile` 保存配置所属型号；编辑器、React 布局、方向键导航、确认摘要和页面工具都使用配置的型号信息。未载入配置时默认显示 ATOM66。
+
+添加型号的流程：
+
+1. 从官方资料和真实只读样本确认 USB 标识、固件识别规则、按键顺序、布局、配置组数和设备能力。同一个 USB ID 不代表同一型号，不按报文数量猜测型号。
+2. 如果确认使用相同的 NIZ EC 报文及命令格式，在 `src/devices/<型号>/model.ts` 定义型号，并加入 `supportedModels`。计数读取长度、RGB 长度、记录寻址、编辑范围和 Fn 同步从型号定义取得。
+3. 如果命令、报文结构或键码含义不同，先实现对应的协议模块及转换，再扩展协议选择；当前 `protocol: 'niz-ec'` 只声明已实现的协议，不能仅添加型号参数就声称支持其他协议。Windows `.pro` 目前也仅支持 `src/devices/atom66/legacy.ts` 中明确识别的 ATOM66 格式。
+4. 增加真实样本的报文往返和设备行为验证后再宣称支持。`tests/model-fixtures.ts` 的 68 键 / 2 层 / 4 组型号仅用于检查结构可扩展性，未注册，也不对应受支持的实际产品。
+
+新型号的 JSON 使用 `format: 'niz-web'`、`schema: 1` 和必填的 `model` 型号 ID。ATOM66 继续导出原有 `atom66-macos` 格式；导入旧文件及备份时明确归属 ATOM66。导入合并、配置比较和硬件写入都检查型号一致性，即使固件字符串及记录数量相同，也拒绝不同型号之间的混用。最小编辑组导入完整配置时保留设备的扩展组原始字节。
+
+旧的 IndexedDB 名称 `atom66-web-backups`、语言偏好键 `atom66.locale` 和三个 `atom66_*` 页面工具名称继续保留，避免已有数据和调用失效。这些名称是兼容标识，不限制当前型号；页面工具会返回编辑器型号、键数、层名称，并在型号切换时重新注册相应的输入范围。ATOM66 诊断格式继续兼容，新型号诊断使用 `niz-read-capture` 并携带 `model`。
 
 原 `web/` 的文件（包括隐藏配置）已全部迁至根目录。原生 Mac 版、旧归档和交付 ZIP 不属于当前项目内容。
 

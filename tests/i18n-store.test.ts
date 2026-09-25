@@ -95,7 +95,7 @@ test('optional page tools change their labels and errors without duplicating reg
   actions.setLocale('en');
   expect(signals.slice(0, 3).every((signal) => signal.aborted)).toBe(true);
   expect(signals.slice(3).every((signal) => !signal.aborted)).toBe(true);
-  expect(tools[3].title).toBe('Read ATOM66 status');
+  expect(tools[3].title).toBe('Read keyboard status');
   expect(() => tools[4].execute({ layer: 0, keys: [0] })).toThrow(/Read or import/);
   await actions.stop();
   expect(signals.every((signal) => signal.aborted)).toBe(true);

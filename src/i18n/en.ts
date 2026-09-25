@@ -1,9 +1,9 @@
 import type { zhCN } from './zh-CN.ts';
 
 export const en = {
-  'app.title': 'ATOM66 — Keyboard configurator',
+  'app.title': 'NIZ — Keyboard configurator',
   'app.description':
-    'Configure your NIZ ATOM66 keyboard directly over WebHID. Profiles and backups stay in your browser.',
+    'Configure supported NIZ keyboards directly over WebHID. Profiles and backups stay in your browser.',
   'app.subtitle': 'NIZ keyboard configurator',
   'app.localOnly': 'Your configuration stays local',
   'app.editor': 'Keyboard editor',
@@ -42,12 +42,12 @@ export const en = {
   'keyboard.reading': 'Reading…',
   'keyboard.layers': 'Editing layer',
   'keyboard.showCounts': 'Show key counts',
-  'keyboard.physical': 'ATOM66 physical keys',
+  'keyboard.physical': '{model} physical keys',
   'keyboard.keyLabel': '{layer}, key {position} {key}, {assignment}{changed}',
   'keyboard.changedSuffix': ', modified',
   'keyboard.changedKeys': 'Modified keys',
-  'keyboard.nineGroups': 'All 9 groups preserved · Edit the first 3',
-  'keyboard.threeLayers': '66 keys · 3 editable layers',
+  'keyboard.extendedGroups': 'All {groups} groups preserved · Edit the first {layers}',
+  'keyboard.dimensions': '{keys} keys · {layers} editable layers',
   'keyboard.import': 'Import configuration',
   'keyboard.export': 'Export configuration',
   'keyboard.importFile': 'Import configuration file',
@@ -113,19 +113,19 @@ export const en = {
   'backup.saved': '{reason} saved locally.',
   'help.open': 'Open help',
   'help.title': 'Help',
-  'help.description': 'Connect your ATOM66 with a USB data cable. Close other configuration tools first.',
+  'help.description': 'Connect a supported keyboard with a USB data cable. Close other configuration tools first.',
   'help.connect':
     'Use a desktop browser with WebHID support. Click “Connect keyboard” and select the keyboard in the browser prompt.',
   'help.read':
     'After connecting, settings are read and backed up automatically. Use “Read configuration again” to retry a failed read.',
   'help.edit':
-    'Choose Normal, Right Fn or Left Fn, then select a key to edit. Command corresponds to Windows / Super.',
+    'Choose an editing layer, then select a key to edit. Command corresponds to Windows / Super.',
   'help.write':
     'Save your changes and click “Write to keyboard”. After confirmation, the app checks the current configuration, backs it up, writes and verifies it.',
   'help.reconnect':
     'Reconnecting preserves pending edits, unsaved input and offline imports. Read the configuration again and confirm to replace the editor contents.',
   'help.features':
-    'Supports chords, repeat, three macro modes, per-step delays, per-key RGB and JSON / Windows .pro imports. All nine groups are preserved; only the first three are editable.',
+    'Supports chords, repeat, three macro modes, per-step delays, per-key RGB and JSON / ATOM66 Windows .pro imports. Extended groups are preserved; editable layers depend on the current model.',
   'help.validation':
     'Writing to real hardware from this app still needs validation. Firmware upgrades, sensor calibration and global macro recording are not included.',
   'help.privacy':
@@ -226,16 +226,18 @@ export const en = {
   'error.keyType': 'Unknown key type.',
   'error.macroIncomplete': 'Macro parameters or packets are incomplete.',
   'error.delayMarker': 'Invalid macro delay marker.',
-  'error.completeGroups': 'A complete three-group or nine-group configuration is required.',
+  'error.completeGroups': 'A complete configuration for this model is required.',
   'error.reportSize': 'Configuration reports must be 64 bytes long.',
-  'error.groupCount': 'Only complete three-group or nine-group configurations are supported.',
+  'error.groupCount': 'This group count is not supported by the selected model.',
   'error.packetFormat': 'Unsupported packet {packet} (group {group}, key {key}, type {type}).',
   'error.duplicateRecord': 'The configuration contains duplicate key records.',
   'error.macroPackets': 'Macro packets are incomplete or too long.',
   'error.macroHeaders': 'Macro packet headers do not match.',
   'error.missingRecords': 'The configuration is missing key or extended records.',
   'error.groupMismatch': 'The group counts differ. Read the keyboard again.',
-  'error.fnConsistency': 'Fn assignments must match across all three layers.',
+  'error.modelMismatch': 'The configuration belongs to a different keyboard model.',
+  'error.profileModel': 'The configuration does not specify a supported keyboard model.',
+  'error.fnConsistency': 'Fn assignments must match across all editable layers.',
   'error.fnRequired': 'Keep at least one Fn key.',
   'error.fileSize': 'The configuration file is too large.',
   'error.profileFormat':
@@ -256,7 +258,7 @@ export const en = {
   'error.noBaseline': 'No configuration has been loaded.',
   'error.noLights': 'This configuration has no editable RGB data.',
   'error.color': 'Invalid color format.',
-  'error.configDevice': 'The selected interface is not an ATOM66 configuration interface.',
+  'error.configDevice': 'The selected interface is not a supported keyboard configuration interface.',
   'error.descriptor':
     "The browser has not exposed the keyboard's 64-byte configuration reports. Select the correct device in a desktop browser with WebHID support.",
   'error.inputLength': 'The keyboard report is {length} bytes long; expected 64.',
@@ -270,17 +272,17 @@ export const en = {
   'error.receiveTimeout':
     'The keyboard response timed out. Close other configuration tools, reconnect and try again.',
   'error.versionResponse': 'Unexpected firmware version response.',
-  'error.model': 'The device firmware is not for an ATOM66.',
+  'error.model': 'The device could not be identified as exactly one supported model.',
   'error.streamLimit': 'The configuration stream exceeded the packet limit.',
   'error.unknownPacket': 'An unknown report was received while reading the configuration.',
   'error.streamEnd': 'The configuration stream did not finish correctly.',
-  'error.dataLength': 'The data length does not match the ATOM66 format.',
+  'error.dataLength': 'The data length does not match the current model.',
   'error.dataStructure': 'The device returned an invalid data structure.',
   'error.dataEnd': 'No end-of-data report was received.',
-  'error.rgbLength': 'RGB data must be 198 bytes long.',
+  'error.rgbLength': 'The RGB data length does not match the current model.',
   'error.unsupportedHid': 'This browser does not support WebHID.',
   'error.deviceBusy': 'The device is busy. Please wait.',
-  'error.multipleInterfaces': 'Multiple configuration interfaces were selected. Connect only one ATOM66.',
+  'error.multipleInterfaces': 'Multiple configuration interfaces were selected. Select only one keyboard.',
   'error.connectionInterrupted': 'The device connection was interrupted.',
   'error.connectionChanged': 'The device connection changed.',
   'error.closeNative': '{error} Close the native configuration tool first.',
@@ -306,7 +308,7 @@ export const en = {
   'hid.multiple': 'Multiple keyboards found. Click Connect keyboard and choose one.',
   'hid.unauthorized':
     'No keyboard has been authorized. Click Connect keyboard and choose a device in the browser prompt.',
-  'hid.authorizing': "Select your ATOM66 in the browser's device list.",
+  'hid.authorizing': "Select a supported keyboard in the browser's device list.",
   'hid.cancelled': 'No keyboard selected. Click Connect keyboard to try again.',
   'hid.connecting': 'Connecting and reading the firmware version…',
   'hid.connected': 'Connected. The current key settings will be read automatically.',
@@ -341,18 +343,18 @@ export const en = {
   'error.toolObject': 'Tool arguments must be an object.',
   'error.toolFields': 'Tool arguments contain unknown fields.',
   'error.toolProfile': 'Read or import a configuration in the page first.',
-  'error.toolKeys': 'Specify between 1 and 66 key positions.',
+  'error.toolKeys': 'The number of keys is outside the range for the current model.',
   'error.toolBusy': 'Wait for the current operation and save or reset the key being edited first.',
-  'error.toolEdits': 'Specify between 1 and 198 edits.',
+  'error.toolEdits': 'The number of edits is outside the editable range for the current model.',
   'error.toolSequence': 'Invalid sequence text.',
   'error.toolDelay': 'Delay mode must be a boolean.',
-  'tools.status': 'Read ATOM66 status',
+  'tools.status': 'Read keyboard status',
   'tools.keys': 'Read loaded keys',
   'tools.stage': 'Stage key edits',
   'tools.statusDescription':
     'Read connection and local editor status. Does not query USB or expose backup contents.',
   'tools.keysDescription':
-    'Read selected key definitions from the local editor, without USB access. Positions are zero-based (0–65); layers 0=normal, 1=right Fn, 2=left Fn.',
+    'Read selected key definitions from the local editor, without USB access. Key and layer positions are zero-based; use the status tool for the current model, key count and layer names.',
   'tools.stageDescription':
-    'Stage a batch of local key edits in the visible editor, atomically. Never writes the keyboard. The user must explicitly review and click the hardware write button. Sequence uses one key per line, optional @milliseconds in custom-delay macros; Fn assignments synchronize the three layers.',
+    'Stage a batch of local key edits in the visible editor, atomically. Never writes the keyboard. The user must explicitly review and click the hardware write button. Sequence uses one key per line, optional @milliseconds in custom-delay macros; Fn assignments synchronize editable layers according to the current model.',
 } satisfies Record<keyof typeof zhCN, string>;

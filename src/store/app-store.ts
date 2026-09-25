@@ -2,7 +2,6 @@ import {
   msg,
   renderMessage,
   joinMessages,
-  layerMessage,
   backupReason,
   defaultLocale,
   isLocale,
@@ -13,12 +12,12 @@ import { localizedKeyName } from '../i18n/key-names';
 import { createStore } from 'zustand/vanilla';
 import { EditorState, type EditorSource } from '../editor';
 import { HIDSession, protocolError } from '../hid';
-import { importWindowsProfile } from '../legacy';
+import { importWindowsProfile } from '../devices/atom66/legacy';
+import type { KeyboardModel } from '../devices/index';
 import { registerModelTools, type ModelContext } from '../model-tools';
 import {
   Profile,
   ProtocolError,
-  PHYSICAL_KEYS,
   MAX_FILE_SIZE,
   assert,
   demoProfile,
@@ -45,6 +44,7 @@ export type AppDialog =
   | { kind: 'message'; title: Message; body: Message }
   | { kind: 'backups' | 'help' };
 export interface SessionView {
+  model: KeyboardModel | null;
   state: ConnectionState;
   connected: boolean;
   version: string;
@@ -63,6 +63,7 @@ export interface Activity {
   error: boolean;
 }
 export interface AppState {
+  model: KeyboardModel;
   locale: Locale;
   profile: Profile | null;
   source: EditorSource;
@@ -143,11 +144,13 @@ export function createAppStore(dependencies: AppDependencies) {
   let resolveConfirmation: ((accepted: boolean) => void) | null = null;
   let unregisterTools = () => {};
   let modelContext: ModelContext | undefined;
+  let toolsModel: KeyboardModel | null = null;
   const sessionView = (): SessionView => ({
+    model: session.model,
     state: session.state,
     connected: session.connected,
     version: session.version,
-    product: String(session.identity.Product ?? 'ATOM66'),
+    product: String(session.identity.Product ?? session.model?.name ?? ''),
     message: session.statusMessage,
     pending: session.pending,
     authorizing: session.authorizing,
@@ -159,6 +162,7 @@ export function createAppStore(dependencies: AppDependencies) {
   return createStore<AppState>()((set, get) => {
     function syncEditor() {
       set({
+        model: editor.model,
         profile: editor.profile?.clone() ?? null,
         source: editor.source,
         key: editor.key,
@@ -173,6 +177,7 @@ export function createAppStore(dependencies: AppDependencies) {
           session.hasLiveBaseline &&
           (editor.dirty || get().formDirty),
       });
+      if (started && toolsModel !== editor.model) refreshTools();
     }
     function loadForm() {
       const definition = editor.profile?.definition(editor.index);
@@ -333,7 +338,9 @@ export function createAppStore(dependencies: AppDependencies) {
         editor.applyDefinitions([{ index: editor.index, definition }]);
         set({ formDirty: false });
         if (announce)
-          log(msg('status.keySaved', { layer: layerMessage(editor.layer), key: PHYSICAL_KEYS[editor.key] }));
+          log(msg('status.keySaved', {
+            layer: editor.model.layers[editor.layer], key: editor.model.keys[editor.key].label,
+          }));
         syncEditor();
         return true;
       } catch (error) {
@@ -357,6 +364,7 @@ export function createAppStore(dependencies: AppDependencies) {
     }
     function refreshTools() {
       unregisterTools();
+      toolsModel = editor.model;
       unregisterTools = registerModelTools(
         modelContext,
         {
@@ -417,9 +425,11 @@ export function createAppStore(dependencies: AppDependencies) {
       },
       async demo() {
         if (isLocked(get()) || !(await discardIfNeeded(msg('confirm.loadDemo'))) || isLocked(get())) return;
-        const profile = demoProfile();
-        profile.lights = new Uint8Array(198);
-        for (let i = 0; i < 66; i++) profile.lights.set([66, 221, 180], i * 3);
+        const profile = demoProfile(editor.model);
+        if (profile.model.demoColor) {
+          profile.lights = new Uint8Array(profile.model.keyCount * 3);
+          for (let i = 0; i < profile.model.keyCount; i++) profile.lights.set(profile.model.demoColor, i * 3);
+        }
         editor.load(profile, { source: 'demo' });
         loadForm();
         const status = msg('status.demo');
@@ -434,7 +444,7 @@ export function createAppStore(dependencies: AppDependencies) {
           const live = session.hasLiveBaseline;
           const profile = file.name.toLowerCase().endsWith('.pro')
             ? importWindowsProfile(text, live ? session.version : undefined, live ? session.identity : {})
-            : Profile.fromJSON(text);
+            : Profile.fromJSON(text, session.models);
           stageImport(profile, file.name);
         });
       },
@@ -544,12 +554,13 @@ export function createAppStore(dependencies: AppDependencies) {
         const target = editor.profile.clone(),
           epoch = session.epoch,
           changes = editor.changes;
+        const { keyCount, editableRecords, layers, keys } = target.model;
         const labels = changes
           .slice(0, 12)
           .map((index) =>
-            index < 198
-              ? joinMessages(layerMessage(Math.floor(index / 66)), ' · ', PHYSICAL_KEYS[index % 66])
-              : msg('confirm.extendedKey', { group: Math.floor(index / 66) + 1, key: (index % 66) + 1 }),
+            index < editableRecords
+              ? joinMessages(layers[Math.floor(index / keyCount)], ' · ', keys[index % keyCount].label)
+              : msg('confirm.extendedKey', { group: Math.floor(index / keyCount) + 1, key: (index % keyCount) + 1 }),
           );
         const summary = joinMessages(
           msg(changes.length === 1 ? 'confirm.writeCount.one' : 'confirm.writeCount.other', {
@@ -580,6 +591,7 @@ export function createAppStore(dependencies: AppDependencies) {
       },
     };
     return {
+      model: editor.model,
       locale: dependencies.locale ?? defaultLocale,
       profile: null,
       source: '',

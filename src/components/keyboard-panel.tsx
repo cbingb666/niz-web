@@ -1,9 +1,7 @@
 import { useI18n } from '@/i18n/use-i18n';
-import { layerMessage } from '@/i18n/core';
 import { localizedSummary } from '@/i18n/profile';
 import { useRef, type CSSProperties, type KeyboardEvent } from 'react';
 import { Download, FolderOpen, RotateCw, Upload } from 'lucide-react';
-import { PHYSICAL_KEYS, ROW_WIDTHS } from '@/protocol';
 import { isLocked } from '@/store/app-store';
 import { useAppStore } from '@/store/context';
 import { Button } from './ui/button';
@@ -11,38 +9,54 @@ import { Checkbox } from './ui/checkbox';
 import { Label } from './ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 
-const rows = ROW_WIDTHS.map((weights, row) =>
-  weights.map((weight: number, column: number) => ({
-    weight,
-    key: ROW_WIDTHS.slice(0, row).reduce((count, widths) => count + widths.length, 0) + column,
-  })),
-);
-
 function Keyboard() {
   const { t, locale } = useI18n();
+  const model = useAppStore((state) => state.model);
   const profile = useAppStore((state) => state.profile);
   const layer = useAppStore((state) => state.layer);
   const selected = useAppStore((state) => state.key);
   const changes = useAppStore((state) => state.changes);
-  const counts = useAppStore((state) => state.showCounts);
+  const counts = useAppStore((state) =>
+    state.showCounts && state.model.capabilities(state.profile?.version ?? '').counters,
+  );
   const locked = useAppStore(isLocked);
   const actions = useAppStore((state) => state.actions);
   const keys = useRef<(HTMLButtonElement | null)[]>([]);
+  let position = 0;
+  const rows = model.rows.map((row) => {
+    let left = 0;
+    const total = row.reduce((sum, key) => sum + key.width, 0);
+    return row.map(({ label, width }) => {
+      const center = (left + width / 2) / total;
+      left += width;
+      return { label, weight: width, key: position++, center };
+    });
+  });
   function navigate(event: KeyboardEvent<HTMLButtonElement>, key: number) {
-    const offsets: Record<string, number> = { ArrowLeft: -1, ArrowRight: 1, ArrowUp: -14, ArrowDown: 14 };
-    if (!(event.key in offsets)) return;
+    if (!['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(event.key)) return;
     event.preventDefault();
-    const next = Math.max(0, Math.min(65, key + offsets[event.key]));
+    let next = key;
+    if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
+      next = Math.max(0, Math.min(model.keyCount - 1, key + (event.key === 'ArrowLeft' ? -1 : 1)));
+    } else {
+      const row = rows.findIndex((row) => row.some((item) => item.key === key));
+      const center = rows[row].find((item) => item.key === key)!.center;
+      const adjacent = rows[row + (event.key === 'ArrowUp' ? -1 : 1)];
+      if (adjacent)
+        next = adjacent.reduce((nearest, item) =>
+          Math.abs(item.center - center) < Math.abs(nearest.center - center) ? item : nearest,
+        ).key;
+    }
     if (actions.selectKey(next)) keys.current[next]?.focus();
   }
   return (
     <div className="keyboard-scroll">
-      <div className="keyboard" aria-label={t('keyboard.physical')}>
+      <div className="keyboard" aria-label={t('keyboard.physical', { model: model.name })}>
         {rows.map((row, rowIndex) => (
           <div className="key-row" key={rowIndex}>
-            {row.map(({ key, weight }) => {
-              const summary = profile ? localizedSummary(profile, layer * 66 + key, locale) : '—';
-              const changed = changes.includes(layer * 66 + key);
+            {row.map(({ key, weight, label }) => {
+              const summary = profile ? localizedSummary(profile, layer * model.keyCount + key, locale) : '—';
+              const changed = changes.includes(layer * model.keyCount + key);
               return (
                 <button
                   key={key}
@@ -55,18 +69,18 @@ function Keyboard() {
                   disabled={locked}
                   aria-pressed={key === selected}
                   tabIndex={key === selected ? 0 : -1}
-                  title={`${PHYSICAL_KEYS[key]} · ${summary}`}
+                  title={`${label} · ${summary}`}
                   aria-label={t('keyboard.keyLabel', {
-                    layer: layerMessage(layer),
+                    layer: model.layers[layer],
                     position: key + 1,
-                    key: PHYSICAL_KEYS[key],
+                    key: label,
                     assignment: summary,
                     changed: changed ? t('keyboard.changedSuffix') : '',
                   })}
                   onClick={() => actions.selectKey(key)}
                   onKeyDown={(event) => navigate(event, key)}
                 >
-                  <span className="legend">{PHYSICAL_KEYS[key]}</span>
+                  <span className="legend">{label}</span>
                   <span className="assignment">
                     {counts ? (profile?.counters[key]?.toLocaleString(locale) ?? '—') : summary}
                   </span>
@@ -117,11 +131,14 @@ function ActivityLog() {
 export function KeyboardPanel() {
   const { t, text, count } = useI18n();
   const profile = useAppStore((state) => state.profile);
+  const model = useAppStore((state) => state.model);
   const source = useAppStore((state) => state.source);
   const stale = useAppStore((state) => state.stale);
   const layer = useAppStore((state) => state.layer);
   const key = useAppStore((state) => state.key);
-  const counts = useAppStore((state) => state.showCounts);
+  const counts = useAppStore((state) =>
+    state.showCounts && state.model.capabilities(state.profile?.version ?? '').counters,
+  );
   const session = useAppStore((state) => state.session);
   const reading = useAppStore((state) => state.reading);
   const backupCount = useAppStore((state) => state.backupRows.length);
@@ -133,7 +150,7 @@ export function KeyboardPanel() {
     <div className="keyboard-panel">
       <div className="panel-toolbar">
         <div>
-          <h2>{t('keyboard.layout')}</h2>
+          <h2>{model.name} · {t('keyboard.layout')}</h2>
           <p>
             {profile
               ? `${t(source === 'demo' ? 'keyboard.demo' : source === 'read' ? 'keyboard.deviceProfile' : 'keyboard.imported')} · ${count(profile.records.length, 'keyboard.records.one', 'keyboard.records.other')}${stale ? ' · ' + t('keyboard.stale') : ''}`
@@ -148,18 +165,22 @@ export function KeyboardPanel() {
       <Tabs value={String(layer)} onValueChange={(value) => actions.selectKey(key, Number(value))}>
         <div className="layout-controls">
           <TabsList aria-label={t('keyboard.layers')}>
-            {[0, 1, 2].map((index) => (
+            {model.layers.map((label, index) => (
               <TabsTrigger key={index} value={String(index)} disabled={locked}>
-                {text(layerMessage(index))}
+                {text(label)}
               </TabsTrigger>
             ))}
           </TabsList>
           <Label className="check-label">
-            <Checkbox checked={counts} onCheckedChange={(value) => actions.setShowCounts(value === true)} />
+            <Checkbox
+              checked={counts}
+              disabled={!model.capabilities(profile?.version ?? '').counters}
+              onCheckedChange={(value) => actions.setShowCounts(value === true)}
+            />
             {t('keyboard.showCounts')}
           </Label>
         </div>
-        {[0, 1, 2].map((index) => (
+        {model.layers.map((_, index) => (
           <TabsContent key={index} value={String(index)}>
             <Keyboard />
           </TabsContent>
@@ -170,7 +191,11 @@ export function KeyboardPanel() {
           <i className="change-dot" />
           {t('keyboard.changedKeys')}
         </span>
-        <span>{t(profile?.groupCount === 9 ? 'keyboard.nineGroups' : 'keyboard.threeLayers')}</span>
+        <span>
+          {profile && profile.groupCount > model.layers.length
+            ? t('keyboard.extendedGroups', { groups: profile.groupCount, layers: model.layers.length })
+            : t('keyboard.dimensions', { keys: model.keyCount, layers: model.layers.length })}
+        </span>
       </div>
       <div className="file-toolbar">
         <div className="file-actions">

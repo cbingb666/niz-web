@@ -1,4 +1,12 @@
 import { msg, renderMessage, type Message } from './i18n/core.ts';
+import {
+  defaultModel,
+  supportedModels,
+  deviceModels,
+  deviceFilters,
+  identifyModel,
+  type KeyboardModel,
+} from './devices/index';
 import type { DeviceIdentity } from './protocol';
 import type {
   ConfigDevice,
@@ -10,10 +18,6 @@ import type {
   OperationProgress,
 } from './types/hid';
 import {
-  VENDOR_ID,
-  PRODUCT_IDS,
-  USAGE_PAGE,
-  USAGE,
   MAX_REPORTS,
   Profile,
   ProtocolError,
@@ -23,20 +27,23 @@ import {
   makeCapture,
 } from './protocol';
 
-export function isConfigDevice(device: ConfigDevice) {
-  if (device.vendorId !== VENDOR_ID || !PRODUCT_IDS.includes(device.productId)) return false;
-  return (device.collections ?? []).some(
-    (collection) => collection.usagePage === USAGE_PAGE && collection.usage === USAGE,
-  );
+export function isConfigDevice(device: ConfigDevice, models = supportedModels) {
+  return deviceModels(device, models).length > 0;
 }
-export function validateDescriptor(device: ConfigDevice) {
-  assert(isConfigDevice(device), msg('error.configDevice'));
+export function validateDescriptor(device: ConfigDevice, models = supportedModels) {
+  const candidates = deviceModels(device, models);
+  assert(candidates.length, msg('error.configDevice'));
   const collections: HIDCollection[] = [];
   function visit(c: HIDCollection) {
     collections.push(c);
     (c.children ?? []).forEach(visit);
   }
-  device.collections.filter((c) => c.usagePage === USAGE_PAGE && c.usage === USAGE).forEach(visit);
+  const filters = deviceFilters(candidates).filter((filter) =>
+    filter.vendorId === device.vendorId && filter.productId === device.productId,
+  );
+  device.collections.filter((c) => filters.some((filter) =>
+    c.usagePage === filter.usagePage && c.usage === filter.usage,
+  )).forEach(visit);
   for (const kind of ['inputReports', 'outputReports'] as const) {
     const reports = collections.flatMap((c) => c[kind] ?? []);
     const matching = reports.find(
@@ -138,12 +145,13 @@ export async function readVersion(channel: PacketChannel) {
   assert(r[0] === 0 && r[1] === 0xf9, msg('error.versionResponse'));
   const end = r.indexOf(0, 2),
     version = new TextDecoder().decode(r.slice(2, end === -1 ? 64 : end));
-  assert(version.startsWith('66EC'), msg('error.model'));
+  assert(version.length > 0, msg('error.versionResponse'));
   return version;
 }
 export async function readKeyReports(
   channel: PacketChannel,
   onProgress: (records: number) => void = () => {},
+  model: KeyboardModel = defaultModel,
 ) {
   channel.reset();
   await channel.send(command(0xf2));
@@ -156,7 +164,7 @@ export async function readKeyReports(
       assert(reports.length < MAX_REPORTS, msg('error.streamLimit'));
       assert(r[0] === 0 && r[1] === 0xf0, msg('error.unknownPacket'));
       reports.push(r);
-      if (reports.length === 1 || reports.length % 66 === 0) onProgress(reports.length);
+      if (reports.length === 1 || reports.length % model.keyCount === 0) onProgress(reports.length);
     }
     throw new ProtocolError(msg('error.streamEnd'));
   } catch (cause) {
@@ -183,10 +191,10 @@ export async function readBytes(channel: PacketChannel, op: number, type: number
   }
   throw new ProtocolError(msg('error.dataEnd'));
 }
-export async function readCounters(channel: PacketChannel) {
-  const b = await readBytes(channel, 0xe3, 0xe3, 264);
+export async function readCounters(channel: PacketChannel, model: KeyboardModel = defaultModel) {
+  const b = await readBytes(channel, 0xe3, 0xe3, model.keyCount * 4);
   const view = new DataView(b.buffer, b.byteOffset, b.byteLength);
-  return Array.from({ length: 66 }, (_, i) => view.getUint32(i * 4, true));
+  return Array.from({ length: model.keyCount }, (_, i) => view.getUint32(i * 4, true));
 }
 export async function writeKeyReports(
   channel: PacketChannel,
@@ -205,11 +213,15 @@ export async function writeKeyReports(
   await channel.send(end);
   await new Promise((resolve) => setTimeout(resolve, 300));
 }
-export async function writeLights(channel: PacketChannel, data: Uint8Array) {
-  assert(data instanceof Uint8Array && data.length === 198, msg('error.rgbLength'));
+export async function writeLights(
+  channel: PacketChannel,
+  data: Uint8Array,
+  model: KeyboardModel = defaultModel,
+) {
+  assert(data instanceof Uint8Array && data.length === model.keyCount * 3, msg('error.rgbLength'));
   channel.reset();
   await channel.send(command(0xe1));
-  for (let offset = 0; offset < 198; offset += 61) {
+  for (let offset = 0; offset < data.length; offset += 61) {
     const r = command(0xe0),
       part = data.slice(offset, offset + 61);
     r[2] = part.length;
@@ -221,6 +233,8 @@ export async function writeLights(channel: PacketChannel, data: Uint8Array) {
   await new Promise((resolve) => setTimeout(resolve, 300));
 }
 export class HIDSession extends EventTarget {
+  readonly models: readonly KeyboardModel[];
+  model: KeyboardModel | null = null;
   hid: HIDAccess | null;
   timeout: number;
   retryMs: number;
@@ -245,8 +259,9 @@ export class HIDSession extends EventTarget {
   connectedListener: () => void;
   disconnectedListener: (event: Event) => void;
   private started = false;
-  constructor(hid: HIDAccess | null, { timeout = 2500, retryMs = 2500 } = {}) {
+  constructor(hid: HIDAccess | null, { timeout = 2500, retryMs = 2500, models = supportedModels } = {}) {
     super();
+    this.models = models;
     this.hid = hid;
     this.timeout = timeout;
     this.retryMs = retryMs;
@@ -321,7 +336,7 @@ export class HIDSession extends EventTarget {
     const hid = this.hid;
     return this.exclusive(async () => {
       try {
-        const devices = (await hid.getDevices()).filter(isConfigDevice);
+        const devices = (await hid.getDevices()).filter((device) => isConfigDevice(device, this.models));
         if (this.stopped || this.paused) return;
         if (devices.length === 1) await this.open(devices[0]);
         else if (devices.length > 1) this.setState('waiting', msg('hid.multiple'));
@@ -340,14 +355,9 @@ export class HIDSession extends EventTarget {
     try {
       // Called directly by the button handler, before yielding user activation.
       const selected = await this.hid.requestDevice({
-        filters: PRODUCT_IDS.map((productId) => ({
-          vendorId: VENDOR_ID,
-          productId,
-          usagePage: USAGE_PAGE,
-          usage: USAGE,
-        })),
+        filters: deviceFilters(this.models),
       });
-      const devices = selected.filter(isConfigDevice);
+      const devices = selected.filter((device) => isConfigDevice(device, this.models));
       if (!devices.length) {
         this.setState('waiting', msg('hid.cancelled'));
         return;
@@ -364,7 +374,7 @@ export class HIDSession extends EventTarget {
     }
   }
   async open(device: ConfigDevice) {
-    validateDescriptor(device);
+    validateDescriptor(device, this.models);
     if (this.device === device && this.connected) return;
     if (this.device) await this.disconnect(false);
     const generation = ++this.epoch;
@@ -377,9 +387,13 @@ export class HIDSession extends EventTarget {
       this.channel = new PacketChannel(device, { timeout: this.timeout });
       const version = await readVersion(this.channel);
       assert(generation === this.epoch, msg('error.connectionChanged'));
+      const model = identifyModel(device, version, this.models);
+      assert(model, msg('error.model'));
+      validateDescriptor(device, [model]);
+      this.model = model;
       this.version = version;
       this.identity = {
-        Product: device.productName || 'ATOM66',
+        Product: device.productName || model.name,
         VendorID: device.vendorId,
         ProductID: device.productId,
       };
@@ -389,6 +403,7 @@ export class HIDSession extends EventTarget {
       this.channel = null;
       this.device = null;
       this.version = '';
+      this.model = null;
       this.identity = {};
       if (device.opened) await device.close().catch(() => {});
       this.setState('error', msg('error.closeNative', { error: protocolError(error).description }));
@@ -402,6 +417,7 @@ export class HIDSession extends EventTarget {
     this.channel = null;
     this.device = null;
     this.version = '';
+    this.model = null;
     this.identity = {};
     this.setState('waiting', message);
   }
@@ -411,30 +427,37 @@ export class HIDSession extends EventTarget {
     this.drop(manual ? msg('hid.disconnected') : msg('hid.switching'));
     if (device?.opened) await device.close().catch(() => {});
   }
-  assertReady(epoch = this.epoch): asserts this is this & { channel: PacketChannel; device: ConfigDevice } {
-    assert(this.connected && this.channel && this.epoch === epoch, msg('error.readRequired'));
+  assertReady(epoch = this.epoch): asserts this is this & {
+    channel: PacketChannel; device: ConfigDevice; model: KeyboardModel;
+  } {
+    assert(this.connected && this.channel && this.model && this.epoch === epoch, msg('error.readRequired'));
   }
   async read(onProgress: (progress: OperationProgress) => void = () => {}) {
     const epoch = this.epoch;
     return this.exclusive(async () => {
       this.assertReady(epoch);
       this.lastRead = null;
+      const model = this.model,
+        version = this.version,
+        identity = { ...this.identity };
       let reports: Uint8Array[] = [];
       try {
-        reports = await readKeyReports(this.channel, (n) => onProgress({ phase: 'read', records: n }));
-        this.lastCapture = makeCapture(this.version, this.identity, reports);
-        const profile = Profile.fromReports(reports);
-        profile.version = this.version;
-        profile.identity = { ...this.identity };
+        reports = await readKeyReports(this.channel, (n) => onProgress({ phase: 'read', records: n }), model);
+        this.lastCapture = makeCapture(version, identity, reports, '', model);
+        const profile = Profile.fromReports(reports, model);
+        profile.version = version;
+        profile.identity = identity;
         const notes = [];
-        try {
-          profile.counters = await readCounters(this.channel);
-        } catch (error) {
-          notes.push(msg('error.counterRead', { error: protocolError(error).description }));
-        }
-        if (this.version.includes('RGB'))
+        const capabilities = model.capabilities(version);
+        if (capabilities.counters)
           try {
-            profile.lights = await readBytes(this.channel, 0xe2, 0xe0, 198);
+            profile.counters = await readCounters(this.channel, model);
+          } catch (error) {
+            notes.push(msg('error.counterRead', { error: protocolError(error).description }));
+          }
+        if (capabilities.perKeyRGB)
+          try {
+            profile.lights = await readBytes(this.channel, 0xe2, 0xe0, model.keyCount * 3);
           } catch (error) {
             notes.push(msg('error.lightingRead', { error: protocolError(error).description }));
           }
@@ -444,10 +467,11 @@ export class HIDSession extends EventTarget {
       } catch (error) {
         const details = protocolError(error);
         this.lastCapture = makeCapture(
-          this.version,
-          this.identity,
+          version,
+          identity,
           details.rawReports ?? reports,
           details.message,
+          model,
         );
         // Connection is intentionally independent of whether the keymap parses.
         throw error;
@@ -460,6 +484,7 @@ export class HIDSession extends EventTarget {
     onProgress: (progress: OperationProgress) => void = () => {},
   ) {
     assert(this.hasLiveBaseline && this.lastRead, msg('error.readBeforeWrite'));
+    assert(desired.model.id === this.model?.id, msg('error.modelMismatch'));
     const target = desired.clone(),
       baseline = this.lastRead.profile.clone(),
       epoch = this.epoch;
@@ -474,18 +499,22 @@ export class HIDSession extends EventTarget {
       try {
         onProgress({ phase: 'verify', value: 5 });
         const version = await readVersion(this.channel);
+        assert(identifyModel(this.device, version, this.models)?.id === this.model.id, msg('error.model'));
         assert(version === baseline.version && target.version === version, msg('error.firmwareChanged'));
-        const current = Profile.fromReports(await readKeyReports(this.channel));
+        const model = this.model;
+        const current = Profile.fromReports(await readKeyReports(this.channel, undefined, model), model);
         current.version = version;
         current.identity = { ...this.identity };
-        if (version.includes('RGB')) current.lights = await readBytes(this.channel, 0xe2, 0xe0, 198);
+        const capabilities = model.capabilities(version);
+        if (capabilities.perKeyRGB)
+          current.lights = await readBytes(this.channel, 0xe2, 0xe0, model.keyCount * 3);
         assert(
           current.differences(baseline).length === 0 &&
             (!lightsChanged || equalBytes(current.lights, baseline.lights)),
           msg('error.externalChanges'),
         );
         assert(
-          !lightsChanged || (version.includes('RGB') && target.lights?.length === 198),
+          !lightsChanged || (capabilities.perKeyRGB && target.lights?.length === model.keyCount * 3),
           msg('error.unsupportedLights'),
         );
         if (!lightsChanged) target.lights = current.lights?.slice() ?? null;
@@ -499,15 +528,15 @@ export class HIDSession extends EventTarget {
           );
         if (lightsChanged) {
           assert(target.lights, msg('error.missingRGB'));
-          await writeLights(this.channel, target.lights);
+          await writeLights(this.channel, target.lights, model);
         }
         this.assertReady(epoch);
         onProgress({ phase: 'readback', value: 85 });
-        const verified = Profile.fromReports(await readKeyReports(this.channel));
+        const verified = Profile.fromReports(await readKeyReports(this.channel, undefined, model), model);
         assert(verified.differences(target).length === 0, msg('error.readback'));
         if (lightsChanged)
           assert(
-            equalBytes(await readBytes(this.channel, 0xe2, 0xe0, 198), target.lights),
+            equalBytes(await readBytes(this.channel, 0xe2, 0xe0, model.keyCount * 3), target.lights),
             msg('error.lightingReadback'),
           );
         this.lastRead = { profile: target.clone(), epoch, device: this.device };
