@@ -4,7 +4,7 @@ import { StrictMode } from 'react';
 import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { afterEach, expect, test } from 'vitest';
 import { App } from '../src/app';
-import { application, ready } from './store-helpers';
+import { application, acceptRead } from './store-helpers';
 import { FakeDevice, FakeHID } from './helpers';
 
 afterEach(cleanup);
@@ -60,7 +60,7 @@ test('StrictMode does not duplicate HID connections, listeners or automatic read
   );
   await act(async () => {
     await actions.start();
-    await ready(store);
+    await acceptRead(store);
   });
   expect(device.openCount).toBe(1);
   expect(device.sent.filter((packet) => packet[1] === 0xf2)).toHaveLength(1);

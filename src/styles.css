@@ -505,10 +505,91 @@ main {
   gap: 15px;
   flex: none;
 }
-progress {
-  width: 100px;
-  height: 7px;
-  accent-color: var(--primary);
+.operation-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  width: 100vw;
+  height: 100dvh;
+  max-width: none;
+  max-height: none;
+  transform: none;
+  translate: none;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  border: 0;
+  border-radius: 0;
+  background: #111416ed;
+  backdrop-filter: blur(12px);
+  cursor: wait;
+}
+.operation-panel {
+  display: grid;
+  justify-items: center;
+  gap: 18px;
+  width: min(100%, 440px);
+  text-align: center;
+}
+.operation-spinner {
+  width: 52px;
+  height: 52px;
+  color: var(--primary);
+  animation: operation-spin 1.2s linear infinite;
+}
+.operation-title {
+  font-size: 1.5rem;
+}
+.operation-description {
+  font-size: 1rem;
+  line-height: 1.8;
+}
+.operation-progress {
+  width: 100%;
+  height: 8px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--muted);
+}
+.operation-progress-label {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  width: 100%;
+  font-size: 0.875rem;
+  color: var(--muted-foreground);
+}
+.operation-count {
+  font-size: 0.875rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--muted-foreground);
+}
+.operation-progress-fill {
+  height: 100%;
+  border-radius: inherit;
+  background: var(--primary);
+  transition: width 180ms linear;
+}
+.operation-progress-fill.indeterminate {
+  width: 36%;
+  animation: operation-sweep 1.6s ease-in-out infinite;
+}
+.operation-status {
+  min-height: 1.5em;
+  font-size: 0.875rem;
+  color: var(--muted-foreground);
+}
+.operation-percentage {
+  font-size: 1.25rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--primary);
+}
+@keyframes operation-spin {
+  to { transform: rotate(360deg); }
+}
+@keyframes operation-sweep {
+  from { transform: translateX(-110%); }
+  to { transform: translateX(290%); }
 }
 .help-content {
   line-height: 1.8;

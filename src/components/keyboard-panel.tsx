@@ -174,7 +174,7 @@ export function KeyboardPanel() {
           <Label className="check-label">
             <Checkbox
               checked={counts}
-              disabled={!model.capabilities(profile?.version ?? '').counters}
+              disabled={locked || !model.capabilities(profile?.version ?? '').counters}
               onCheckedChange={(value) => actions.setShowCounts(value === true)}
             />
             {t('keyboard.showCounts')}

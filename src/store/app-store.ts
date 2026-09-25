@@ -78,9 +78,10 @@ export interface AppState {
   showCounts: boolean;
   session: SessionView;
   busy: Message;
+  hardwareOperation: 'read' | 'write' | null;
   reading: boolean;
   status: Message;
-  progress: number | null | undefined;
+  progress: OperationProgress | null;
   dialog: AppDialog | null;
   logs: Activity[];
   backupRows: BackupRow[];
@@ -130,7 +131,7 @@ const emptyForm = (): EditorForm => ({
   color: '#42ddb4',
 });
 export const isLocked = (state: AppState) =>
-  !!state.busy || state.session.pending > 0 || state.session.authorizing;
+  !!state.busy || state.session.pending > 0 || state.session.authorizing || state.dialog?.kind === 'confirm';
 
 export function createAppStore(dependencies: AppDependencies) {
   const session: HIDSession = dependencies.session;
@@ -229,47 +230,91 @@ export function createAppStore(dependencies: AppDependencies) {
       label: Message = msg('common.continue'),
     ): Promise<boolean> {
       if (resolveConfirmation || disposed) return Promise.resolve(false);
-      set({ dialog: { kind: 'confirm', title, body, label } });
       return new Promise((resolve) => {
         resolveConfirmation = resolve;
+        set({ dialog: { kind: 'confirm', title, body, label } });
       });
     }
     async function discardIfNeeded(action: Message) {
       if (!editor.dirty && !get().formDirty) return true;
-      return confirm(
+      const accepted = await confirm(
         msg('confirm.replaceTitle', { action }),
         msg('confirm.replaceBody'),
         msg('confirm.replace'),
       );
+      if (!accepted) maybeAutoRead();
+      return accepted;
     }
-    async function operation(label: Message, execute: () => Promise<void>) {
+    async function operation(
+      label: Message,
+      execute: () => Promise<void>,
+      hardwareOperation: AppState['hardwareOperation'] = null,
+    ) {
       if (disposed || isLocked(get())) return;
-      set({ busy: label, status: label });
+      set({ busy: label, status: label, hardwareOperation, progress: null });
       try {
         await execute();
       } catch (error) {
         fail(error);
       } finally {
-        set({ busy: '', reading: false, progress: undefined });
+        set({ busy: '', hardwareOperation: null, reading: false, progress: null });
         syncEditor();
         maybeAutoRead();
       }
     }
     function progress(value: OperationProgress) {
       const labels = {
-        read: msg('status.readPackets', { count: value.phase === 'read' ? value.records : 0 }),
+        read: msg('status.readKeys'),
         verify: msg('status.verify'),
+        counters: msg('status.readCounters'),
+        readLights: msg('status.readLights'),
+        backup: msg('status.backingUp'),
         write: msg('status.write'),
+        writeLights: msg('status.writeLights'),
+        settle: msg('status.deviceProcessing'),
         readback: msg('status.readback'),
+        readbackLights: msg('status.readbackLights'),
+        validate: msg('status.validateReadback'),
         done: msg('status.done'),
       };
-      set({ status: labels[value.phase], progress: value.phase === 'read' ? null : value.value });
+      set({ status: labels[value.phase], progress: value });
     }
     async function readConfiguration(automatic = false) {
+      if (disposed || !session.connected || isLocked(get()) || get().dialog) return;
+      const epoch = session.epoch;
+      const preserve =
+        automatic && (get().formDirty || editor.dirty || (!!editor.profile && editor.source !== 'read'));
+      // A cancelled connection prompt must not appear again until a new connection
+      // or an explicit Read action. Consent is valid only for this connection epoch.
+      autoReadEpoch = epoch;
+      set({ status: msg('status.readConfirmation') });
+      const title = automatic
+        ? msg(session.connectionSource === 'automatic' ? 'confirm.autoReadTitle' : 'confirm.connectedReadTitle')
+        : msg('confirm.readTitle');
+      const body = joinMessages(
+        automatic
+          ? joinMessages(msg('confirm.connectedDevice', { product: sessionView().product }), '\n\n')
+          : '',
+        msg('confirm.keyLock'),
+        '\n\n',
+        msg('confirm.readBody'),
+        preserve
+          ? joinMessages('\n\n', msg('confirm.readPreserve'))
+          : editor.dirty || get().formDirty
+            ? joinMessages('\n\n', msg('confirm.replaceBody'))
+            : '',
+      );
+      if (!(await confirm(title, body, msg('confirm.readAction')))) {
+        if (!disposed && epoch === session.epoch) set({ status: msg('status.readCancelled') });
+        maybeAutoRead();
+        return;
+      }
+      if (disposed) return;
+      if (!session.connected || epoch !== session.epoch) {
+        fail(new ProtocolError(msg('error.confirmReadConnection')));
+        return;
+      }
       await operation(automatic ? msg('status.autoRead') : msg('status.read'), async () => {
-        const epoch = session.epoch;
-        const preserve =
-          automatic && (get().formDirty || editor.dirty || (!!editor.profile && editor.source !== 'read'));
         set({ reading: true });
         const { profile, notes } = await session.read(progress);
         session.assertReady(epoch);
@@ -289,6 +334,7 @@ export function createAppStore(dependencies: AppDependencies) {
         notes.forEach((note) => log(note, true));
         let saved = false;
         try {
+          progress({ phase: 'backup' });
           await saveBackup(profile, automatic ? '自动读取备份' : '读取备份');
           saved = true;
         } catch (error) {
@@ -303,11 +349,10 @@ export function createAppStore(dependencies: AppDependencies) {
                 ? msg('status.readPreserved', { backup: suffix })
                 : msg(automatic ? 'status.autoReadReady' : 'status.readReady', { backup: suffix }),
         });
-      });
+      }, 'read');
     }
     function maybeAutoRead() {
-      if (disposed || !session.connected || isLocked(get()) || autoReadEpoch === session.epoch) return;
-      autoReadEpoch = session.epoch;
+      if (disposed || !session.connected || isLocked(get()) || get().dialog || autoReadEpoch === session.epoch) return;
       void readConfiguration(true);
     }
     function onSessionChange() {
@@ -382,7 +427,7 @@ export function createAppStore(dependencies: AppDependencies) {
     }
     const actions: AppActions = {
       setLocale(locale) {
-        if (!isLocale(locale) || locale === get().locale || disposed) return;
+        if (!isLocale(locale) || locale === get().locale || disposed || get().hardwareOperation) return;
         set((state) => ({
           locale,
           form:
@@ -421,7 +466,7 @@ export function createAppStore(dependencies: AppDependencies) {
         if (!isLocked(get())) await session.disconnect().catch(fail);
       },
       async read() {
-        if (!isLocked(get()) && (await discardIfNeeded(msg('keyboard.read')))) await readConfiguration();
+        await readConfiguration();
       },
       async demo() {
         if (isLocked(get()) || !(await discardIfNeeded(msg('confirm.loadDemo'))) || isLocked(get())) return;
@@ -435,6 +480,7 @@ export function createAppStore(dependencies: AppDependencies) {
         const status = msg('status.demo');
         set({ status });
         log(status);
+        maybeAutoRead();
       },
       async importFile(file) {
         if (isLocked(get()) || !(await discardIfNeeded(msg('keyboard.import')))) return;
@@ -504,13 +550,14 @@ export function createAppStore(dependencies: AppDependencies) {
         }
       },
       setShowCounts(showCounts) {
+        if (isLocked(get())) return;
         set({ showCounts });
       },
       async showBackups() {
         if (isLocked(get())) return;
+        set({ dialog: { kind: 'backups' } });
         try {
           await refreshBackups();
-          set({ dialog: { kind: 'backups' } });
         } catch (error) {
           fail(error);
         }
@@ -531,11 +578,15 @@ export function createAppStore(dependencies: AppDependencies) {
         }
       },
       showHelp() {
+        if (isLocked(get())) return;
         set({ dialog: { kind: 'help' } });
       },
       closeDialog() {
         if (resolveConfirmation) actions.confirm(false);
-        else set({ dialog: null });
+        else {
+          set({ dialog: null });
+          maybeAutoRead();
+        }
       },
       confirm(accepted) {
         const resolve = resolveConfirmation;
@@ -544,7 +595,7 @@ export function createAppStore(dependencies: AppDependencies) {
         resolve?.(accepted);
       },
       async write() {
-        if (isLocked(get()) || !saveForm() || !editor.canWrite(session) || !editor.profile) return;
+        if (isLocked(get()) || get().dialog || !saveForm() || !editor.canWrite(session) || !editor.profile) return;
         try {
           editor.profile.validateForWriting();
         } catch (error) {
@@ -563,6 +614,8 @@ export function createAppStore(dependencies: AppDependencies) {
               : msg('confirm.extendedKey', { group: Math.floor(index / keyCount) + 1, key: (index % keyCount) + 1 }),
           );
         const summary = joinMessages(
+          msg('confirm.keyLock'),
+          '\n\n',
           msg(changes.length === 1 ? 'confirm.writeCount.one' : 'confirm.writeCount.other', {
             count: changes.length,
             lighting: editor.lightsChanged ? msg('confirm.lighting') : '',
@@ -575,7 +628,10 @@ export function createAppStore(dependencies: AppDependencies) {
           '\n\n',
           msg('confirm.writeValidation'),
         );
-        if (!(await confirm(msg('confirm.writeTitle'), summary, msg('confirm.writeAction')))) return;
+        if (!(await confirm(msg('confirm.writeTitle'), summary, msg('confirm.writeAction')))) {
+          maybeAutoRead();
+          return;
+        }
         if (epoch !== session.epoch) {
           fail(new ProtocolError(msg('error.confirmConnection')));
           return;
@@ -587,7 +643,7 @@ export function createAppStore(dependencies: AppDependencies) {
           const status = msg('status.writeComplete');
           set({ status });
           log(status);
-        });
+        }, 'write');
       },
     };
     return {
@@ -606,9 +662,10 @@ export function createAppStore(dependencies: AppDependencies) {
       showCounts: false,
       session: sessionView(),
       busy: '',
+      hardwareOperation: null,
       reading: false,
       status: msg('status.initial'),
-      progress: undefined,
+      progress: null,
       dialog: null,
       logs: [],
       backupRows: [],

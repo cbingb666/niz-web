@@ -1,5 +1,5 @@
 import { expect, test, vi } from 'vitest';
-import { application, profileFile, ready } from './store-helpers';
+import { application, profileFile, acceptRead } from './store-helpers';
 import { FakeDevice, FakeHID, fixture } from './helpers';
 import { renderMessage } from '../src/i18n/core';
 import type { ModelTool } from '../src/model-tools';
@@ -63,7 +63,7 @@ test('a language change leaves pending confirmation and the HID session intact',
     hid = new FakeHID([device]);
   const { store, actions, session } = application(hid);
   await actions.start();
-  await ready(store);
+  await acceptRead(store);
   actions.updateForm({ sequence: 'A' });
   const pending = actions.write();
   const dialog = store.getState().dialog,
@@ -75,6 +75,7 @@ test('a language change leaves pending confirmation and the HID session intact',
   if (dialog?.kind !== 'confirm') throw new Error('Expected a confirmation');
   expect(renderMessage(dialog.title, 'en')).toBe('Confirm keyboard write');
   expect(renderMessage(dialog.body, 'en')).toContain('1 key record');
+  expect(renderMessage(dialog.body, 'en')).toContain('keyboard keys will be locked');
   expect(session.epoch).toBe(epoch);
   expect(device.openCount).toBe(1);
   expect(device.sent).toEqual(reports);

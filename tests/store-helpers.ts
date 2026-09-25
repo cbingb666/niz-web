@@ -5,6 +5,7 @@ import type { Backups, BackupRow } from '../src/storage';
 import { Profile } from '../src/protocol';
 import { FakeHID } from './helpers';
 import { supportedModels } from '../src/devices';
+import { msg } from '../src/i18n/core';
 
 export function memoryBackups(models = supportedModels): Backups {
   const rows: BackupRow[] = [];
@@ -46,6 +47,15 @@ export async function ready(store: AppStore) {
     expect(store.getState().busy).toBe('');
     expect(store.getState().session.pending).toBe(0);
   });
+}
+export async function acceptRead(store: AppStore) {
+  await vi.waitFor(() => {
+    expect(store.getState().dialog).toMatchObject({ kind: 'confirm', label: msg('confirm.readAction') });
+  });
+  store.getState().actions.confirm(true);
+  // Let the confirmed action enter its operation before checking for completion.
+  await Promise.resolve();
+  await ready(store);
 }
 export function profileFile(profile: Profile) {
   const text = JSON.stringify(profile.toJSON());

@@ -3,7 +3,7 @@ import '@testing-library/jest-dom/vitest';
 import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { afterEach, beforeAll, expect, test, vi } from 'vitest';
 import { App } from '../src/app';
-import { application, ready, profileFile } from './store-helpers';
+import { application, profileFile, acceptRead } from './store-helpers';
 import { FakeDevice, FakeHID, fixture } from './helpers';
 import { msg } from '../src/i18n/core';
 import { browserLocale, localeStorageKey, saveBrowserLocale } from '../src/i18n/preferences';
@@ -88,12 +88,12 @@ test('connection details, read history and historic backup reasons follow the se
   render(<App store={store} usbAvailable />);
   await act(async () => {
     await actions.start();
-    await ready(store);
+    await acceptRead(store);
   });
   const sent = device.sent.slice();
   await chooseEnglish();
   expect(screen.getByText(/Connected · ATOM66 fixture/)).toBeInTheDocument();
-  expect(screen.getByText(/Automatic read complete: 9 groups, 594 records/)).toBeInTheDocument();
+  expect(screen.getByText(/Read after connecting complete: 9 groups, 594 records/)).toBeInTheDocument();
   expect(device.sent).toEqual(sent);
   await act(async () => {
     fireEvent.click(screen.getByRole('button', { name: /Local backups/ }));

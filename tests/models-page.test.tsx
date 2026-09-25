@@ -7,7 +7,7 @@ import { defaultModel } from '../src/devices';
 import type { ModelTool } from '../src/model-tools';
 import { FakeDevice, FakeHID } from './helpers';
 import { modelFixture, test68 } from './model-fixtures';
-import { application, memoryBackups, profileFile, ready } from './store-helpers';
+import { application, memoryBackups, profileFile, acceptRead } from './store-helpers';
 
 afterEach(cleanup);
 
@@ -19,7 +19,7 @@ test('connection renders the loaded geometry, layers and counters and edits the 
   render(<App store={store} usbAvailable />);
   await act(async () => {
     await actions.start({ registerTool: (tool) => tools.push(tool) });
-    await ready(store);
+    await acceptRead(store);
   });
   expect(screen.getAllByRole('button', { name: /第 \d+ 键/ })).toHaveLength(68);
   expect(screen.getAllByRole('tab')).toHaveLength(2);
@@ -69,13 +69,13 @@ test('connecting a different model preserves pending edits and requires loading 
   render(<App store={store} usbAvailable />);
   await act(async () => {
     await actions.start();
-    await ready(store);
+    await acceptRead(store);
   });
   fireEvent.change(screen.getByLabelText(/按键序列/), { target: { value: 'Command\nC' } });
   await act(async () => {
     hid.disconnect(atom);
     hid.connect(next);
-    await ready(store);
+    await acceptRead(store);
   });
   expect(session.model).toBe(test68);
   expect(session.lastRead?.profile.model).toBe(test68);

@@ -7,9 +7,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 export function LanguageSwitcher() {
   const { t, locale } = useI18n();
   const setLocale = useAppStore((state) => state.actions.setLocale);
+  const operating = useAppStore((state) => state.hardwareOperation !== null);
   return (
     <Select
       value={locale}
+      disabled={operating}
       onValueChange={(value) => {
         if (isLocale(value)) setLocale(value);
       }}

@@ -36,5 +36,16 @@ export interface HIDConnectionEvent extends Event {
 }
 export type ConnectionState =
   'waiting' | 'unsupported' | 'authorizing' | 'connecting' | 'connected' | 'error';
-export type OperationProgress =
-  { phase: 'read'; records: number } | { phase: 'verify' | 'write' | 'readback' | 'done'; value: number };
+export type TransferProgress = {
+  completed: number;
+} & (
+  // Null means the input stream has not advertised a total. Never infer a
+  // packet count from physical keys: macros can span multiple packets.
+  { unit: 'packets'; total: number | null } | { unit: 'bytes'; total: number }
+);
+export interface OperationProgress {
+  phase:
+    | 'read' | 'verify' | 'counters' | 'readLights' | 'backup'
+    | 'write' | 'writeLights' | 'settle' | 'readback' | 'readbackLights' | 'validate' | 'done';
+  transfer?: TransferProgress;
+}

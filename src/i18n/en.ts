@@ -27,7 +27,7 @@ export const en = {
   'connection.loaded': 'Configuration loaded',
   'connection.notRead': 'Configuration not loaded',
   'connection.initial':
-    'Grant permission once; authorized devices connect and load their configuration automatically.',
+    'Grant permission once; authorized devices connect automatically and wait for confirmation before reading.',
   'connection.connect': 'Connect keyboard',
   'connection.disconnect': 'Disconnect',
   'keyboard.layout': 'Key layout',
@@ -117,7 +117,7 @@ export const en = {
   'help.connect':
     'Use a desktop browser with WebHID support. Click “Connect keyboard” and select the keyboard in the browser prompt.',
   'help.read':
-    'After connecting, settings are read and backed up automatically. Use “Read configuration again” to retry a failed read.',
+    'After connecting, confirm the read to load and back up settings. Keyboard keys will be locked during reads and writes. Use “Read configuration again” after cancelling or a failed read.',
   'help.edit':
     'Choose an editing layer, then select a key to edit. Command corresponds to Windows / Super.',
   'help.write':
@@ -141,26 +141,36 @@ export const en = {
   'environment.file':
     'This is a local HTML file. USB and backup access depend on browser file permissions. If authorization fails, use HTTPS hosting.',
   'status.initial':
-    'Connecting reads and backs up settings automatically. The keyboard changes only after you confirm a write.',
-  'status.autoRead': 'Reading keyboard configuration automatically…',
+    'Confirm after connecting to read and back up settings. Keyboard keys will be locked during reads and writes.',
+  'status.readConfirmation': 'Waiting for confirmation to read. Keyboard keys will be locked during the operation.',
+  'status.readCancelled': 'Read cancelled. Choose “Read configuration again” to confirm and retry.',
+  'status.backingUp': 'Saving a local backup…',
+  'status.autoRead': 'Reading keyboard configuration…',
   'status.read': 'Reading keyboard configuration again…',
   'status.readPackets': 'Reading configuration · packets received: {count}',
+  'status.readKeys': 'Reading key configuration…',
+  'status.readCounters': 'Reading key counters…',
+  'status.readLights': 'Reading lighting configuration…',
   'status.verify': 'Reading the device again to check for external changes…',
-  'status.write': 'Writing. Keep the keyboard connected and this page open…',
-  'status.readback': 'Reading back and verifying all configuration groups…',
+  'status.write': 'Sending key configuration…',
+  'status.writeLights': 'Sending lighting configuration…',
+  'status.deviceProcessing': 'Data sent. Waiting for the device to process it…',
+  'status.readback': 'Reading back key configuration…',
+  'status.readbackLights': 'Reading back lighting configuration…',
+  'status.validateReadback': 'Checking read-back results…',
   'status.done': 'Write complete. Read-back verification passed.',
   'status.readSuccess': 'Read complete: {groups} groups, {records} records.',
-  'status.autoReadSuccess': 'Automatic read complete: {groups} groups, {records} records.',
+  'status.autoReadSuccess': 'Read after connecting complete: {groups} groups, {records} records.',
   'status.backupSaved': 'A local backup has been saved.',
   'status.backupFailed':
     'Local backup failed. Export a copy first; a successful backup is required before writing.',
   'status.readStale': 'Configuration was read, but the connection changed. {backup}',
   'status.readPreserved':
-    'Device configuration was read automatically. Your edits were preserved. Use “Read configuration again” to load device settings. {backup}',
+    'Device configuration was read. Your edits were preserved. Use “Read configuration again” to load device settings. {backup}',
   'status.readReady': 'Configuration loaded. You can start editing. {backup}',
-  'status.autoReadReady': 'Configuration loaded automatically. You can start editing. {backup}',
+  'status.autoReadReady': 'Configuration loaded. You can start editing. {backup}',
   'status.connected':
-    'Connected to {version}. Configuration will be read automatically; nothing will be written automatically.',
+    'Connected to {version}. Confirm before reading configuration; nothing will be written automatically.',
   'status.waiting': 'Waiting for a connection.',
   'status.keySaved': 'Saved changes to {layer} · {key} in the editor (not yet written).',
   'status.importLive': 'Configuration imported into the editor, not yet written to the keyboard.',
@@ -186,6 +196,17 @@ export const en = {
   'confirm.replace': 'Replace editor contents',
   'confirm.loadDemo': 'Load demo',
   'confirm.importBackup': 'Import backup',
+  'confirm.keyLock':
+    'While configuration is being read or written, the keyboard keys will be locked and cannot be used for typing. Wait until the operation finishes before using the keyboard again.',
+  'confirm.readTitle': 'Confirm configuration read',
+  'confirm.autoReadTitle': 'Keyboard connected automatically — ready to read',
+  'confirm.connectedReadTitle': 'Keyboard connected — ready to read',
+  'confirm.connectedDevice': 'Connected device: {product}',
+  'confirm.readAction': 'Confirm and read',
+  'confirm.readBody':
+    'After you confirm, the app will read the current keyboard configuration and save a local backup. Do not unplug the keyboard, change its mode or close this page.',
+  'confirm.readPreserve':
+    'Your current edits will be preserved. You can read again manually or import a configuration later to replace them.',
   'confirm.writeTitle': 'Confirm keyboard write',
   'confirm.writeAction': 'Back up and write',
   'confirm.writeCount.one': '{count} key record{lighting} will be changed.',
@@ -196,6 +217,14 @@ export const en = {
     'The app will read and back up the current settings, write the full configuration and verify it. Do not unplug the keyboard, change its mode or close this page.',
   'confirm.writeValidation':
     'This is an experimental port. Writing to real hardware from this web app has not yet been validated.',
+  'operation.readTitle': 'Reading configuration',
+  'operation.writeTitle': 'Writing configuration',
+  'operation.locked':
+    'Keyboard keys are temporarily locked. Wait until the operation finishes. Do not unplug the keyboard, change its mode or close this page.',
+  'progress.stage': 'Current stage progress',
+  'progress.packets': '{completed} / {total} packets',
+  'progress.bytes': '{completed} / {total} bytes',
+  'progress.receivedPackets': 'Received {completed} packets',
   'download.profile': 'Configuration',
   'download.backup': 'Backup',
   'download.diagnostic': 'Read-diagnostics',
@@ -302,6 +331,7 @@ export const en = {
   'error.partialWrite':
     'The device may have been partially written. Read it again to check; the previous configuration is in your local backups.',
   'error.confirmConnection': 'The keyboard connection changed. Read it again before writing.',
+  'error.confirmReadConnection': 'The keyboard connection changed. Confirm a new configuration read.',
   'error.importSize': 'The file exceeds the 4 MB limit.',
   'hid.unplugged': 'Keyboard unplugged. Waiting to reconnect.',
   'hid.unsupported': 'WebHID is unavailable. Use a supported desktop browser.',
@@ -311,7 +341,7 @@ export const en = {
   'hid.authorizing': "Select a supported keyboard in the browser's device list.",
   'hid.cancelled': 'No keyboard selected. Click Connect keyboard to try again.',
   'hid.connecting': 'Connecting and reading the firmware version…',
-  'hid.connected': 'Connected. The current key settings will be read automatically.',
+  'hid.connected': 'Connected. Confirm before reading the current key settings.',
   'hid.disconnected': 'Disconnected. Click Connect keyboard to reconnect.',
   'hid.switching': 'Switching devices…',
   'error.storageUnavailable': 'Local backup storage is unavailable. Use a regular browser window.',

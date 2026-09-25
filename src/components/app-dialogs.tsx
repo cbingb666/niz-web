@@ -1,6 +1,7 @@
 import { useI18n } from '@/i18n/use-i18n';
 import { backupReason } from '@/i18n/core';
 import { useAppStore } from '@/store/context';
+import { OperationOverlay } from './operation-overlay';
 import { Button } from './ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from './ui/dialog';
 import {
@@ -15,8 +16,10 @@ import {
 export function AppDialogs() {
   const { t, text, locale, count } = useI18n();
   const dialog = useAppStore((state) => state.dialog);
+  const operation = useAppStore((state) => state.hardwareOperation);
   const backups = useAppStore((state) => state.backupRows);
   const actions = useAppStore((state) => state.actions);
+  if (operation) return <OperationOverlay operation={operation} />;
   if (!dialog) return null;
   if (dialog.kind === 'confirm')
     return (

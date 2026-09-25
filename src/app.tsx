@@ -19,7 +19,6 @@ function CommitBar() {
   const formDirty = useAppStore((state) => state.formDirty);
   const source = useAppStore((state) => state.source);
   const status = useAppStore((state) => state.status);
-  const progress = useAppStore((state) => state.progress);
   const canWrite = useAppStore((state) => state.canWrite);
   const locked = useAppStore(isLocked);
   const actions = useAppStore((state) => state.actions);
@@ -39,9 +38,6 @@ function CommitBar() {
         <p aria-live="polite">{text(status)}</p>
       </div>
       <div className="commit-actions">
-        {progress !== undefined && (
-          <progress max={100} value={progress ?? undefined} aria-label={t('changes.progress')} />
-        )}
         <Button disabled={locked || !canWrite} onClick={actions.write}>
           {t('changes.write')}
           <ArrowRight />
@@ -52,6 +48,7 @@ function CommitBar() {
 }
 function Header() {
   const { t } = useI18n();
+  const locked = useAppStore(isLocked);
   const showHelp = useAppStore((state) => state.actions.showHelp);
   return (
     <header className="app-header">
@@ -70,7 +67,7 @@ function Header() {
         <span className="local-dot" aria-hidden="true" />
         <span>{t('app.localOnly')}</span>
         <LanguageSwitcher />
-        <Button variant="ghost" size="icon" aria-label={t('help.open')} onClick={showHelp}>
+        <Button variant="ghost" size="icon" aria-label={t('help.open')} disabled={locked} onClick={showHelp}>
           <CircleHelp />
         </Button>
       </div>
@@ -83,25 +80,28 @@ interface AppContentProps {
 }
 function AppContent({ notices = [], usbAvailable = false }: AppContentProps) {
   const { t, text, locale } = useI18n();
+  const operating = useAppStore((state) => state.hardwareOperation !== null);
   useEffect(() => {
     applyDocumentLocale(locale, document);
   }, [locale]);
   return (
     <>
-      <Header />
-      <main>
-        <ConnectionPanel usbAvailable={usbAvailable} />
-        {notices.length > 0 && (
-          <div className="notice" role="status">
-            {notices.map(text).join(' ')}
-          </div>
-        )}
-        <section className="workspace" aria-label={t('app.editor')}>
-          <KeyboardPanel />
-          <KeyEditor />
-        </section>
-        <CommitBar />
-      </main>
+      <div inert={operating} aria-busy={operating}>
+        <Header />
+        <main>
+          <ConnectionPanel usbAvailable={usbAvailable} />
+          {notices.length > 0 && (
+            <div className="notice" role="status">
+              {notices.map(text).join(' ')}
+            </div>
+          )}
+          <section className="workspace" aria-label={t('app.editor')}>
+            <KeyboardPanel />
+            <KeyEditor />
+          </section>
+          <CommitBar />
+        </main>
+      </div>
       <AppDialogs />
     </>
   );
