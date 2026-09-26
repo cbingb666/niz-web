@@ -87,6 +87,7 @@ function Header() {
   const locked = useAppStore(isLocked);
   const showHelp = useAppStore((state) => state.actions.showHelp);
   const connected = useAppStore(state => state.session.connected);
+  const otherConnected = useAppStore(state => state.connectedDevices.length > 0);
   const page = useAppStore(state => state.page);
   const profile = useAppStore(state => state.profile);
   const navigate = useAppStore(state => state.actions.navigate);
@@ -112,7 +113,7 @@ function Header() {
           onClick={() => profile ? navigate('editor') : configureDevice()}><SlidersHorizontal />{t('devices.editor')}</Button>}
       </nav>
       <div className="header-device">
-        {connected ? <ConnectedDevice /> : <span className="disconnected-device"><span className="status-dot" />{t('connection.waiting')}</span>}
+        {connected ? <ConnectedDevice /> : <span className="disconnected-device"><span className="status-dot" />{t(otherConnected ? 'devices.chooseDevice' : 'connection.waiting')}</span>}
       </div>
       <div className="header-detail">
         <ProfileActions />
@@ -140,8 +141,8 @@ function AppContent({ notices = [], usbAvailable = false }: AppContentProps) {
   const changesCollapsed = changesPreference ?? compactChanges;
   const operating = useAppStore((state) => state.hardwareOperation !== null);
   const dialogOpen = useAppStore(state => state.dialog !== null);
-  const editorKey = useAppStore(state => `${state.generation}:${state.layer}:${state.key}`);
-  const unsaved = useAppStore(state => state.changes.length > 0 || state.lightsChanged || state.draftIndices.length > 0);
+  const editorKey = useAppStore(state => `${state.session.id}:${state.generation}:${state.layer}:${state.key}`);
+  const unsaved = useAppStore(state => state.hasUnsavedChanges);
   useEffect(() => {
     if (previousPage.current === page) return;
     previousPage.current = page;

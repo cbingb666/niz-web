@@ -254,7 +254,34 @@ export async function writeLights(
   await channel.send(new Uint8Array(64).fill(0xe6));
   await new Promise((resolve) => setTimeout(resolve, 300));
 }
+interface DeviceConnection {
+  device: ConfigDevice;
+  channel: PacketChannel;
+  model: KeyboardModel;
+  connectionSource: 'automatic' | 'manual';
+  version: string;
+  identity: DeviceIdentity;
+  epoch: number;
+  lastRead: { profile: Profile; epoch: number; device: ConfigDevice } | null;
+  lastCapture: ReturnType<typeof makeCapture> | null;
+}
+export interface ConnectedHIDDevice {
+  id: string;
+  number: number;
+  model: KeyboardModel;
+  product: string;
+  version: string;
+  hasLiveBaseline: boolean;
+}
 export class HIDSession extends EventTarget {
+  activeDeviceId: string | null = null;
+  private connections = new Map<string, DeviceConnection>();
+  private deviceIds = new WeakMap<ConfigDevice, string>();
+  private knownDeviceIds = new Set<string>();
+  private ignoredDevices = new WeakSet<ConfigDevice>();
+  private deviceSequence = 0;
+  private epochSequence = 0;
+  private openingChannel: PacketChannel | null = null;
   readonly models: readonly KeyboardModel[];
   model: KeyboardModel | null = null;
   connectionSource: 'automatic' | 'manual' | null = null;
@@ -305,10 +332,68 @@ export class HIDSession extends EventTarget {
       if (!this.paused) this.restore().catch(() => {});
     };
     this.disconnectedListener = (event) => {
-      if ((event as HIDConnectionEvent).device === this.device) this.drop(msg('hid.unplugged'));
+      const device = (event as HIDConnectionEvent).device;
+      if (device === this.device) this.drop(msg('hid.unplugged'));
+      else {
+        const id = this.deviceIds.get(device);
+        if (id) {
+          this.connections.get(id)?.channel.close();
+          this.connections.delete(id);
+          this.notify();
+        }
+      }
     };
   }
+  private rememberActive() {
+    const record = this.activeDeviceId ? this.connections.get(this.activeDeviceId) : undefined;
+    if (record && record.device === this.device) {
+      record.lastRead = this.lastRead;
+      record.lastCapture = this.lastCapture;
+      record.epoch = this.epoch;
+    }
+  }
+  get connectedDevices(): ConnectedHIDDevice[] {
+    this.rememberActive();
+    return [...this.connections].filter(([, record]) => record.device.opened).map(([id, record]) => ({
+      id,
+      number: Number(id.slice('device-'.length)),
+      model: record.model,
+      product: String(record.identity.Product ?? record.model.name),
+      version: record.version,
+      hasLiveBaseline: record.lastRead?.epoch === record.epoch && record.lastRead.device === record.device,
+    }));
+  }
+  selectDevice(id: string, allowDisconnected = false): boolean {
+    if (this.pending || this.authorizing || this.stopped) return false;
+    const record = this.connections.get(id);
+    if (!record?.device.opened) {
+      if (!allowDisconnected || !this.knownDeviceIds.has(id)) return false;
+      this.rememberActive();
+      this.activeDeviceId = id;
+      this.device = null;
+      this.channel = null;
+      this.model = null;
+      this.connectionSource = null;
+      this.version = '';
+      this.identity = {};
+      this.lastRead = null;
+      this.lastCapture = null;
+      this.epochSequence = Math.max(this.epochSequence, this.epoch) + 1;
+      this.epoch = this.epochSequence;
+      this.setState('waiting', msg('hid.unplugged'));
+      return true;
+    }
+    if (id !== this.activeDeviceId || !this.connected) this.activate(id, record);
+    return true;
+  }
+  private activate(id: string, record: DeviceConnection) {
+    this.rememberActive();
+    this.activeDeviceId = id;
+    Object.assign(this, record);
+    this.setState('connected', msg('hid.connected'));
+  }
   notify() {
+    this.rememberActive();
     this.dispatchEvent(new Event('change'));
   }
   setState(state: ConnectionState, message: Message) {
@@ -334,7 +419,7 @@ export class HIDSession extends EventTarget {
     await this.restore();
     if (!this.stopped)
       this.timer = setInterval(() => {
-        if (!this.device && !this.paused) this.restore().catch(() => {});
+        if (!this.device && !this.connections.size && !this.paused) this.restore().catch(() => {});
       }, this.retryMs);
   }
   async stop() {
@@ -342,7 +427,15 @@ export class HIDSession extends EventTarget {
     clearInterval(this.timer);
     this.hid?.removeEventListener('connect', this.connectedListener);
     this.hid?.removeEventListener('disconnect', this.disconnectedListener);
-    await this.disconnect();
+    this.openingChannel?.close();
+    const connections = [...this.connections.values()];
+    this.drop(msg('hid.disconnected'));
+    this.connections.clear();
+    await Promise.all(connections.map(async ({ device, channel }) => {
+      channel.close();
+      if (device.opened) await device.close().catch(() => {});
+    }));
+    this.notify();
   }
   exclusive<T>(operation: () => Promise<T>): Promise<T> {
     this.pending++;
@@ -355,88 +448,109 @@ export class HIDSession extends EventTarget {
     });
   }
   async restore() {
-    if (!this.hid || this.stopped || this.device || this.pending || this.paused || this.authorizing) return;
+    if (!this.hid || this.stopped || this.pending || this.paused || this.authorizing) return;
     const hid = this.hid;
     return this.exclusive(async () => {
       try {
-        const devices = (await hid.getDevices()).filter((device) => isConfigDevice(device, this.models));
+        const devices = (await hid.getDevices()).filter((device) =>
+          isConfigDevice(device, this.models) && !this.ignoredDevices.has(device));
         if (this.stopped || this.paused) return;
-        if (devices.length === 1) await this.open(devices[0], 'automatic');
-        else if (devices.length > 1) this.setState('waiting', msg('hid.multiple'));
-        else this.setState('waiting', msg('hid.unauthorized'));
+        for (const device of devices) {
+          if (this.stopped || this.paused) return;
+          try { await this.open(device, 'automatic'); }
+          catch (error) {
+            if (!this.connected) this.setState('error', protocolError(error).description);
+          }
+        }
+        if (!devices.length && !this.connected) this.setState('waiting', msg('hid.unauthorized'));
       } catch (error) {
-        this.setState('error', protocolError(error).message);
+        if (!this.connected) this.setState('error', protocolError(error).description);
       }
     });
   }
-  async authorize() {
+  async authorize(): Promise<string | null> {
     assert(this.hid, msg('error.unsupportedHid'));
+    assert(!this.stopped, msg('error.connectionInterrupted'));
     assert(!this.pending && !this.authorizing, msg('error.deviceBusy'));
-    if (this.connected) return;
     this.authorizing = true;
-    this.setState('authorizing', msg('hid.authorizing'));
+    this.setState(this.connected ? 'connected' : 'authorizing', msg('hid.authorizing'));
     try {
       // Called directly by the button handler, before yielding user activation.
       const selected = await this.hid.requestDevice({
         filters: deviceFilters(this.models),
       });
+      assert(!this.stopped, msg('error.connectionInterrupted'));
       const devices = selected.filter((device) => isConfigDevice(device, this.models));
       if (!devices.length) {
-        this.setState('waiting', msg('hid.cancelled'));
-        return;
+        this.setState(this.connected ? 'connected' : 'waiting', msg('hid.cancelled'));
+        return null;
       }
       assert(devices.length === 1, msg('error.multipleInterfaces'));
       this.paused = false;
-      await this.exclusive(() => this.open(devices[0]));
+      this.ignoredDevices.delete(devices[0]);
+      const id = await this.exclusive(() => this.open(devices[0]));
+      if (this.connected) this.setState('connected', msg('hid.connected'));
+      return id;
     } catch (error) {
-      this.setState('error', protocolError(error).message);
+      this.setState(this.connected ? 'connected' : 'error', protocolError(error).description);
       throw error;
     } finally {
       this.authorizing = false;
       this.notify();
     }
   }
-  async open(device: ConfigDevice, source: 'automatic' | 'manual' = 'manual') {
+  async open(device: ConfigDevice, source: 'automatic' | 'manual' = 'manual'): Promise<string> {
     validateDescriptor(device, this.models);
-    if (this.device === device && this.connected) return;
-    if (this.device) await this.disconnect(false);
-    const generation = ++this.epoch;
-    this.device = device;
-    this.lastRead = null;
-    this.setState('connecting', msg('hid.connecting'));
+    let id = this.deviceIds.get(device);
+    if (id && this.connections.has(id) && device.opened) return id;
+    if (!id) {
+      id = `device-${++this.deviceSequence}`;
+      this.deviceIds.set(device, id);
+      this.knownDeviceIds.add(id);
+    }
+    this.connections.get(id)?.channel.close();
+    this.connections.delete(id);
+    if (!this.connected) this.setState('connecting', msg('hid.connecting'));
+    let channel: PacketChannel | null = null;
     try {
       if (!device.opened) await device.open();
-      assert(generation === this.epoch && !this.stopped, msg('error.connectionInterrupted'));
-      this.channel = new PacketChannel(device, { timeout: this.timeout });
-      const version = await readVersion(this.channel);
-      assert(generation === this.epoch, msg('error.connectionChanged'));
+      assert(!this.stopped, msg('error.connectionInterrupted'));
+      channel = new PacketChannel(device, { timeout: this.timeout });
+      this.openingChannel = channel;
+      const version = await readVersion(channel);
+      assert(device.opened && !this.stopped, msg('error.connectionChanged'));
       const model = identifyModel(device, version, this.models);
       assert(model, msg('error.model'));
       validateDescriptor(device, [model]);
-      this.model = model;
-      this.connectionSource = source;
-      this.version = version;
-      this.identity = {
-        Product: device.productName || model.name,
-        VendorID: device.vendorId,
-        ProductID: device.productId,
+      this.epochSequence = Math.max(this.epochSequence, this.epoch) + 1;
+      const record: DeviceConnection = {
+        device, channel, model, connectionSource: source, version,
+        identity: {
+          Product: device.productName || model.name,
+          VendorID: device.vendorId,
+          ProductID: device.productId,
+        },
+        epoch: this.epochSequence, lastRead: null, lastCapture: null,
       };
-      this.setState('connected', msg('hid.connected'));
+      this.connections.set(id, record);
+      // Adding a keyboard must not switch the editor or close another keyboard.
+      if (!this.activeDeviceId || this.activeDeviceId === id) this.activate(id, record);
+      else if (!this.connected) this.setState('waiting', msg('hid.unplugged'));
+      else this.notify();
+      return id;
     } catch (error) {
-      this.channel?.close();
-      this.channel = null;
-      this.device = null;
-      this.version = '';
-      this.model = null;
-      this.connectionSource = null;
-      this.identity = {};
+      channel?.close();
       if (device.opened) await device.close().catch(() => {});
-      this.setState('error', msg('error.closeNative', { error: protocolError(error).description }));
+      if (!this.connected) this.setState('error', msg('error.closeNative', { error: protocolError(error).description }));
       throw error;
+    } finally {
+      this.openingChannel = null;
     }
   }
   drop(message: Message) {
-    this.epoch++;
+    this.epochSequence = Math.max(this.epochSequence, this.epoch) + 1;
+    this.epoch = this.epochSequence;
+    if (this.activeDeviceId) this.connections.delete(this.activeDeviceId);
     this.lastRead = null;
     this.channel?.close();
     this.channel = null;
@@ -448,10 +562,21 @@ export class HIDSession extends EventTarget {
     this.setState('waiting', message);
   }
   async disconnect(manual = true) {
-    if (manual) this.paused = true;
     const device = this.device;
+    if (manual && device) this.ignoredDevices.add(device);
     this.drop(manual ? msg('hid.disconnected') : msg('hid.switching'));
+    if (manual) this.paused = this.connections.size === 0;
     if (device?.opened) await device.close().catch(() => {});
+  }
+  async disconnectDevice(id: string) {
+    if (id === this.activeDeviceId) return this.disconnect();
+    const record = this.connections.get(id);
+    if (!record) return;
+    this.ignoredDevices.add(record.device);
+    this.connections.delete(id);
+    record.channel.close();
+    if (record.device.opened) await record.device.close().catch(() => {});
+    this.notify();
   }
   assertReady(epoch = this.epoch): asserts this is this & {
     channel: PacketChannel; device: ConfigDevice; model: KeyboardModel;

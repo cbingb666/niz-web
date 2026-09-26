@@ -259,7 +259,9 @@ test('read consent cannot carry over to a reconnected device', async () => {
   expect(first.sent.map((packet) => packet[1])).toEqual([0xf9]);
   expect(next.sent.map((packet) => packet[1])).toEqual([0xf9]);
   actions.closeDialog();
+  const configuring = actions.configureDevice(store.getState().connectedDevices[0].id);
   await acceptRead(store);
+  await configuring;
   expect(store.getState().profile?.summary(0)).toBe('S');
 });
 

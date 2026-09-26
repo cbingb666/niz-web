@@ -152,19 +152,21 @@ test('cancelled authorization leaves no connection and can be retried', async (t
   assert.equal(session.connected, true);
   const count = hid.requestCount;
   await session.authorize();
-  assert.equal(hid.requestCount, count);
+  assert.equal(hid.requestCount, count + 1);
   assert.equal(session.connected, true);
 });
-test('multiple authorized devices require explicit selection', async (t) => {
+test('multiple authorized devices are identified separately without reading configuration', async (t) => {
   const a = new FakeDevice(),
     b = new FakeDevice(),
     hid = new FakeHID([a, b]),
     session = new HIDSession(hid, { retryMs: 60000 });
   t.onTestFinished(() => session.stop());
   await session.start();
-  assert.equal(session.connected, false);
-  assert.equal(a.openCount + b.openCount, 0);
-  assert.match(session.message, /多把/);
+  assert.equal(session.connected, true);
+  assert.equal(a.openCount + b.openCount, 2);
+  assert.equal(session.connectedDevices.length, 2);
+  assert.deepEqual(a.sent.map(packet => packet[1]), [0xf9]);
+  assert.deepEqual(b.sent.map(packet => packet[1]), [0xf9]);
 });
 test('fresh read handles nine groups and uint32 little-endian counters without writes', async (t) => {
   const { device, session } = await connected(t, fixture(9));

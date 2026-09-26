@@ -90,14 +90,15 @@ test('connecting a different model preserves pending edits and requires loading 
     hid.connect(next);
     await ready(store);
   });
-  expect(session.model).toBe(test68);
+  expect(session.model).toBeNull();
+  expect(session.connectedDevices[0].model).toBe(test68);
   expect(session.lastRead).toBeNull();
   expect(store.getState().dialog).toBeNull();
   expect(store.getState().model).toBe(defaultModel);
   expect(store.getState().canWrite).toBe(false);
   expect(screen.getByLabelText(/按键序列/)).toHaveValue('Command\nC');
   let read: Promise<void>;
-  act(() => { read = actions.read(); });
+  act(() => { read = actions.configureDevice(session.connectedDevices[0].id); });
   await act(async () => {
     actions.confirm(true);
     await read;

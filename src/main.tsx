@@ -29,7 +29,7 @@ root.render(
 void store.getState().actions.start(document.modelContext);
 const beforeUnload = (event: BeforeUnloadEvent) => {
   const state = store.getState();
-  if (isLocked(state) || state.formDirty || state.changes.length || state.lightsChanged) {
+  if (isLocked(state) || state.hasUnsavedChanges) {
     event.preventDefault();
     event.returnValue = '';
   }

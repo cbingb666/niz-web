@@ -1116,6 +1116,16 @@ main {
 .device-transport { display: flex; align-items: center; gap: 6px; color: var(--muted-foreground); font-size: .875rem; }
 .device-transport svg { width: 16px; height: 16px; }
 .device-card, .devices-empty { display: grid; grid-template-columns: 1.2fr 1fr; min-height: 340px; border: 1px solid var(--border); border-radius: 20px; background: var(--panel); overflow: hidden; }
+.device-card-grid { display: grid; gap: 20px; }
+.device-card-grid[data-multiple='true'] { grid-template-columns: repeat(auto-fit, minmax(min(100%, 380px), 1fr)); }
+.device-card-grid[data-multiple='true'] .device-card { grid-template-columns: 1fr; }
+.device-card-grid[data-multiple='true'] .device-card-art .device-illustration { max-height: 210px; }
+.device-card-grid[data-multiple='true'] .device-card-content { padding: 24px; }
+.device-card-grid[data-multiple='true'] .device-card-content > h3 { font-size: 1.5rem; }
+.device-card-actions { display: flex; align-items: center; gap: 8px; width: 100%; }
+.device-card-actions .configure-device { flex: 1; width: auto; }
+.device-pending-edits { font-size: .875rem; color: var(--warning); margin-bottom: 16px; }
+.guide-pick-again { align-self: flex-start; margin-top: 14px; }
 .device-card-art { display: flex; justify-content: center; align-items: center; min-width: 0; padding: 22px; background: #111416; }
 .device-illustration { display: block; width: 100%; height: auto; object-fit: contain; user-select: none; }
 .device-card-art .device-illustration { max-height: 330px; mask-image: radial-gradient(ellipse at center, #000 52%, transparent 74%); }

@@ -11,7 +11,7 @@ import {
 import { localizedKeyName } from '../i18n/key-names';
 import { createStore } from 'zustand/vanilla';
 import { EditorState, type EditorSource } from '../editor';
-import { HIDSession, protocolError } from '../hid';
+import { HIDSession, protocolError, type ConnectedHIDDevice } from '../hid';
 import { importWindowsProfile } from '../devices/atom66/legacy';
 import type { KeyboardModel } from '../devices/index';
 import { registerModelTools, type ModelContext } from '../model-tools';
@@ -49,6 +49,7 @@ export type AppDialog =
   | { kind: 'backups' | 'help' | 'activity' | 'device' }
   | { kind: 'changes'; review: ChangeReview };
 export interface SessionView {
+  id: string | null;
   model: KeyboardModel | null;
   state: ConnectionState;
   connected: boolean;
@@ -68,6 +69,18 @@ export interface Activity {
   error: boolean;
 }
 export type AppPage = 'devices' | 'connect' | 'editor';
+interface EditingSession {
+  editor: EditorState;
+  form: EditorForm;
+  formDirty: boolean;
+  formError: Message;
+  drafts: Record<number, EditorForm>;
+  showCounts: boolean;
+  showKeyNumbers: boolean;
+}
+export interface DeviceView extends ConnectedHIDDevice {
+  hasEdits: boolean;
+}
 export interface AppState {
   page: AppPage;
   model: KeyboardModel;
@@ -92,6 +105,9 @@ export interface AppState {
   showCounts: boolean;
   showKeyNumbers: boolean;
   session: SessionView;
+  connectedDevices: DeviceView[];
+  disconnectedEditors: { id: string; number: number; model: string }[];
+  hasUnsavedChanges: boolean;
   busy: Message;
   hardwareOperation: 'read' | 'write' | null;
   reading: boolean;
@@ -105,12 +121,13 @@ export interface AppState {
 }
 export interface AppActions {
   navigate(page: AppPage): void;
-  configureDevice(): Promise<void>;
+  configureDevice(id?: string): Promise<void>;
+  resumeEditor(id: string): void;
   setLocale(locale: Locale): void;
   start(context?: ModelContext): Promise<void>;
   stop(): Promise<void>;
-  connect(): Promise<void>;
-  disconnect(): Promise<void>;
+  connect(): Promise<string | null>;
+  disconnect(id?: string): Promise<void>;
   read(): Promise<void>;
   demo(): Promise<void>;
   importFile(file: Pick<File, 'name' | 'size' | 'text'>): Promise<void>;
@@ -161,7 +178,9 @@ export const isLocked = (state: AppState) =>
 export function createAppStore(dependencies: AppDependencies) {
   const session: HIDSession = dependencies.session;
   const { backups, download } = dependencies;
-  const editor = new EditorState();
+  let editor = new EditorState();
+  let editorDeviceId = session.activeDeviceId;
+  const editingSessions = new Map<string, EditingSession>();
   let lastConnection = '';
   let logId = 0;
   let started = false;
@@ -170,7 +189,9 @@ export function createAppStore(dependencies: AppDependencies) {
   let unregisterTools = () => {};
   let modelContext: ModelContext | undefined;
   let toolsModel: KeyboardModel | null = null;
+  let toolsEditor: EditorState | null = null;
   const sessionView = (): SessionView => ({
+    id: session.activeDeviceId,
     model: session.model,
     state: session.state,
     connected: session.connected,
@@ -185,7 +206,37 @@ export function createAppStore(dependencies: AppDependencies) {
   });
 
   return createStore<AppState>()((set, get) => {
+    function activateEditor() {
+      const id = session.activeDeviceId;
+      if (!id || id === editorDeviceId) return;
+      // The first connection retains any offline work already in the editor.
+      if (editorDeviceId) {
+        const { form, formDirty, formError, drafts, showCounts, showKeyNumbers } = get();
+        editingSessions.set(editorDeviceId, { editor, form, formDirty, formError, drafts, showCounts, showKeyNumbers });
+        const cached = editingSessions.get(id);
+        editor = cached?.editor ?? new EditorState();
+        const nextForm = cached?.form ?? emptyForm();
+        set({
+          form: cached && !cached.formDirty && editor.profile
+            ? { ...nextForm, sequence: sequenceText(editor.profile.definition(editor.index), code => localizedKeyName(code, get().locale)) }
+            : nextForm,
+          formDirty: cached?.formDirty ?? false,
+          formError: cached?.formError ?? '',
+          drafts: cached?.drafts ?? {},
+          showCounts: cached?.showCounts ?? false,
+          showKeyNumbers: cached?.showKeyNumbers ?? false,
+          status: msg('status.initial'),
+        });
+      }
+      editorDeviceId = id;
+    }
     function syncEditor() {
+      const activeDirty = editor.dirty || Object.keys(get().drafts).length > 0;
+      const connectedDevices = session.connectedDevices.map(device => {
+        const saved = editingSessions.get(device.id);
+        return { ...device, hasEdits: device.id === editorDeviceId ? activeDirty :
+          !!saved && (saved.editor.dirty || Object.keys(saved.drafts).length > 0) };
+      });
       set({
         model: editor.model,
         profile: editor.profile?.clone() ?? null,
@@ -201,13 +252,19 @@ export function createAppStore(dependencies: AppDependencies) {
         lightsChanged: editor.lightsChanged,
         stale: editor.boundEpoch !== null && editor.boundEpoch !== session.epoch,
         session: sessionView(),
+        connectedDevices,
+        disconnectedEditors: [...editingSessions].filter(([id, saved]) =>
+          id !== editorDeviceId && !!saved.editor.profile && !connectedDevices.some(device => device.id === id))
+          .map(([id, saved]) => ({ id, number: Number(id.slice('device-'.length)), model: saved.editor.model.name })),
+        hasUnsavedChanges: activeDirty || [...editingSessions].some(([id, saved]) =>
+          id !== editorDeviceId && (saved.editor.dirty || Object.keys(saved.drafts).length > 0)),
         canWrite:
           editor.source !== 'demo' &&
           editor.boundEpoch === session.epoch &&
           session.hasLiveBaseline &&
           editor.dirty && !Object.keys(get().drafts).length,
       });
-      if (started && toolsModel !== editor.model) refreshTools();
+      if (started && (toolsModel !== editor.model || toolsEditor !== editor)) refreshTools();
     }
     function loadForm(reset = false) {
       if (reset) set({ drafts: {} });
@@ -366,11 +423,12 @@ export function createAppStore(dependencies: AppDependencies) {
       }, 'read');
     }
     function onSessionChange() {
-      const state = `${session.state}:${session.version}:${session.message}`;
+      activateEditor();
+      const state = `${session.activeDeviceId}:${session.state}:${session.version}:${session.message}`;
       if (state !== lastConnection) {
         lastConnection = state;
         log(
-          session.connected
+          session.connected && !session.authorizing
             ? msg('status.connected', { version: session.version })
             : session.statusMessage || msg('status.waiting'),
           session.state === 'error',
@@ -437,6 +495,7 @@ export function createAppStore(dependencies: AppDependencies) {
     function refreshTools() {
       unregisterTools();
       toolsModel = editor.model;
+      toolsEditor = editor;
       unregisterTools = registerModelTools(
         modelContext,
         {
@@ -453,13 +512,19 @@ export function createAppStore(dependencies: AppDependencies) {
       );
     }
     const actions: AppActions = {
+      resumeEditor(id) {
+        if (disposed || isLocked(get()) || get().dialog || !editingSessions.get(id)?.editor.profile) return;
+        if (session.selectDevice(id, true)) set({ page: 'editor' });
+      },
       navigate(page) {
         if (disposed || isLocked(get()) || get().dialog) return;
         if (page === 'editor' && !get().profile && !get().session.connected) return;
         set({ page });
       },
-      async configureDevice() {
-        if (disposed || isLocked(get()) || get().dialog || !session.connected) return;
+      async configureDevice(id = session.activeDeviceId ?? undefined) {
+        if (disposed || isLocked(get()) || get().dialog) return;
+        if (id && !session.selectDevice(id)) return;
+        if (!session.connected) return;
         if (!session.hasLiveBaseline || editor.boundEpoch !== session.epoch || editor.source === 'demo')
           await readConfiguration();
         if (disposed || isLocked(get()) || get().dialog || !session.connected || editor.boundEpoch !== session.epoch) return;
@@ -499,10 +564,15 @@ export function createAppStore(dependencies: AppDependencies) {
         await session.stop();
       },
       async connect() {
-        if (!isLocked(get())) await session.authorize().catch(fail);
+        if (disposed || isLocked(get())) return null;
+        try { return await session.authorize(); }
+        catch (error) { if (!disposed) fail(error); return null; }
       },
-      async disconnect() {
-        if (!isLocked(get())) await session.disconnect().catch(fail);
+      async disconnect(id = session.activeDeviceId ?? undefined) {
+        if (!isLocked(get())) {
+          if (id) await session.disconnectDevice(id).catch(fail);
+          else await session.disconnect().catch(fail);
+        }
       },
       async read() {
         await readConfiguration();
@@ -744,6 +814,9 @@ export function createAppStore(dependencies: AppDependencies) {
       showCounts: false,
       showKeyNumbers: false,
       session: sessionView(),
+      connectedDevices: session.connectedDevices.map(device => ({ ...device, hasEdits: false })),
+      disconnectedEditors: [],
+      hasUnsavedChanges: false,
       busy: '',
       hardwareOperation: null,
       reading: false,

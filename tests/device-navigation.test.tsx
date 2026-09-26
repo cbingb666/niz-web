@@ -17,6 +17,58 @@ function confirmCable() {
   fireEvent.click(screen.getByRole('button', { name: '已连接数据线，下一步' }));
 }
 
+test('the authorization step can open the picker when a keyboard is already connected', async () => {
+  const device = new FakeDevice(), hid = new FakeHID([device]);
+  const { store, actions } = application(hid);
+  render(<App store={store} usbAvailable />);
+  await act(() => actions.start());
+  openGuide();
+  confirmCable();
+  await act(async () => { fireEvent.click(screen.getByRole('button', { name: /连接(另一台)?键盘/ })); });
+  expect(hid.requestCount).toBe(1);
+});
+
+test('the guide adds another ATOM66 and both cards configure and disconnect their own device', async () => {
+  const first = new FakeDevice(), second = new FakeDevice(), hid = new FakeHID([first]);
+  second.profile.setDefinition(0, { type: 0, keys: [44] });
+  const { store, actions, session } = application(hid);
+  render(<App store={store} usbAvailable />);
+  await act(() => actions.start());
+  const firstId = session.activeDeviceId;
+  openGuide();
+  confirmCable();
+  hid.selection = [];
+  await act(async () => { fireEvent.click(screen.getByRole('button', { name: '连接另一台键盘' })); });
+  expect(first.opened).toBe(true);
+  expect(screen.queryByRole('button', { name: '下一步' })).not.toBeInTheDocument();
+  hid.selection = [second];
+  await act(async () => { fireEvent.click(screen.getByRole('button', { name: '连接另一台键盘' })); });
+  expect(screen.getByRole('status')).toHaveTextContent('已连接 · ATOM66 · 设备 2');
+  expect(first.opened && second.opened).toBe(true);
+  expect(session.activeDeviceId).toBe(firstId);
+  expect(first.sent.map(packet => packet[1])).toEqual([0xf9]);
+  expect(second.sent.map(packet => packet[1])).toEqual([0xf9]);
+  fireEvent.click(screen.getByRole('button', { name: '下一步' }));
+  fireEvent.click(screen.getByRole('button', { name: '完成，查看设备' }));
+  expect(screen.getAllByRole('article')).toHaveLength(2);
+  const secondCard = screen.getByRole('article', { name: 'ATOM66 · 设备 2' });
+  fireEvent.click(within(secondCard).getByRole('button', { name: '配置设备' }));
+  await act(() => acceptRead(store));
+  expect(store.getState().profile!.summary(0)).toBe('S');
+  fireEvent.click(screen.getByRole('button', { name: '设备管理' }));
+  fireEvent.click(within(screen.getByRole('article', { name: 'ATOM66 · 设备 1' })).getByRole('button', { name: '配置设备' }));
+  await act(() => acceptRead(store));
+  expect(store.getState().profile!.summary(0)).toBe('Esc');
+  fireEvent.click(screen.getByRole('button', { name: '设备管理' }));
+  await act(async () => {
+    fireEvent.click(within(screen.getByRole('article', { name: 'ATOM66 · 设备 2' })).getByRole('button', { name: '断开' }));
+  });
+  expect(screen.getAllByRole('article')).toHaveLength(1);
+  expect(first.opened).toBe(true);
+  expect(second.opened).toBe(false);
+  expect(session.activeDeviceId).toBe(firstId);
+});
+
 test('the guide presents one step at a time and only its second step can request device access', async () => {
   const hid = new FakeHID();
   const { store, actions } = application(hid);
@@ -113,6 +165,7 @@ test('a disconnect at the last step requires reconnecting and never enables Fini
   openGuide();
   expect(screen.getByRole('heading', { name: '连接 USB 数据线' })).toBeVisible();
   confirmCable();
+  await act(async () => { fireEvent.click(screen.getByRole('button', { name: '连接另一台键盘' })); });
   fireEvent.click(screen.getByRole('button', { name: '下一步' }));
   await act(async () => { hid.disconnect(device); await ready(store); });
   expect(screen.getByRole('heading', { name: '键盘已断开' })).toHaveFocus();
