@@ -4,6 +4,7 @@ export const zhCN = {
     'NIZ 键盘网页配置工具，通过 WebHID 直接连接 USB 键盘。配置和备份仅在浏览器本地处理。',
   'app.subtitle': 'NIZ 键盘配置工具',
   'app.editor': '键盘编辑器',
+  'app.github': 'GitHub 仓库（在新标签页打开）',
   'devices.navigation': '页面导航',
   'devices.title': '设备管理',
   'devices.description': '你的键盘，你的使用习惯。从这里开始配置。',

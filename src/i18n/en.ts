@@ -6,6 +6,7 @@ export const en = {
     'Configure supported NIZ keyboards directly over WebHID. Profiles and backups stay in your browser.',
   'app.subtitle': 'NIZ keyboard configurator',
   'app.editor': 'Keyboard editor',
+  'app.github': 'GitHub repository (opens in a new tab)',
   'devices.navigation': 'Page navigation',
   'devices.title': 'Devices',
   'devices.description': 'Make your keyboard work your way. Start here.',
