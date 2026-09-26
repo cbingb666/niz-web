@@ -21,7 +21,8 @@ NIZ 键盘配置工具的纯 Web 移植测试版，**目前仅支持 ATOM66**。
 │   └── model-tools.ts  # 可选 WebMCP 页面工具
 ├── scripts/             # 单文件构建插件与私人样本回放
 ├── tests/               # Vitest：协议、状态、React 交互与产物测试
-├── .openai/hosting.json # Sites 配置，发布目录为 dist
+├── .github/workflows/   # GitHub Pages 检查、构建与部署
+├── .openai/hosting.json # 历史 Sites 配置，当前不用于同步或发布
 ├── components.json      # shadcn/ui 配置
 ├── index.html           # Vite 页面入口
 ├── package-lock.json    # npm 依赖锁文件
@@ -149,7 +150,7 @@ npm run check       # 完整检查
 
 `npm run build` 输出独立的 `dist/index.html`，React、shadcn、样式和应用代码全部内联。`scripts/standalone.ts` 在 Vite 构建后计算脚本 SHA-256 CSP，将经典脚本放在页面挂载节点之后，并生成 `dist/_headers`。生产 CSP 保留 `connect-src 'none'`；开发环境需要 Vite 热更新连接，使用独立的开发配置。
 
-`dist/_headers` 为支持此约定的静态托管提供 `Permissions-Policy: hid=(self)`；其他托管需要自行配置该响应头。Sites 继续使用现有项目及 `static.directory: dist`。部署只使用 `dist/`，不要公开源码、测试或 `drivers/`。
+`dist/_headers` 为支持此约定的静态托管提供 `Permissions-Policy: hid=(self)` 等响应头；GitHub Pages 不读取该文件。网页内的 CSP 由 HTML 中的 `<meta>` 提供。部署只使用 `dist/`，不要把源码、测试或 `drivers/` 放进站点产物。`.openai/hosting.json` 仅作历史记录，当前不再同步或发布到 ChatGPT Apps / Sites。
 
 shadcn/ui 组件保存在 `src/components/ui/`，采用 Radix 基础组件，主题令牌在 `src/styles.css`。`components.json` 配置了 `@/` 别名，后续可用 shadcn CLI 添加组件。当前采用深色映射工作台；键帽参考正视阶梯结构，使用中性炭灰的窄外缘和内嵌键面；高度随每行单键宽度计算，保留接近方形的键面，普通层左对齐、Fn 层右对齐：正面上方显示较大的普通层，正面下方显示较小的左 Fn，底部侧面显示较小的右 Fn，右侧面显示编号；三层均可独立编辑。键帽使用短名称和键盘符号，悬停和编辑器保留完整功能名称。保留真实错列与长键比例，窄屏时横向查看完整键盘，编辑区移到下方。
 
@@ -162,6 +163,22 @@ npm run replay -- /absolute/path/to/read-capture.json
 ```
 
 验证范围与当前环境限制见 [VALIDATION.md](VALIDATION.md)。
+
+## GitHub Pages 部署
+
+仓库提供 [Deploy to GitHub Pages](.github/workflows/deploy-pages.yml) 工作流。推送到 `main` 时自动部署，也可在 Actions 中选择该工作流，点击 **Run workflow** 并选择 `main`；手动运行其他分支只检查和构建，不部署。
+
+首次启用：
+
+1. 在仓库的 **Settings → Pages → Build and deployment → Source** 中选择 **GitHub Actions**，参见 [GitHub 官方说明](https://docs.github.com/en/pages/getting-started-with-github-pages/configuring-a-publishing-source-for-your-github-pages-site)。
+2. 将工作流及代码提交并推送到 `main`，或在工作流已存在时手动运行。
+3. 等待 Actions 中的 `build` 和 `deploy` 均成功，通过部署任务给出的链接访问。此仓库使用默认域名时，地址为 <https://cbingb666.github.io/niz-web/>；fork 后以自己仓库的 Pages 设置和部署输出为准。
+
+工作流使用 Node.js 24 和 `npm ci`，执行 `npm run check`（类型检查、lint、全部测试、生产构建），通过后只上传 `dist/`。部署使用 GitHub 自动提供的 `GITHUB_TOKEN`，无需额外配置个人访问令牌或提交构建产物，也无需创建 `gh-pages` 分支。
+
+保留 `vite.config.ts` 中的 `base: './'`：单文件构建会内联全部运行时资源，因此同时适用于 `/niz-web/` 这类仓库子路径、站点根路径与下载后的离线 HTML，无需硬编码仓库名。应用切换页面不修改 URL，不需要额外的 SPA 路由回退。
+
+连接键盘时，请在桌面版 Chrome / Edge 中直接打开 Pages 的 **HTTPS** 地址并点击连接按钮授权；WebHID 的 `hid` 权限策略默认允许当前来源，无需依赖 `_headers` 文件，参见 [WebHID 规范](https://hid.spec.whatwg.org/#permissions-policy)。切换到新的站点来源后，需要重新授权设备，原来源下的浏览器本地备份不会自动迁移。
 
 ## 许可证
 

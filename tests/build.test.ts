@@ -19,7 +19,7 @@ test('production is one offline HTML with hash CSP and HID permissions', async (
     const console = new VirtualConsole();
     console.on('jsdomError', (error) => errors.push(error));
     const dom = new JSDOM(html, {
-      url: 'https://atom66.example/',
+      url: 'https://atom66.example/niz-web/',
       runScripts: 'dangerously',
       pretendToBeVisual: true,
       virtualConsole: console,
