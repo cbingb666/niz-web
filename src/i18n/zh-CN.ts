@@ -23,7 +23,7 @@ export const zhCN = {
   'devices.localProfile': '当前编辑内容',
   'devices.localDescription': '{model} 的编辑内容保留在此页面，可随时继续。',
   'devices.resume': '继续编辑',
-  'devices.keyboardIllustration': '紧凑型键盘示意插图',
+  'devices.keyboardIllustration': 'NIZ ATOM66 静电容键盘产品照片',
   'guide.title': '设备连接引导',
   'guide.description': '跟随步骤连接键盘，完成后回到设备管理。',
   'guide.steps': '连接步骤',

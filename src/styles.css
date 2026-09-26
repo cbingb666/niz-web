@@ -1141,7 +1141,7 @@ main {
 .guide-pick-again { align-self: flex-start; margin-top: 14px; }
 .device-card-art { display: flex; justify-content: center; align-items: center; min-width: 0; padding: 22px; background: #111416; }
 .device-illustration { display: block; width: 100%; height: auto; object-fit: contain; user-select: none; }
-.device-card-art .device-illustration { max-height: 330px; mask-image: radial-gradient(ellipse at center, #000 52%, transparent 74%); }
+.device-card-art .device-illustration { max-height: 330px; }
 .device-card-content, .devices-empty-copy { display: flex; flex-direction: column; justify-content: center; align-items: flex-start; padding: 36px 40px; min-width: 0; }
 .device-status { display: inline-flex; align-items: center; gap: 9px; font-size: .875rem; color: var(--primary); }
 .device-status .status-dot { width: 7px; height: 7px; }
@@ -1173,7 +1173,7 @@ main {
 .guide-visual { position: relative; display: flex; flex-direction: column; justify-content: center; min-width: 0; padding: 32px; background: #111416; overflow: hidden; }
 .guide-visual-label { display: flex; align-items: center; gap: 10px; color: var(--muted-foreground); font-size: .75rem; letter-spacing: .06em; }
 .guide-visual-label .status-dot { width: 6px; height: 6px; box-shadow: none; }
-.guide-visual .device-illustration { width: 100%; margin: 20px auto 12px; mask-image: radial-gradient(ellipse at center, #000 58%, transparent 78%); }
+.guide-visual .device-illustration { width: 100%; margin: 20px auto 12px; }
 .guide-visual-caption { display: flex; align-items: center; gap: 14px; margin-top: auto; animation: guide-caption-in 300ms ease-out; }
 .guide-caption-icon { display: flex; align-items: center; justify-content: center; width: 44px; height: 44px; flex: none; border: 1px solid #6de3bc40; border-radius: 12px; background: #6de3bc0d; color: var(--primary); }
 .guide-caption-icon svg { width: 22px; height: 22px; }
@@ -1227,8 +1227,8 @@ main {
 .permission-window-actions { display: flex; align-items: center; justify-content: flex-end; gap: 18px; font-size: .8125rem; color: var(--muted-foreground); }
 .permission-confirm { display: block; padding: 7px 18px; background: var(--primary); color: var(--primary-foreground); border-radius: 7px; animation: confirm-device 5s infinite; }
 .permission-pointer { position: absolute; left: 40px; top: 138px; width: 24px; height: 24px; fill: var(--foreground); stroke: var(--background); stroke-width: 1.5px; filter: drop-shadow(0 1px 3px #0008); animation: select-device-pointer 5s ease-in-out infinite; }
-.connection-result-art { position: relative; width: 100%; }
-.connection-result-mark { position: absolute; left: 50%; bottom: 8%; display: flex; align-items: center; justify-content: center; transform: translateX(-50%); width: 52px; height: 52px; background: var(--background); border: 1px solid #6de3bc50; border-radius: 50%; color: var(--primary); }
+.connection-result-art { width: 100%; }
+.connection-result-mark { display: flex; align-items: center; justify-content: center; margin: 0 auto 12px; width: 52px; height: 52px; background: var(--background); border: 1px solid #6de3bc50; border-radius: 50%; color: var(--primary); }
 .connection-result-mark svg { width: 30px; height: 30px; }
 .connection-result-art[data-connected='false'] .connection-result-mark { color: var(--warning); border-color: var(--warning); }
 @keyframes insert-usb { 0%, 15%, 100% { transform: translateY(17px); } 35%, 75% { transform: translateY(0); } }

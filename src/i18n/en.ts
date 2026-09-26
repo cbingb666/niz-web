@@ -25,7 +25,7 @@ export const en = {
   'devices.localProfile': 'Current editing session',
   'devices.localDescription': 'Your edits for {model} are kept in this page, ready to resume.',
   'devices.resume': 'Resume editing',
-  'devices.keyboardIllustration': 'Illustration of a compact keyboard',
+  'devices.keyboardIllustration': 'Product photo of the NIZ ATOM66 electrocapacitive keyboard',
   'guide.title': 'Connection guide',
   'guide.description': 'Connect your keyboard step by step, then return to Devices.',
   'guide.steps': 'Connection steps',
