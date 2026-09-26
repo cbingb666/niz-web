@@ -42,7 +42,6 @@ export function DeviceManager() {
           <h3>{name}</h3>
           <p className="device-specification">{t('keyboard.dimensions', { keys: device.model.keyCount, layers: device.model.layers.length })}</p>
           <dl className="device-card-details">
-            <div><dt>{t('connection.product')}</dt><dd>{device.product}</dd></div>
             <div><dt>{t('connection.firmware')}</dt><dd>{device.version || '—'}</dd></div>
             <div><dt>{t('connection.configuration')}</dt><dd>{t(device.hasLiveBaseline ? 'connection.loaded' : 'connection.notRead')}</dd></div>
           </dl>
