@@ -5,6 +5,7 @@ import { afterEach, expect, test, vi } from 'vitest';
 import { App } from '../src/app';
 import { FakeDevice, FakeHID } from './helpers';
 import { acceptRead, application, memoryBackups, ready } from './store-helpers';
+import { openDeviceEditor } from './page-helpers';
 
 afterEach(cleanup);
 
@@ -35,7 +36,7 @@ test('read confirmation explains auto-connection; confirmation alone opens a glo
   expect(store.getState().profile).toBeNull();
   expect(device.sent.map((packet) => packet[1])).toEqual([0xf9]);
 
-  fireEvent.click(screen.getByRole('button', { name: '重新读取配置' }));
+  fireEvent.click(screen.getByRole('button', { name: '配置设备' }));
   const retry = screen.getByRole('alertdialog', { name: '确认读取键盘配置' });
   await act(async () => {
     fireEvent.click(within(retry).getByRole('button', { name: '确认并读取' }));
@@ -59,6 +60,8 @@ test('read confirmation explains auto-connection; confirmation alone opens a glo
   actions.setLocale('en');
   actions.setShowCounts(true);
   actions.setShowKeyNumbers(true);
+  actions.navigate('connect');
+  expect(store.getState().page).toBe('devices');
   expect(store.getState()).toMatchObject({ hardwareOperation: 'read', locale: 'zh-CN', showCounts: false, showKeyNumbers: false });
   await act(async () => {
     backupGate.release();
@@ -74,6 +77,7 @@ test('write progress locks the whole transaction, including backup and read-back
   const { store, actions } = application(new FakeHID([device]), backups);
   const view = render(<App store={store} usbAvailable />);
   await act(async () => { await actions.start(); await acceptRead(store); });
+  await openDeviceEditor();
   const backupGate = gate(), writeGate = gate(), readbackGate = gate();
   t.onTestFinished(() => { backupGate.release(); writeGate.release(); readbackGate.release(); });
   const persist = vi.mocked(backups.save).getMockImplementation()!;
@@ -142,6 +146,7 @@ test.each(['read', 'write'] as const)('%s failure unlocks the page and exposes a
   await act(() => actions.start());
   if (operation === 'write') {
     await act(() => acceptRead(store));
+    await openDeviceEditor();
     device.failOn = 0xf1;
     await act(() => actions.assignKey(43));
     fireEvent.click(screen.getByRole('button', { name: '核对并写入' }));
@@ -157,5 +162,5 @@ test.each(['read', 'write'] as const)('%s failure unlocks the page and exposes a
   const error = screen.getByRole('dialog', { name: '操作未完成' });
   fireEvent.click(within(error).getByRole('button', { name: '知道了' }));
   expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
-  expect(screen.getByRole('button', { name: '重新读取配置' })).toBeEnabled();
+  expect(screen.getByRole('button', { name: operation === 'read' ? '配置设备' : '重新读取配置' })).toBeEnabled();
 });

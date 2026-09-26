@@ -3,7 +3,7 @@ import '@testing-library/jest-dom/vitest';
 import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { afterAll, afterEach, beforeAll, expect, test, vi } from 'vitest';
 import { App } from '../src/app';
-import { chooseMappingType } from './page-helpers';
+import { chooseMappingType, openDeviceEditor } from './page-helpers';
 import { application, acceptRead, profileFile } from './store-helpers';
 import { FakeDevice, FakeHID, fixture } from './helpers';
 import { renderMessage } from '../src/i18n/core';
@@ -21,7 +21,7 @@ afterEach(cleanup);
 test('mapping type select switches all editors while preserving unapplied input', async () => {
   const { store, actions } = application();
   render(<App store={store} />);
-  expect(screen.getByRole('combobox', { name: '映射类型' })).toBeDisabled();
+  expect(screen.queryByRole('combobox', { name: '映射类型' })).not.toBeInTheDocument();
   expect(screen.queryByRole('tablist')).not.toBeInTheDocument();
   await act(() => actions.demo());
   const original = store.getState().profile!.toJSON();
@@ -46,6 +46,7 @@ test('key numbers are opt-in on the layout and guide, appear only in the editor 
   const { store, actions } = application(new FakeHID([device]));
   const view = render(<App store={store} usbAvailable />);
   await act(async () => { await actions.start(); await acceptRead(store); });
+  await openDeviceEditor();
   const sent = device.sent.slice();
   const original = store.getState().profile!.toJSON();
   const layout = view.container.querySelector('.keyboard')!;
@@ -81,6 +82,7 @@ test('No action is first in common actions, updates the keycap preview, and Rest
   const { store, actions } = application(new FakeHID([device]));
   render(<App store={store} usbAvailable />);
   await act(async () => { await actions.start(); await acceptRead(store); });
+  await openDeviceEditor();
   const original = store.getState().profile!.toJSON();
   const sent = device.sent.slice();
   fireEvent.click(screen.getByRole('button', { name: /^右 Fn，第 1 键，/ }));
@@ -107,7 +109,7 @@ test('No action is first in common actions, updates the keycap preview, and Rest
 test('mapping preview follows selected position, active layer, language and undo without adding editable keys', async () => {
   const { store, actions } = application();
   const view = render(<App store={store} />);
-  expect(screen.getByRole('figure', { name: '映射编辑' })).toHaveTextContent('#01 - 普通层 -> —');
+  expect(screen.queryByRole('figure', { name: '映射编辑' })).not.toBeInTheDocument();
   await act(() => actions.demo());
   fireEvent.click(screen.getByRole('button', { name: /^左 Fn，第 30 键，/ }));
   fireEvent.click(screen.getByRole('button', { name: 'C' }));
@@ -130,6 +132,7 @@ test('count view replaces front-edge mappings with counts and orders key brightn
   const { store, actions } = application(new FakeHID([device]));
   render(<App store={store} usbAvailable />);
   await act(async () => { await actions.start(); await acceptRead(store); });
+  await openDeviceEditor();
   act(() => { actions.selectKey(0, 1); actions.assignKey(58); });
   const sent = device.sent.slice();
   const profile = store.getState().profile!.toJSON();
@@ -368,6 +371,7 @@ test('write confirmation includes parameter-level differences and cancellation h
   const { store, actions } = application(new FakeHID([device]));
   render(<App store={store} usbAvailable />);
   await act(async () => { await actions.start(); await acceptRead(store); });
+  await openDeviceEditor();
   fireEvent.change(screen.getByLabelText('间隔（ms）'), { target: { value: '80' } });
   fireEvent.click(screen.getByRole('button', { name: '应用这次编辑' }));
   const sent = device.sent.slice();

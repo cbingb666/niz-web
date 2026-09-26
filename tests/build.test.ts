@@ -29,13 +29,20 @@ test('production is one offline HTML with hash CSP and HID permissions', async (
       },
     });
     try {
-      await vi.waitFor(() => expect(dom.window.document.querySelectorAll('.key')).toHaveLength(66));
+      await vi.waitFor(() => expect(dom.window.document.querySelector('.device-page')).not.toBeNull());
       await vi.waitFor(() => expect(dom.window.document.documentElement.lang).toBe('en'));
       expect(dom.window.document.title).toBe('NIZ — Keyboard configurator');
       expect(
         dom.window.document.querySelector('meta[name="description"]')?.getAttribute('content'),
       ).toContain('Configure supported NIZ');
-      expect(dom.window.document.getElementById('root')?.textContent).toContain('Connect keyboard');
+      const document = dom.window.document;
+      expect(document.getElementById('root')?.textContent).toContain('Connected devices');
+      expect(document.querySelector<HTMLImageElement>('.device-illustration')?.src).toMatch(/^data:image\/webp;base64,/);
+      Array.from(document.querySelectorAll('button')).find(button => button.textContent === 'Connect a device')!.click();
+      await vi.waitFor(() => expect(document.querySelector('.connection-guide-page')).not.toBeNull());
+      expect(document.querySelector<HTMLImageElement>('.device-illustration')?.src).toMatch(/^data:image\/webp;base64,/);
+      Array.from(document.querySelectorAll('button')).find(button => button.textContent === 'Offline demo')!.click();
+      await vi.waitFor(() => expect(document.querySelectorAll('.key')).toHaveLength(66));
       expect(errors).toEqual([]);
     } finally {
       dom.window.close();

@@ -33,8 +33,11 @@ test('the language control changes the UI and remembers the choice on reload', a
   const view = render(<App store={store} notices={[msg('environment.unsupported')]} />);
   await act(() => actions.start());
   await chooseEnglish();
+  expect(screen.getByRole('heading', { name: 'Devices' })).toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: 'Connect a device' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Cable connected — next' }));
   expect(screen.getByRole('button', { name: 'Connect keyboard' })).toBeDisabled();
-  expect(screen.getByRole('button', { name: 'Review and write' })).toBeDisabled();
+  expect(screen.getByRole('button', { name: 'Offline demo' })).toBeEnabled();
   expect(screen.getByText('USB is unavailable in this environment')).toBeInTheDocument();
   expect(screen.getByText(/This browser does not support WebHID/)).toBeInTheDocument();
   expect(document.documentElement.lang).toBe('en');
@@ -44,6 +47,7 @@ test('the language control changes the UI and remembers the choice on reload', a
   const reloaded = application(null, undefined, { locale: browserLocale() });
   render(<App store={reloaded.store} />);
   expect(screen.getByRole('combobox', { name: 'Language' })).toHaveTextContent('English');
+  fireEvent.click(screen.getByRole('button', { name: 'Connect a device' }));
   expect(screen.getByRole('button', { name: 'Offline demo' })).toBeInTheDocument();
 });
 test('English editing uses translated names and preserves unsaved input when returning to Chinese', async () => {

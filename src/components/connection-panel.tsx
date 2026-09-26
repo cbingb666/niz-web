@@ -4,7 +4,7 @@ import { useAppStore } from '@/store/context';
 import { isLocked } from '@/store/app-store';
 import { Button } from './ui/button';
 
-export function ConnectionPanel({ usbAvailable }: { usbAvailable: boolean }) {
+export function ConnectionPanel() {
   const { t, text } = useI18n();
   const session = useAppStore((state) => state.session);
   const locked = useAppStore(isLocked);
@@ -29,8 +29,8 @@ export function ConnectionPanel({ usbAvailable }: { usbAvailable: boolean }) {
           {text(session.message) || t('connection.initial')}
         </p>
       </div>
-      <Button disabled={!usbAvailable || locked} onClick={actions.connect}>
-        <Cable />{t('connection.connect')}
+      <Button disabled={locked} onClick={() => actions.navigate('connect')}>
+        <Cable />{t('guide.title')}
       </Button>
     </section>
   );

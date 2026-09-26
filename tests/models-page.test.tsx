@@ -3,7 +3,7 @@ import '@testing-library/jest-dom/vitest';
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, expect, test } from 'vitest';
 import { App } from '../src/app';
-import { chooseMappingType } from './page-helpers';
+import { chooseMappingType, openDeviceEditor } from './page-helpers';
 import { defaultModel } from '../src/devices';
 import type { ModelTool } from '../src/model-tools';
 import { FakeDevice, FakeHID } from './helpers';
@@ -23,6 +23,7 @@ test('connection renders the loaded geometry, layers and counters and edits the 
     await actions.start({ registerTool: (tool) => tools.push(tool) });
     await acceptRead(store);
   });
+  await openDeviceEditor();
   expect(screen.getAllByRole('button', { name: /第 \d+ 键/ })).toHaveLength(136);
   expect(screen.queryByRole('group', { name: '编辑层' })).not.toBeInTheDocument();
   expect(screen.queryByRole('combobox', { name: '编辑层' })).not.toBeInTheDocument();
@@ -81,6 +82,7 @@ test('connecting a different model preserves pending edits and requires loading 
     await actions.start();
     await acceptRead(store);
   });
+  await openDeviceEditor();
   await chooseMappingType('宏 / 高级');
   fireEvent.change(screen.getByLabelText(/按键序列/), { target: { value: 'Command\nC' } });
   await act(async () => {

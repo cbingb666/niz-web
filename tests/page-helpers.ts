@@ -1,4 +1,8 @@
-import { fireEvent, screen } from '@testing-library/react';
+import { act, fireEvent, screen } from '@testing-library/react';
+
+export async function openDeviceEditor() {
+  await act(async () => { fireEvent.click(screen.getByRole('button', { name: /^(配置设备|Configure device)$/ })); });
+}
 
 export async function chooseMappingType(label: string) {
   // jsdom has no scrolling; Radix scrolls the focused select option into view.

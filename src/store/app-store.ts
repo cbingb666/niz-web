@@ -67,7 +67,9 @@ export interface Activity {
   message: Message;
   error: boolean;
 }
+export type AppPage = 'devices' | 'connect' | 'editor';
 export interface AppState {
+  page: AppPage;
   model: KeyboardModel;
   locale: Locale;
   profile: Profile | null;
@@ -102,6 +104,8 @@ export interface AppState {
   actions: AppActions;
 }
 export interface AppActions {
+  navigate(page: AppPage): void;
+  configureDevice(): Promise<void>;
   setLocale(locale: Locale): void;
   start(context?: ModelContext): Promise<void>;
   stop(): Promise<void>;
@@ -452,7 +456,7 @@ export function createAppStore(dependencies: AppDependencies) {
       });
       loadForm(true);
       const status = live ? msg('status.importLive') : msg('status.importOffline');
-      set({ status });
+      set({ status, page: 'editor' });
       log(msg('status.importLabel', { label, status }));
     }
     function refreshTools() {
@@ -474,6 +478,18 @@ export function createAppStore(dependencies: AppDependencies) {
       );
     }
     const actions: AppActions = {
+      navigate(page) {
+        if (disposed || isLocked(get()) || get().dialog) return;
+        if (page === 'editor' && !get().profile && !get().session.connected) return;
+        set({ page });
+      },
+      async configureDevice() {
+        if (disposed || isLocked(get()) || get().dialog || !session.connected) return;
+        if (!session.hasLiveBaseline || editor.boundEpoch !== session.epoch || editor.source === 'demo')
+          await readConfiguration();
+        if (disposed || isLocked(get()) || get().dialog || !session.connected || editor.boundEpoch !== session.epoch) return;
+        set({ page: 'editor' });
+      },
       setLocale(locale) {
         if (!isLocale(locale) || locale === get().locale || disposed || get().hardwareOperation) return;
         set((state) => ({
@@ -526,7 +542,7 @@ export function createAppStore(dependencies: AppDependencies) {
         editor.load(profile, { source: 'demo' });
         loadForm(true);
         const status = msg('status.demo');
-        set({ status });
+        set({ status, page: 'editor' });
         log(status);
         maybeAutoRead();
       },
@@ -735,6 +751,7 @@ export function createAppStore(dependencies: AppDependencies) {
       },
     };
     return {
+      page: 'devices',
       model: editor.model,
       locale: dependencies.locale ?? defaultLocale,
       profile: null,

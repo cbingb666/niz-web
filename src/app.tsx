@@ -1,6 +1,8 @@
 import { useEffect, useLayoutEffect, useRef, useState, type RefObject } from 'react';
-import { ArrowRight, CircleHelp, Undo2, Redo2 } from 'lucide-react';
+import { ArrowRight, CircleHelp, LayoutGrid, SlidersHorizontal, Undo2, Redo2 } from 'lucide-react';
 import { ConnectionPanel } from './components/connection-panel';
+import { DeviceManager } from './components/device-manager';
+import { ConnectionGuide } from './components/connection-guide';
 import { KeyboardPanel } from './components/keyboard-panel';
 import { KeyEditor } from './components/key-editor';
 import { AppDialogs } from './components/app-dialogs';
@@ -85,6 +87,10 @@ function Header() {
   const locked = useAppStore(isLocked);
   const showHelp = useAppStore((state) => state.actions.showHelp);
   const connected = useAppStore(state => state.session.connected);
+  const page = useAppStore(state => state.page);
+  const profile = useAppStore(state => state.profile);
+  const navigate = useAppStore(state => state.actions.navigate);
+  const configureDevice = useAppStore(state => state.actions.configureDevice);
   const header = useRef<HTMLElement>(null);
   useChromeHeight(header, '--app-header-height');
   return (
@@ -99,6 +105,12 @@ function Header() {
           </h1>
         </div>
       </div>
+      <nav className="page-navigation" aria-label={t('devices.navigation')}>
+        <Button variant="ghost" size="sm" disabled={locked} aria-current={page === 'devices' ? 'page' : undefined}
+          onClick={() => navigate('devices')}><LayoutGrid />{t('devices.title')}</Button>
+        {(profile || connected) && <Button variant="ghost" size="sm" disabled={locked} aria-current={page === 'editor' ? 'page' : undefined}
+          onClick={() => profile ? navigate('editor') : configureDevice()}><SlidersHorizontal />{t('devices.editor')}</Button>}
+      </nav>
       <div className="header-device">
         {connected ? <ConnectedDevice /> : <span className="disconnected-device"><span className="status-dot" />{t('connection.waiting')}</span>}
       </div>
@@ -122,11 +134,21 @@ function AppContent({ notices = [], usbAvailable = false }: AppContentProps) {
   const [compactChanges, setCompactChanges] = useState(() => window.matchMedia?.('(max-width: 1599px)').matches ?? false);
   const [editorOpen, setEditorOpen] = useState(false);
   const [changesPreference, setChangesPreference] = useState<boolean | null>(null);
+  const page = useAppStore(state => state.page);
+  const main = useRef<HTMLElement>(null);
+  const previousPage = useRef(page);
   const changesCollapsed = changesPreference ?? compactChanges;
   const operating = useAppStore((state) => state.hardwareOperation !== null);
   const dialogOpen = useAppStore(state => state.dialog !== null);
   const editorKey = useAppStore(state => `${state.generation}:${state.layer}:${state.key}`);
   const unsaved = useAppStore(state => state.changes.length > 0 || state.lightsChanged || state.draftIndices.length > 0);
+  useEffect(() => {
+    if (previousPage.current === page) return;
+    previousPage.current = page;
+    (document.getElementById('page-title') ?? main.current)?.focus({ preventScroll: true });
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+  }, [page]);
   useEffect(() => {
     const media = window.matchMedia?.('(max-width: 900px)');
     const changesMedia = window.matchMedia?.('(max-width: 1599px)');
@@ -150,26 +172,28 @@ function AppContent({ notices = [], usbAvailable = false }: AppContentProps) {
   }, [unsaved]);
   return (
     <>
-      <div className="app-shell" data-changes-collapsed={changesCollapsed || compactChanges} inert={operating} aria-busy={operating}>
+      <div className="app-shell" data-page={page} data-changes-collapsed={changesCollapsed || compactChanges} inert={operating} aria-busy={operating}>
         <Header />
-        <main>
-          {!compactChanges && <PendingChanges collapsed={changesCollapsed} onToggle={() => setChangesPreference(true)} />}
-          <ConnectionPanel usbAvailable={usbAvailable} />
+        <main ref={main} tabIndex={-1}>
+          {page === 'editor' && !compactChanges && <PendingChanges collapsed={changesCollapsed} onToggle={() => setChangesPreference(true)} />}
+          {page === 'editor' && <ConnectionPanel />}
           {notices.length > 0 && (
             <div className="notice" role="status">
               {notices.map(text).join(' ')}
             </div>
           )}
-          <section className="workspace" aria-label={t('app.editor')}>
+          {page === 'devices' && <DeviceManager />}
+          {page === 'connect' && <ConnectionGuide usbAvailable={usbAvailable} />}
+          {page === 'editor' && <section className="workspace" aria-label={t('app.editor')}>
             <KeyboardPanel onEdit={() => { if (narrow) setEditorOpen(true); }}
               changesExpanded={!changesCollapsed}
               onShowChanges={changesCollapsed || compactChanges ? () => setChangesPreference(false) : undefined} />
-          </section>
+          </section>}
         </main>
-        {!narrow && <div className="editor-pane"><KeyEditor key={editorKey} /></div>}
-        <CommitBar />
+        {page === 'editor' && !narrow && <div className="editor-pane"><KeyEditor key={editorKey} /></div>}
+        {page === 'editor' && <CommitBar />}
       </div>
-      {compactChanges && <Dialog open={!changesCollapsed && !operating} onOpenChange={open => setChangesPreference(!open)}>
+      {page === 'editor' && compactChanges && <Dialog open={!changesCollapsed && !operating} onOpenChange={open => setChangesPreference(!open)}>
         <DialogContent className="changes-drawer" closeLabel={t('common.close')} aria-describedby={undefined}
           onCloseAutoFocus={event => {
             event.preventDefault();
@@ -181,7 +205,7 @@ function AppContent({ notices = [], usbAvailable = false }: AppContentProps) {
             onReview={() => setChangesPreference(true)} />
         </DialogContent>
       </Dialog>}
-      {narrow && <Dialog open={editorOpen && !operating} onOpenChange={setEditorOpen}>
+      {page === 'editor' && narrow && <Dialog open={editorOpen && !operating} onOpenChange={setEditorOpen}>
         <DialogContent className="editor-drawer" closeLabel={t('common.close')} aria-describedby={undefined}
           onCloseAutoFocus={event => {
             event.preventDefault();
