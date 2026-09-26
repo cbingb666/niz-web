@@ -8,7 +8,7 @@ import type { Plugin } from 'vite';
 export function standalone(): Plugin {
   let directory = '';
   return {
-    name: 'atom66-standalone',
+    name: 'niz-web-standalone',
     apply: 'build',
     enforce: 'post',
     configResolved(config) {
@@ -26,7 +26,7 @@ export function standalone(): Plugin {
         const source = await readFile(resolve(directory, match[1].replace(/^\.?\//, '')), 'utf8');
         // Prevent script termination when source strings contain HTML markup.
         const script = source.replace(/<\/script/gi, '<\\/script');
-        new Script(script, { filename: 'atom66.bundle.js' });
+        new Script(script, { filename: 'niz-web.bundle.js' });
         hashes.push(`'sha256-${createHash('sha256').update(script).digest('base64')}'`);
         html = html.replace(match[0], '');
         inlineScripts.push(`<script>${script}</script>`);
