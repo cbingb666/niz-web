@@ -909,11 +909,11 @@ main {
 .app-header .brand-mark { padding: 2px 8px; font-size: 1.15rem; border-radius: 7px; }
 .app-header h1 { font-size: 1.1rem; }
 .app-header .brand h1 span { margin-left: .25rem; }
-.header-device { min-width: 0; }
-.disconnected-device { display: flex; align-items: center; gap: 9px; color: var(--muted-foreground); font-size: .875rem; }
+.disconnected-device { display: flex; align-items: center; gap: 9px; height: 38px; padding: 0 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--panel); color: var(--muted-foreground); font-size: .875rem; white-space: nowrap; }
 .header-detail { gap: 12px; }
-.profile-actions { display: flex; align-items: center; gap: 2px; padding-right: 12px; border-right: 1px solid var(--border); }
-.profile-actions > button { width: 36px; height: 36px; padding: 8px; }
+.profile-actions { display: flex; align-items: center; gap: 4px; padding-left: 16px; border-left: 1px solid var(--border); }
+.profile-actions > button { width: 36px; height: 36px; padding: 8px; color: var(--muted-foreground); }
+.profile-actions > button:hover:not(:disabled) { color: var(--foreground); }
 .app-shell > main {
   display: flex;
   flex-direction: column;
@@ -1020,33 +1020,47 @@ main {
   position: fixed;
   inset: auto 0 0;
   z-index: 30;
-  display: flex;
-  flex-direction: row;
+  display: grid;
+  grid-template-columns: minmax(0, auto) minmax(100px, 1fr) auto;
   align-items: center;
-  justify-content: space-between;
-  flex-wrap: nowrap;
-  gap: 12px 24px;
+  gap: 12px 20px;
   max-height: 35dvh;
   overflow-y: auto;
   margin: 0;
   padding: 12px var(--page-gutter) calc(12px + env(safe-area-inset-bottom));
   background: var(--background);
   border-top: 1px solid var(--border);
+  box-shadow: 0 -8px 24px #00000014;
 }
-.commit-details { flex: 1; min-width: 0; }
+.commit-tools { display: flex; align-items: center; gap: 16px; min-width: 0; height: 40px; overflow-x: auto; scrollbar-width: none; }
+.commit-tools::-webkit-scrollbar { display: none; }
+.commit-tools button:focus-visible { outline-offset: -2px; }
+.commit-device, .commit-tools > .profile-actions { flex: none; }
+.commit-details { min-width: 0; }
 .commit-bar strong { font-size: .875rem; }
+.commit-summary { min-height: 1lh; }
+.commit-details[data-pending='true'] .commit-summary { color: var(--primary); }
+.commit-details[data-warning='true'] .commit-summary { color: var(--warning); }
+.commit-summary, .commit-warning { white-space: nowrap !important; overflow: hidden; text-overflow: ellipsis; }
 .commit-bar p { margin-top: 2px; font-size: .8125rem; }
-.commit-status { white-space: nowrap !important; overflow: hidden; text-overflow: ellipsis; }
+.commit-status { min-height: 1lh; white-space: nowrap !important; overflow: hidden; text-overflow: ellipsis; }
 .commit-bar .commit-warning { color: var(--warning); }
-.commit-actions { flex-wrap: nowrap; gap: 8px; }
-.connected-device { display: flex; align-items: center; gap: 2px; margin: 0; }
+.commit-actions { flex-wrap: nowrap; align-self: center; gap: 12px; width: auto; }
+.commit-history { display: flex; align-items: center; gap: 2px; padding: 2px; border: 1px solid var(--border); border-radius: 8px; background: var(--panel); }
+.commit-history > button { width: 32px; height: 32px; padding: 0; border-radius: 5px; }
+.commit-write { min-width: 144px; }
+.connected-device { display: flex; align-items: center; margin: 0; border: 1px solid var(--border); border-radius: 8px; background: var(--panel); }
+.connected-device .device-summary { height: 36px; padding-inline: 10px; border-radius: 7px 0 0 7px; }
+.connected-device .device-disconnect { width: 36px; height: 36px; padding: 8px; border-left: 1px solid var(--border); border-radius: 0 7px 7px 0; color: var(--muted-foreground); }
+.device-disconnect:hover:not(:disabled) { color: var(--warning); }
 @media (max-width: 1120px) {
   .app-shell { --page-gutter: 16px; }
   .workspace > .keyboard-panel { padding: 18px 16px 6px; }
 }
 @media (max-width: 900px) {
+  .commit-bar { column-gap: 12px; }
+  .commit-tools { gap: 12px; }
   .app-shell > main { padding-right: var(--page-gutter); }
-  .app-header .header-device { order: 3; width: 100%; }
   .app-shell > .app-header { gap: 8px 12px; }
   .editor-drawer {
     inset: auto 0 0;
@@ -1070,16 +1084,17 @@ main {
   .app-shell { --page-gutter: 12px; }
   .app-header .brand-mark, .app-header .brand h1 span { display: none; }
   .app-header .header-detail { gap: 4px; }
-  .profile-actions { gap: 0; padding-right: 4px; }
+  .profile-actions { gap: 0; padding-left: 8px; }
   .profile-actions > button { width: 32px; padding: 6px; }
-  .commit-bar { flex-wrap: wrap; gap: 8px; }
-  .commit-details { flex-basis: 100%; }
-  .commit-actions { width: 100%; }
-  .commit-actions > button:last-child { flex: 1; }
+  .commit-bar { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: 'tools tools' 'details actions'; gap: 8px 12px; }
+  .commit-tools { grid-area: tools; justify-content: space-between; }
+  .commit-details { grid-area: details; }
+  .commit-actions { grid-area: actions; gap: 8px; }
+  .commit-write { min-width: 0; padding-inline: 12px; }
   .workspace > .keyboard-panel { padding: 16px 12px 6px; }
 }
-@media (pointer: coarse) { .profile-actions > button { min-height: 44px; } }
-.device-summary { max-width: min(240px, 65vw); }
+@media (pointer: coarse) { .profile-actions > button { min-height: 40px; } }
+.device-summary { max-width: min(200px, 45vw); }
 .device-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .device-summary .status-dot { width: 6px; height: 6px; box-shadow: none; }
 .device-details { display: grid; gap: 16px; font-size: .875rem; }
@@ -1230,7 +1245,6 @@ main {
 @keyframes guide-stage-in { from { opacity: 0; transform: translateX(14px) scale(.98); } to { opacity: 1; transform: translateX(0) scale(1); } }
 @media (max-width: 1240px) {
   .app-shell > .app-header { flex-wrap: wrap; }
-  .app-header .header-device { order: 3; width: 100%; }
 }
 @media (max-width: 760px) {
   .app-shell:not([data-page='editor']) > main { padding-top: 24px; }
@@ -1250,9 +1264,7 @@ main {
 }
 @media (max-width: 580px) {
   .app-header .page-navigation { order: 4; width: 100%; border-top: 1px solid var(--border); padding-top: 8px; }
-  .app-header .header-device { order: 5; }
   .page-navigation > button { flex: 1; }
-  .app-shell:not([data-page='editor']) .header-device:has(.disconnected-device) { display: none; }
   .device-page-heading { align-items: flex-start; flex-direction: column; }
   .device-page-heading > button { width: 100%; }
   .page-description { margin-top: 10px; }

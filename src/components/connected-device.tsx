@@ -17,11 +17,11 @@ export function ConnectedDevice() {
     : session.model?.name || session.product;
   return <div className="connected-device">
     <Button id="device-details-trigger" variant="ghost" size="sm" className="device-summary" disabled={locked}
-      aria-label={t('connection.connected', { product: name })} aria-haspopup="dialog" title={t('connection.details')}
+      aria-label={t('connection.connected', { product: name })} aria-haspopup="dialog" title={`${t('connection.details')} · ${name}`}
       onClick={actions.showDeviceDetails}>
       <span className="status-dot connected" aria-hidden="true" /><span className="device-name">{name}</span><ChevronRight />
     </Button>
-    <Button variant="ghost" size="sm" disabled={locked} onClick={() => actions.disconnect()}><Unplug />{t('connection.disconnect')}</Button>
+    <Button variant="ghost" size="icon" className="device-disconnect" title={t('connection.disconnect')} disabled={locked} onClick={() => actions.disconnect()}><Unplug /><span className="sr-only">{t('connection.disconnect')}</span></Button>
   </div>;
 }
 

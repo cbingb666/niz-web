@@ -96,6 +96,7 @@ test('connection details, read history and historic backup reasons follow the se
   await act(async () => {
     await actions.start();
     await acceptRead(store);
+    await actions.configureDevice();
   });
   const sent = device.sent.slice();
   await chooseEnglish();

@@ -10,12 +10,15 @@ import { FakeDevice, FakeHID, fixture } from './helpers';
 
 afterEach(cleanup);
 
-test('activity opens from the header, handles an empty session and keeps diagnostic export read-only', async () => {
+test('activity opens from the workbench footer, handles an empty session and keeps diagnostic export read-only', async () => {
   const device = new FakeDevice();
   const { store, actions, download } = application(new FakeHID([device]));
+  store.setState({ page: 'editor' });
   const view = render(<App store={store} usbAvailable />);
   const header = within(view.container.querySelector<HTMLElement>('.app-header')!);
-  const trigger = header.getByRole('button', { name: '操作记录' });
+  const footer = within(view.container.querySelector<HTMLElement>('.commit-bar')!);
+  const trigger = footer.getByRole('button', { name: '操作记录' });
+  expect(header.queryByRole('button', { name: '操作记录' })).not.toBeInTheDocument();
   expect(within(screen.getByRole('main')).queryByText('操作记录')).not.toBeInTheDocument();
   fireEvent.click(trigger);
   const empty = screen.getByRole('dialog', { name: '操作记录' });
@@ -36,17 +39,23 @@ test('activity opens from the header, handles an empty session and keeps diagnos
   await vi.waitFor(() => expect(trigger).toHaveFocus());
 });
 
-test('connected device summary and direct disconnect live in the header; details open without device traffic', async () => {
+test('connected device summary and disconnect live in the workbench footer while the header stays unchanged', async () => {
   const device = new FakeDevice();
   const { store, actions } = application(new FakeHID([device]));
   const view = render(<App store={store} usbAvailable />);
-  await act(async () => { await actions.start(); await acceptRead(store); });
+  const initialHeader = view.container.querySelector('.app-header')!.textContent;
+  await act(async () => { await actions.start(); await acceptRead(store); await actions.configureDevice(); });
   const header = within(view.container.querySelector<HTMLElement>('.app-header')!);
-  const details = header.getByRole('button', { name: '已连接 · ATOM66' });
+  const footer = within(view.container.querySelector<HTMLElement>('.commit-bar')!);
+  expect(view.container.querySelector('.app-header')!.textContent).toBe(initialHeader);
+  expect(header.queryByRole('button', { name: '已连接 · ATOM66' })).not.toBeInTheDocument();
+  expect(header.queryByRole('button', { name: '断开' })).not.toBeInTheDocument();
+  expect(header.queryByRole('button', { name: '配置工作台' })).not.toBeInTheDocument();
+  const details = footer.getByRole('button', { name: '已连接 · ATOM66' });
   expect(details).toHaveTextContent('ATOM66');
   expect(details).not.toHaveTextContent(device.profile.version);
   expect(view.container.querySelector('.connection-bar')).toBeNull();
-  expect(header.getByRole('button', { name: '断开' })).toBeEnabled();
+  expect(footer.getByRole('button', { name: '断开' })).toBeEnabled();
   const sent = device.sent.slice();
   fireEvent.click(details);
   const dialog = screen.getByRole('dialog', { name: '设备详情' });
@@ -57,10 +66,12 @@ test('connected device summary and direct disconnect live in the header; details
   expect(device.sent).toEqual(sent);
   await act(async () => { fireEvent.click(within(dialog).getByRole('button', { name: '关闭' })); });
   await vi.waitFor(() => expect(details).toHaveFocus());
-  await act(async () => { fireEvent.click(header.getByRole('button', { name: '断开' })); });
+  await act(async () => { fireEvent.click(footer.getByRole('button', { name: '断开' })); });
   expect(store.getState().session.connected).toBe(false);
-  expect(header.queryByRole('button', { name: '断开' })).not.toBeInTheDocument();
-  expect(screen.getByRole('button', { name: '连接设备' })).toBeEnabled();
+  expect(footer.queryByRole('button', { name: '断开' })).not.toBeInTheDocument();
+  expect(footer.getByText('未连接键盘')).toBeInTheDocument();
+  expect(view.container.querySelector('.app-header')!.textContent).toBe(initialHeader);
+  expect(screen.getByRole('button', { name: '设备连接引导' })).toBeEnabled();
 });
 
 test('keyboard and mapping panes can receive keyboard focus after selecting another key', async () => {
@@ -179,38 +190,41 @@ test('narrow screens open an editor drawer, preserve edits, restore key focus an
   }
 });
 
-test('the header owns configuration tools and removed editor hints stay absent', async () => {
+test('the workbench footer owns configuration tools and removed editor hints stay absent', async () => {
   const { store, download } = application();
+  store.setState({ page: 'editor' });
   const view = render(<App store={store} />);
   const header = within(view.container.querySelector<HTMLElement>('.app-header')!);
+  const footer = within(view.container.querySelector<HTMLElement>('.commit-bar')!);
   const hints = ['点击即暂存，可连续修改其他键位。', '读取键盘或导入配置后，即可编辑此键。'];
   for (const hint of hints) expect(screen.queryByText(hint)).not.toBeInTheDocument();
   for (const name of ['导入配置', '导出配置', /本地备份/]) {
-    expect(header.getByRole('button', { name })).toBeInTheDocument();
+    expect(footer.getByRole('button', { name })).toBeInTheDocument();
+    expect(header.queryByRole('button', { name })).not.toBeInTheDocument();
   }
   expect(header.queryByRole('button', { name: '离线演示' })).not.toBeInTheDocument();
-  expect(header.getByRole('button', { name: '导出配置' })).toBeDisabled();
+  expect(footer.getByRole('button', { name: '导出配置' })).toBeDisabled();
   const input = screen.getByLabelText<HTMLInputElement>('导入配置文件');
   const pickFile = vi.spyOn(input, 'click');
-  fireEvent.click(header.getByRole('button', { name: '导入配置' }));
+  fireEvent.click(footer.getByRole('button', { name: '导入配置' }));
   expect(pickFile).toHaveBeenCalledOnce();
   await act(async () => {
     fireEvent.change(input, { target: { files: [profileFile(fixture())] } });
     await vi.waitFor(() => expect(store.getState().source).toBe('import'));
   });
-  fireEvent.click(header.getByRole('button', { name: '导出配置' }));
+  fireEvent.click(footer.getByRole('button', { name: '导出配置' }));
   expect(download).toHaveBeenCalledWith('配置', store.getState().profile!.toJSON());
   const panel = within(view.container.querySelector<HTMLElement>('.keyboard-panel')!);
   for (const name of ['导入配置', '导出配置', /本地备份/, '离线演示']) {
     expect(panel.queryByRole('button', { name })).not.toBeInTheDocument();
   }
   for (const hint of hints) expect(screen.queryByText(hint)).not.toBeInTheDocument();
-  await act(async () => { fireEvent.click(header.getByRole('button', { name: /本地备份/ })); });
+  await act(async () => { fireEvent.click(footer.getByRole('button', { name: /本地备份/ })); });
   const backups = await screen.findByRole('dialog', { name: '本地备份' });
   fireEvent.click(within(backups).getByRole('button', { name: '关闭' }));
   await chooseMappingType('宏 / 高级');
   fireEvent.change(screen.getByLabelText(/按键序列/), { target: { value: 'A' } });
-  expect(header.getByRole('button', { name: '导出配置' })).toBeDisabled();
+  expect(footer.getByRole('button', { name: '导出配置' })).toBeDisabled();
 });
 
 test('React boots on Devices without WebHID and the guide opens a usable offline editor', async () => {
@@ -273,6 +287,7 @@ test('StrictMode does not duplicate HID connections, listeners or automatic read
   await act(async () => {
     await actions.start();
     await acceptRead(store);
+    await actions.configureDevice();
   });
   expect(device.openCount).toBe(1);
   expect(device.sent.filter((packet) => packet[1] === 0xf2)).toHaveLength(1);
@@ -292,7 +307,9 @@ test('shadcn confirmation dialog cancels a replacement and retains unsaved input
     fireEvent.click(within(dialog).getByRole('button', { name: '取消' }));
   });
   expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
-  fireEvent.click(screen.getByRole('button', { name: '配置工作台' }));
+  expect(screen.queryByRole('button', { name: '配置工作台' })).not.toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: '设备管理' }));
+  fireEvent.click(screen.getByRole('button', { name: '继续编辑' }));
   expect(screen.getByLabelText(/按键序列/)).toHaveValue('A');
 });
 test('help uses a labelled dialog and can be dismissed', () => {

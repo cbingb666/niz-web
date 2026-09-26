@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState, type RefObject } from 'react';
-import { ArrowRight, CircleHelp, LayoutGrid, SlidersHorizontal, Undo2, Redo2 } from 'lucide-react';
+import { ArrowRight, CircleHelp, LayoutGrid, Undo2, Redo2 } from 'lucide-react';
 import { ConnectionPanel } from './components/connection-panel';
 import { DeviceManager } from './components/device-manager';
 import { ConnectionGuide } from './components/connection-guide';
@@ -42,6 +42,7 @@ function CommitBar() {
   const changes = useAppStore((state) => state.changes);
   const model = useAppStore((state) => state.model);
   const session = useAppStore((state) => state.session);
+  const otherConnected = useAppStore(state => state.connectedDevices.length > 0);
   const stale = useAppStore((state) => state.stale);
   const canUndo = useAppStore((state) => state.canUndo);
   const canRedo = useAppStore((state) => state.canRedo);
@@ -57,23 +58,35 @@ function CommitBar() {
     lights ? t('changes.rgb') : '',
     drafts.length ? t('mapping.drafts', { count: drafts.length }) : '',
   ].filter(Boolean);
+  const summary = details.length
+    ? t('changes.pending', { details: details.join(' · ') })
+    : source === 'demo' ? t('changes.demo') : '';
+  const warning = drafts.length > 0 || stale || (session.hasLiveBaseline && !canWrite && (count > 0 || lights))
+    ? t(drafts.length ? 'mapping.finishDrafts' : 'mapping.unbound') : '';
+  const backupStatus = typeof status !== 'string' && 'key' in status && status.key === 'status.readReady'
+    ? status.params?.backup : undefined;
+  const statusText = typeof backupStatus === 'object' && 'key' in backupStatus && backupStatus.key === 'status.backupSaved'
+    ? '' : text(status);
   return (
     <div className="commit-bar-space">
       <footer ref={bar} className="commit-bar">
-        <div className="commit-details">
-          <strong>
-            {details.length
-              ? t('changes.pending', { details: details.join(' · ') })
-              : t(source === 'demo' ? 'changes.demo' : 'changes.none')}
-          </strong>
-          <p className="commit-status" aria-live="polite" title={text(status)}>{text(status)}</p>
-          {(drafts.length > 0 || stale || (session.hasLiveBaseline && !canWrite && (count > 0 || lights))) &&
-            <p className="commit-warning">{t(drafts.length ? 'mapping.finishDrafts' : 'mapping.unbound')}</p>}
+        <div className="commit-tools">
+          <div className="commit-device">
+            {session.connected ? <ConnectedDevice /> : <span className="disconnected-device"><span className="status-dot" />{t(otherConnected ? 'devices.chooseDevice' : 'connection.waiting')}</span>}
+          </div>
+          <ProfileActions />
+        </div>
+        <div className="commit-details" data-pending={details.length > 0} data-warning={Boolean(warning)}>
+          <div className="commit-summary" title={summary}><strong>{summary}</strong></div>
+          <p className="commit-status" aria-live="polite" title={statusText}>{statusText}</p>
+          {warning && <p className="commit-warning" title={warning}>{warning}</p>}
         </div>
         <div className="commit-actions">
-          <Button variant="outline" disabled={locked || !canUndo} onClick={actions.undo}><Undo2 />{t('mapping.undo')}</Button>
-          <Button variant="outline" disabled={locked || !canRedo} onClick={actions.redo}><Redo2 />{t('mapping.redo')}</Button>
-          <Button disabled={locked || !canWrite} onClick={actions.write}>
+          <div className="commit-history">
+            <Button variant="ghost" size="icon" title={t('mapping.undo')} disabled={locked || !canUndo} onClick={actions.undo}><Undo2 /><span className="sr-only">{t('mapping.undo')}</span></Button>
+            <Button variant="ghost" size="icon" title={t('mapping.redo')} disabled={locked || !canRedo} onClick={actions.redo}><Redo2 /><span className="sr-only">{t('mapping.redo')}</span></Button>
+          </div>
+          <Button className="commit-write" disabled={locked || !canWrite} onClick={actions.write}>
             {t('changes.write')}
             <ArrowRight />
           </Button>
@@ -86,12 +99,8 @@ function Header() {
   const { t } = useI18n();
   const locked = useAppStore(isLocked);
   const showHelp = useAppStore((state) => state.actions.showHelp);
-  const connected = useAppStore(state => state.session.connected);
-  const otherConnected = useAppStore(state => state.connectedDevices.length > 0);
   const page = useAppStore(state => state.page);
-  const profile = useAppStore(state => state.profile);
   const navigate = useAppStore(state => state.actions.navigate);
-  const configureDevice = useAppStore(state => state.actions.configureDevice);
   const header = useRef<HTMLElement>(null);
   useChromeHeight(header, '--app-header-height');
   return (
@@ -109,14 +118,8 @@ function Header() {
       <nav className="page-navigation" aria-label={t('devices.navigation')}>
         <Button variant="ghost" size="sm" disabled={locked} aria-current={page === 'devices' ? 'page' : undefined}
           onClick={() => navigate('devices')}><LayoutGrid />{t('devices.title')}</Button>
-        {(profile || connected) && <Button variant="ghost" size="sm" disabled={locked} aria-current={page === 'editor' ? 'page' : undefined}
-          onClick={() => profile ? navigate('editor') : configureDevice()}><SlidersHorizontal />{t('devices.editor')}</Button>}
       </nav>
-      <div className="header-device">
-        {connected ? <ConnectedDevice /> : <span className="disconnected-device"><span className="status-dot" />{t(otherConnected ? 'devices.chooseDevice' : 'connection.waiting')}</span>}
-      </div>
       <div className="header-detail">
-        <ProfileActions />
         <LanguageSwitcher />
         <Button variant="ghost" size="icon" aria-label={t('help.open')} disabled={locked} onClick={showHelp}>
           <CircleHelp />
