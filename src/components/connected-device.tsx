@@ -1,20 +1,19 @@
 import { ChevronRight, Unplug } from 'lucide-react';
 import { useI18n } from '@/i18n/use-i18n';
+import { deviceName } from '@/i18n/device';
 import { isLocked } from '@/store/app-store';
 import { useAppStore } from '@/store/context';
 import { Button } from './ui/button';
 
 export function ConnectedDevice() {
-  const { t } = useI18n();
+  const { t, text } = useI18n();
   const session = useAppStore(state => state.session);
   const devices = useAppStore(state => state.connectedDevices);
   const locked = useAppStore(isLocked);
   const actions = useAppStore(state => state.actions);
   if (!session.connected) return null;
   const current = devices.find(device => device.id === session.id);
-  const name = current && devices.length > 1
-    ? t('devices.numberedName', { model: current.model.name, number: current.number })
-    : session.model?.name || session.product;
+  const name = current ? text(deviceName(current, devices)) : session.product || session.model?.name || '';
   return <div className="connected-device">
     <Button id="device-details-trigger" variant="ghost" size="sm" className="device-summary" disabled={locked}
       aria-label={t('connection.connected', { product: name })} aria-haspopup="dialog" title={`${t('connection.details')} · ${name}`}

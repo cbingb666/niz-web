@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { ArrowLeft, ArrowRight, Cable, Check, CheckCircle2, MousePointer2, Play, ShieldCheck, Unplug } from 'lucide-react';
 import { useI18n } from '@/i18n/use-i18n';
+import { deviceName } from '@/i18n/device';
 import { isLocked } from '@/store/app-store';
 import { useAppStore } from '@/store/context';
 import { Button } from './ui/button';
@@ -34,8 +35,7 @@ export function ConnectionGuide({ usbAvailable }: { usbAvailable: boolean }) {
     heading.current?.focus({ preventScroll: true });
   }, [focusKey, locked, dialogOpen]);
   const unsupported = !usbAvailable || session.state === 'unsupported';
-  const selectedName = selected && (devices.length > 1
-    ? t('devices.numberedName', { model: selected.model.name, number: selected.number }) : selected.model.name);
+  const selectedName = selected && text(deviceName(selected, devices));
   const status = session.authorizing ? t('connection.authorizing') : selected
     ? t('connection.connected', { product: selectedName! })
     : unsupported ? t('connection.unsupported')
@@ -107,7 +107,6 @@ export function ConnectionGuide({ usbAvailable }: { usbAvailable: boolean }) {
                 ? <Button className="guide-connect" disabled={locked} onClick={() => actions.navigate('devices')}>{t('guide.finish')}<ArrowRight /></Button>
                 : <Button className="guide-connect" disabled={locked} onClick={() => setActiveStep(1)}>{t('guide.reconnect')}<ArrowRight /></Button>}
         </div>
-        <p className="guide-privacy"><ShieldCheck aria-hidden="true" />{t('app.localOnly')}</p>
       </div>
     </section>
     <section className="guide-demo" aria-labelledby="guide-demo-title">

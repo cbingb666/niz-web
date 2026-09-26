@@ -48,10 +48,10 @@ test('connected device summary and disconnect live in the workbench footer while
   const header = within(view.container.querySelector<HTMLElement>('.app-header')!);
   const footer = within(view.container.querySelector<HTMLElement>('.commit-bar')!);
   expect(view.container.querySelector('.app-header')!.textContent).toBe(initialHeader);
-  expect(header.queryByRole('button', { name: '已连接 · ATOM66' })).not.toBeInTheDocument();
+  expect(header.queryByRole('button', { name: '已连接 · ATOM66 fixture' })).not.toBeInTheDocument();
   expect(header.queryByRole('button', { name: '断开' })).not.toBeInTheDocument();
   expect(header.queryByRole('button', { name: '配置工作台' })).not.toBeInTheDocument();
-  const details = footer.getByRole('button', { name: '已连接 · ATOM66' });
+  const details = footer.getByRole('button', { name: '已连接 · ATOM66 fixture' });
   expect(details).toHaveTextContent('ATOM66');
   expect(details).not.toHaveTextContent(device.profile.version);
   expect(view.container.querySelector('.connection-bar')).toBeNull();
@@ -291,7 +291,7 @@ test('StrictMode does not duplicate HID connections, listeners or automatic read
   });
   expect(device.openCount).toBe(1);
   expect(device.sent.filter((packet) => packet[1] === 0xf2)).toHaveLength(1);
-  expect(screen.getByRole('button', { name: '已连接 · ATOM66' })).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: '已连接 · ATOM66 fixture' })).toBeInTheDocument();
 });
 test('shadcn confirmation dialog cancels a replacement and retains unsaved input', async () => {
   const { store, actions } = application();

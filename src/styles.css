@@ -1128,8 +1128,6 @@ main {
 .device-list-heading { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
 .device-list-heading h3 { display: flex; align-items: center; gap: 10px; font-size: .875rem; font-weight: 500; }
 .device-count { display: inline-flex; justify-content: center; align-items: center; min-width: 24px; height: 24px; border-radius: 7px; background: var(--muted); font-variant-numeric: tabular-nums; }
-.device-transport { display: flex; align-items: center; gap: 6px; color: var(--muted-foreground); font-size: .875rem; }
-.device-transport svg { width: 16px; height: 16px; }
 .device-card, .devices-empty { display: grid; grid-template-columns: 1.2fr 1fr; min-height: 340px; border: 1px solid var(--border); border-radius: 20px; background: var(--panel); overflow: hidden; }
 .device-card-grid { display: grid; gap: 20px; }
 .device-card-grid[data-multiple='true'] { grid-template-columns: repeat(auto-fit, minmax(min(100%, 380px), 1fr)); }
@@ -1209,8 +1207,6 @@ main {
 .guide-connection-state p { margin-top: 5px; font-size: .8125rem; color: var(--muted-foreground); line-height: 1.7; overflow-wrap: anywhere; }
 .guide-connect { width: 100%; min-height: 44px; }
 .guide-connect > svg:last-child { margin-left: auto; }
-.guide-privacy { display: flex; align-items: flex-start; gap: 6px; margin: 12px 2px 0; font-size: .75rem; line-height: 1.7; color: var(--muted-foreground); }
-.guide-privacy svg { width: 14px; height: 14px; margin-top: 3px; flex: none; }
 .guide-demo { background: #6de3bc04; }
 .cable-demo, .permission-demo { width: 100%; margin: 0; }
 .cable-demo > svg { display: block; width: min(100%, 440px); margin: auto; color: var(--muted-foreground); }

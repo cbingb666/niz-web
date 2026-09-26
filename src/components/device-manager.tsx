@@ -1,4 +1,5 @@
-import { ArrowRight, Cable, Keyboard, Plus, ShieldCheck, SlidersHorizontal, Unplug } from 'lucide-react';
+import { ArrowRight, Keyboard, Plus, SlidersHorizontal, Unplug } from 'lucide-react';
+import { deviceName } from '@/i18n/device';
 import { useI18n } from '@/i18n/use-i18n';
 import { supportedModels } from '@/devices';
 import { isLocked } from '@/store/app-store';
@@ -7,7 +8,7 @@ import { Button } from './ui/button';
 import { DeviceIllustration } from './device-illustration';
 
 export function DeviceManager() {
-  const { t } = useI18n();
+  const { t, text } = useI18n();
   const session = useAppStore(state => state.session);
   const devices = useAppStore(state => state.connectedDevices);
   const disconnectedEditors = useAppStore(state => state.disconnectedEditors);
@@ -31,10 +32,9 @@ export function DeviceManager() {
     <section className="device-list" aria-label={t('devices.connected')}>
       <div className="device-list-heading">
         <h3>{t('devices.connected')}<span className="device-count">{devices.length}</span></h3>
-        <span className="device-transport"><Cable aria-hidden="true" />USB</span>
       </div>
       {devices.length ? <div className="device-card-grid" data-multiple={devices.length > 1}>{devices.map(device => {
-        const name = devices.length > 1 ? t('devices.numberedName', { model: device.model.name, number: device.number }) : device.model.name;
+        const name = text(deviceName(device, devices));
         return <article key={device.id} className="device-card" aria-label={name}>
         <div className="device-card-art"><DeviceIllustration /></div>
         <div className="device-card-content">
@@ -75,13 +75,12 @@ export function DeviceManager() {
     </section>}
     {disconnectedEditors.map(saved => <section key={saved.id} className="resume-profile">
       <span className="resume-profile-icon"><Unplug aria-hidden="true" /></span>
-      <div><h3>{t('devices.numberedName', { model: saved.model, number: saved.number })}</h3><p>{t('devices.disconnectedDraft')}</p></div>
+      <div><h3>{t('devices.numberedName', { name: saved.model, number: saved.number })}</h3><p>{t('devices.disconnectedDraft')}</p></div>
       <Button variant="outline" disabled={locked} onClick={() => actions.resumeEditor(saved.id)}>{t('devices.resume')}<ArrowRight /></Button>
     </section>)}
 
     <footer className="device-page-footer">
       <span>{t('devices.supported', { models: supportedModels.map(model => model.name).join(' / ') })}</span>
-      <span><ShieldCheck aria-hidden="true" />{t('app.localOnly')}</span>
     </footer>
   </div>;
 }

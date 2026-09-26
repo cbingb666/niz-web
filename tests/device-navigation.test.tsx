@@ -43,7 +43,7 @@ test('the guide adds another ATOM66 and both cards configure and disconnect thei
   expect(screen.queryByRole('button', { name: '下一步' })).not.toBeInTheDocument();
   hid.selection = [second];
   await act(async () => { fireEvent.click(screen.getByRole('button', { name: '连接另一台键盘' })); });
-  expect(screen.getByRole('status')).toHaveTextContent('已连接 · ATOM66 · 设备 2');
+  expect(screen.getByRole('status')).toHaveTextContent('已连接 · ATOM66 fixture · 设备 2');
   expect(first.opened && second.opened).toBe(true);
   expect(session.activeDeviceId).toBe(firstId);
   expect(first.sent.map(packet => packet[1])).toEqual([0xf9]);
@@ -51,22 +51,45 @@ test('the guide adds another ATOM66 and both cards configure and disconnect thei
   fireEvent.click(screen.getByRole('button', { name: '下一步' }));
   fireEvent.click(screen.getByRole('button', { name: '完成，查看设备' }));
   expect(screen.getAllByRole('article')).toHaveLength(2);
-  const secondCard = screen.getByRole('article', { name: 'ATOM66 · 设备 2' });
+  const secondCard = screen.getByRole('article', { name: 'ATOM66 fixture · 设备 2' });
   fireEvent.click(within(secondCard).getByRole('button', { name: '配置设备' }));
   await act(() => acceptRead(store));
   expect(store.getState().profile!.summary(0)).toBe('S');
   fireEvent.click(screen.getByRole('button', { name: '设备管理' }));
-  fireEvent.click(within(screen.getByRole('article', { name: 'ATOM66 · 设备 1' })).getByRole('button', { name: '配置设备' }));
+  fireEvent.click(within(screen.getByRole('article', { name: 'ATOM66 fixture · 设备 1' })).getByRole('button', { name: '配置设备' }));
   await act(() => acceptRead(store));
   expect(store.getState().profile!.summary(0)).toBe('Esc');
   fireEvent.click(screen.getByRole('button', { name: '设备管理' }));
   await act(async () => {
-    fireEvent.click(within(screen.getByRole('article', { name: 'ATOM66 · 设备 2' })).getByRole('button', { name: '断开' }));
+    fireEvent.click(within(screen.getByRole('article', { name: 'ATOM66 fixture · 设备 2' })).getByRole('button', { name: '断开' }));
   });
   expect(screen.getAllByRole('article')).toHaveLength(1);
   expect(first.opened).toBe(true);
   expect(second.opened).toBe(false);
   expect(session.activeDeviceId).toBe(firstId);
+});
+
+test('different device names identify cards, the selected guide device, and the workbench', async () => {
+  const first = new FakeDevice(), second = new FakeDevice(), hid = new FakeHID([first]);
+  first.productName = '66EC-XRGB';
+  second.productName = '66EC-S';
+  const { store, actions } = application(hid);
+  render(<App store={store} usbAvailable />);
+  await act(() => actions.start());
+  openGuide();
+  confirmCable();
+  hid.selection = [second];
+  await act(async () => { fireEvent.click(screen.getByRole('button', { name: '连接另一台键盘' })); });
+  expect(screen.getByRole('status')).toHaveTextContent('已连接 · 66EC-S');
+  expect(screen.getByRole('status')).not.toHaveTextContent('设备 2');
+  fireEvent.click(screen.getByRole('button', { name: '下一步' }));
+  fireEvent.click(screen.getByRole('button', { name: '完成，查看设备' }));
+  expect(screen.getByRole('article', { name: '66EC-XRGB' })).toBeVisible();
+  const secondCard = screen.getByRole('article', { name: '66EC-S' });
+  expect(secondCard).toBeVisible();
+  fireEvent.click(within(secondCard).getByRole('button', { name: '配置设备' }));
+  await act(() => acceptRead(store));
+  expect(screen.getByRole('button', { name: '已连接 · 66EC-S' })).toBeVisible();
 });
 
 test('the guide presents one step at a time and only its second step can request device access', async () => {
@@ -125,7 +148,7 @@ test('every guide step requires a click, and configuration is read only after ch
   fireEvent.click(screen.getByRole('button', { name: '下一步' }));
   fireEvent.click(screen.getByRole('button', { name: '完成，查看设备' }));
   expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
-  const card = screen.getByRole('article', { name: 'ATOM66' });
+  const card = screen.getByRole('article', { name: 'ATOM66 fixture' });
   expect(card).toHaveTextContent(device.profile.version);
   expect(card).toHaveTextContent('尚未读取配置');
   expect(device.sent.map(packet => packet[1])).toEqual([0xf9]);
@@ -174,7 +197,7 @@ test('a disconnect at the last step requires reconnecting and never enables Fini
   expect(screen.getByRole('heading', { name: '授权浏览器访问' })).toHaveFocus();
   expect(screen.getByRole('button', { name: '连接键盘' })).toBeEnabled();
   fireEvent.click(screen.getByRole('button', { name: '返回设备管理' }));
-  expect(screen.queryByRole('article', { name: 'ATOM66' })).not.toBeInTheDocument();
+  expect(screen.queryByRole('article', { name: 'ATOM66 fixture' })).not.toBeInTheDocument();
   expect(store.getState().profile).toBeNull();
 });
 

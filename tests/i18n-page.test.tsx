@@ -100,7 +100,7 @@ test('connection details, read history and historic backup reasons follow the se
   });
   const sent = device.sent.slice();
   await chooseEnglish();
-  expect(screen.getByRole('button', { name: 'Connected · ATOM66' })).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: 'Connected · ATOM66 fixture' })).toBeInTheDocument();
   fireEvent.click(screen.getByRole('button', { name: 'Activity' }));
   const activity = screen.getByRole('dialog', { name: 'Activity' });
   expect(within(activity).getByText(/Read complete: 9 groups, 594 records/)).toBeInTheDocument();
