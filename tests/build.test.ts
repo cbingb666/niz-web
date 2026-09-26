@@ -40,7 +40,7 @@ test('production is one offline HTML with hash CSP and HID permissions', async (
       expect(document.querySelector<HTMLImageElement>('.device-illustration')?.src).toMatch(/^data:image\/webp;base64,/);
       Array.from(document.querySelectorAll('button')).find(button => button.textContent === 'Connect a device')!.click();
       await vi.waitFor(() => expect(document.querySelector('.connection-guide-page')).not.toBeNull());
-      expect(document.querySelector<HTMLImageElement>('.device-illustration')?.src).toMatch(/^data:image\/webp;base64,/);
+      expect(document.querySelector('.cable-demo svg')).not.toBeNull();
       Array.from(document.querySelectorAll('button')).find(button => button.textContent === 'Offline demo')!.click();
       await vi.waitFor(() => expect(document.querySelectorAll('.key')).toHaveLength(66));
       expect(errors).toEqual([]);

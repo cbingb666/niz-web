@@ -49,6 +49,12 @@ export async function ready(store: AppStore) {
   });
 }
 export async function acceptRead(store: AppStore) {
+  // Connection no longer prompts for a read. Tests that need a baseline request
+  // it explicitly; tests of the confirmation itself can open it beforehand.
+  if (!store.getState().dialog) {
+    await ready(store);
+    void store.getState().actions.read();
+  }
   await vi.waitFor(() => {
     expect(store.getState().dialog).toMatchObject({ kind: 'confirm', label: msg('confirm.readAction') });
   });

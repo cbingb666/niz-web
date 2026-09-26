@@ -162,7 +162,6 @@ export function createAppStore(dependencies: AppDependencies) {
   const session: HIDSession = dependencies.session;
   const { backups, download } = dependencies;
   const editor = new EditorState();
-  let autoReadEpoch: number | null = null;
   let lastConnection = '';
   let logId = 0;
   let started = false;
@@ -276,7 +275,6 @@ export function createAppStore(dependencies: AppDependencies) {
         msg('confirm.replaceBody'),
         msg('confirm.replace'),
       );
-      if (!accepted) maybeAutoRead();
       return accepted;
     }
     async function operation(
@@ -293,7 +291,6 @@ export function createAppStore(dependencies: AppDependencies) {
       } finally {
         set({ busy: '', hardwareOperation: null, reading: false, progress: null });
         syncEditor();
-        maybeAutoRead();
       }
     }
     function progress(value: OperationProgress) {
@@ -313,34 +310,24 @@ export function createAppStore(dependencies: AppDependencies) {
       };
       set({ status: labels[value.phase], progress: value });
     }
-    async function readConfiguration(automatic = false) {
+    async function readConfiguration() {
       if (disposed || !session.connected || isLocked(get()) || get().dialog) return;
       const epoch = session.epoch;
-      const preserve =
-        automatic && (get().draftIndices.length > 0 || editor.dirty || (!!editor.profile && editor.source !== 'read'));
-      // A cancelled connection prompt must not appear again until a new connection
-      // or an explicit Read action. Consent is valid only for this connection epoch.
-      autoReadEpoch = epoch;
+      // Connecting only identifies a device. Reading is an explicit action, and
+      // its confirmation is valid only for this connection epoch.
       set({ status: msg('status.readConfirmation') });
-      const title = automatic
-        ? msg(session.connectionSource === 'automatic' ? 'confirm.autoReadTitle' : 'confirm.connectedReadTitle')
-        : msg('confirm.readTitle');
+      const title = msg('confirm.readTitle');
       const body = joinMessages(
-        automatic
-          ? joinMessages(msg('confirm.connectedDevice', { product: sessionView().product }), '\n\n')
-          : '',
+        msg('confirm.connectedDevice', { product: sessionView().product }), '\n\n',
         msg('confirm.keyLock'),
         '\n\n',
         msg('confirm.readBody'),
-        preserve
-          ? joinMessages('\n\n', msg('confirm.readPreserve'))
-          : editor.dirty || get().draftIndices.length
-            ? joinMessages('\n\n', msg('confirm.replaceBody'))
-            : '',
+        editor.dirty || get().draftIndices.length
+          ? joinMessages('\n\n', msg('confirm.replaceBody'))
+          : '',
       );
       if (!(await confirm(title, body, msg('confirm.readAction')))) {
         if (!disposed && epoch === session.epoch) set({ status: msg('status.readCancelled') });
-        maybeAutoRead();
         return;
       }
       if (disposed) return;
@@ -348,19 +335,14 @@ export function createAppStore(dependencies: AppDependencies) {
         fail(new ProtocolError(msg('error.confirmReadConnection')));
         return;
       }
-      await operation(automatic ? msg('status.autoRead') : msg('status.read'), async () => {
+      await operation(msg('status.read'), async () => {
         set({ reading: true });
         const { profile, notes } = await session.read(progress);
         session.assertReady(epoch);
-        if (preserve) {
-          editor.boundEpoch = null;
-          syncEditor();
-        } else {
-          editor.load(profile, { epoch, source: 'read' });
-          loadForm(true);
-        }
+        editor.load(profile, { epoch, source: 'read' });
+        loadForm(true);
         log(
-          msg(automatic ? 'status.autoReadSuccess' : 'status.readSuccess', {
+          msg('status.readSuccess', {
             groups: profile.groupCount,
             records: profile.records.length,
           }),
@@ -369,7 +351,7 @@ export function createAppStore(dependencies: AppDependencies) {
         let saved = false;
         try {
           progress({ phase: 'backup' });
-          await saveBackup(profile, automatic ? '自动读取备份' : '读取备份');
+          await saveBackup(profile, '读取备份');
           saved = true;
         } catch (error) {
           log(protocolError(error).description, true);
@@ -379,15 +361,9 @@ export function createAppStore(dependencies: AppDependencies) {
           status:
             !session.connected || session.epoch !== epoch
               ? msg('status.readStale', { backup: suffix })
-              : preserve
-                ? msg('status.readPreserved', { backup: suffix })
-                : msg(automatic ? 'status.autoReadReady' : 'status.readReady', { backup: suffix }),
+              : msg('status.readReady', { backup: suffix }),
         });
       }, 'read');
-    }
-    function maybeAutoRead() {
-      if (disposed || !session.connected || isLocked(get()) || get().dialog || autoReadEpoch === session.epoch) return;
-      void readConfiguration(true);
     }
     function onSessionChange() {
       const state = `${session.state}:${session.version}:${session.message}`;
@@ -401,7 +377,6 @@ export function createAppStore(dependencies: AppDependencies) {
         );
       }
       syncEditor();
-      maybeAutoRead();
     }
     function saveForm(announce = false): boolean {
       if (!editor.profile || !get().formDirty) return true;
@@ -544,7 +519,6 @@ export function createAppStore(dependencies: AppDependencies) {
         const status = msg('status.demo');
         set({ status, page: 'editor' });
         log(status);
-        maybeAutoRead();
       },
       async importFile(file) {
         if (isLocked(get()) || !(await discardIfNeeded(msg('keyboard.import')))) return;
@@ -698,10 +672,7 @@ export function createAppStore(dependencies: AppDependencies) {
       },
       closeDialog() {
         if (resolveConfirmation) actions.confirm(false);
-        else {
-          set({ dialog: null });
-          maybeAutoRead();
-        }
+        else set({ dialog: null });
       },
       confirm(accepted) {
         const resolve = resolveConfirmation;
@@ -733,7 +704,6 @@ export function createAppStore(dependencies: AppDependencies) {
           msg('confirm.writeValidation'),
         );
         if (!(await confirm(msg('confirm.writeTitle'), summary, msg('confirm.writeAction'), review()))) {
-          maybeAutoRead();
           return;
         }
         if (epoch !== session.epoch) {

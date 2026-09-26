@@ -102,14 +102,14 @@ test('connection details, read history and historic backup reasons follow the se
   expect(screen.getByRole('button', { name: 'Connected · ATOM66' })).toBeInTheDocument();
   fireEvent.click(screen.getByRole('button', { name: 'Activity' }));
   const activity = screen.getByRole('dialog', { name: 'Activity' });
-  expect(within(activity).getByText(/Read after connecting complete: 9 groups, 594 records/)).toBeInTheDocument();
+  expect(within(activity).getByText(/Read complete: 9 groups, 594 records/)).toBeInTheDocument();
   fireEvent.click(within(activity).getByRole('button', { name: 'Close' }));
   expect(device.sent).toEqual(sent);
   await act(async () => {
     fireEvent.click(screen.getByRole('button', { name: /Local backups/ }));
   });
   const dialog = screen.getByRole('dialog', { name: 'Local backups' });
-  expect(within(dialog).getByText(/Automatic read backup ·/)).toBeInTheDocument();
+  expect(within(dialog).getByText(/Read backup ·/)).toBeInTheDocument();
   expect(within(dialog).getByRole('button', { name: 'Import' })).toBeInTheDocument();
   expect(device.sent).toEqual(sent);
 });

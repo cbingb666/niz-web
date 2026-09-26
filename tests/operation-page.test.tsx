@@ -15,7 +15,7 @@ function gate() {
   return { promise, release };
 }
 
-test('read confirmation explains auto-connection; confirmation alone opens a global non-dismissible progress overlay', async (t) => {
+test('Configure device requests consent; confirmation alone opens a global non-dismissible progress overlay', async (t) => {
   const device = new FakeDevice(), backups = memoryBackups(), backupGate = gate();
   t.onTestFinished(backupGate.release);
   const persist = vi.mocked(backups.save).getMockImplementation()!;
@@ -26,7 +26,9 @@ test('read confirmation explains auto-connection; confirmation alone opens a glo
   const { store, actions } = application(new FakeHID([device]), backups);
   const view = render(<App store={store} usbAvailable />);
   await act(() => actions.start());
-  const confirmation = screen.getByRole('alertdialog', { name: '键盘已自动连接，即将读取配置' });
+  expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: '配置设备' }));
+  const confirmation = screen.getByRole('alertdialog', { name: '确认读取键盘配置' });
   expect(confirmation).toHaveTextContent('已连接设备：ATOM66 fixture');
   expect(confirmation).toHaveTextContent('键盘按键将被锁定');
   expect(within(confirmation).getByRole('button', { name: '取消' })).toHaveFocus();
@@ -150,7 +152,10 @@ test.each(['read', 'write'] as const)('%s failure unlocks the page and exposes a
     device.failOn = 0xf1;
     await act(() => actions.assignKey(43));
     fireEvent.click(screen.getByRole('button', { name: '核对并写入' }));
-  } else device.readOverride = device.profile.reports.slice(0, 10);
+  } else {
+    device.readOverride = device.profile.reports.slice(0, 10);
+    fireEvent.click(screen.getByRole('button', { name: '配置设备' }));
+  }
   await act(async () => {
     fireEvent.click(screen.getByRole('button', { name: operation === 'read' ? '确认并读取' : '备份并写入' }));
     await vi.waitFor(() => expect(store.getState().dialog?.kind).toBe('message'));

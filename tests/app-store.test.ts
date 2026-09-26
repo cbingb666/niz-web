@@ -8,21 +8,25 @@ function writes(device: FakeDevice) {
   return device.sent.filter((packet) => [0xf1, 0xf0, 0xf6, 0xe1, 0xe0, 0xe6].includes(packet[1]));
 }
 
-test('startup asks before reading all nine groups once, backing up, and never writes', async () => {
+test('startup only identifies the device; configuring asks before reading and backing up all nine groups', async () => {
   const device = new FakeDevice(fixture(9)),
     hid = new FakeHID([device]);
   const { store, actions, backups } = application(hid);
   await actions.start();
+  expect(store.getState().dialog).toBeNull();
+  expect(device.sent.map(packet => packet[1])).toEqual([0xf9]);
+  const configuring = actions.configureDevice();
   const dialog = store.getState().dialog;
   expect(dialog?.kind).toBe('confirm');
   if (dialog?.kind !== 'confirm') throw new Error('Expected a read confirmation');
-  expect(renderMessage(dialog.title)).toContain('已自动连接');
+  expect(renderMessage(dialog.title)).toBe('确认读取键盘配置');
   expect(renderMessage(dialog.body)).toContain('ATOM66 fixture');
   expect(renderMessage(dialog.body)).toContain('键盘按键将被锁定');
   expect(device.sent.map((packet) => packet[1])).toEqual([0xf9]);
   expect(store.getState().profile).toBeNull();
   expect(backups.save).not.toHaveBeenCalled();
   await acceptRead(store);
+  await configuring;
   expect(hid.requestCount).toBe(0);
   expect(store.getState().profile?.records).toHaveLength(594);
   expect(device.sent.map((packet) => packet[1])).toEqual([0xf9, 0xf2, 0xe3]);
@@ -34,7 +38,7 @@ test('startup asks before reading all nine groups once, backing up, and never wr
   expect(writes(device)).toHaveLength(0);
   expect(store.getState().canWrite).toBe(false);
 });
-test('first authorization preserves user activation then waits for confirmation to read', async () => {
+test('first authorization preserves user activation and does not read or open a confirmation', async () => {
   const device = new FakeDevice(),
     hid = new FakeHID();
   hid.selection = [device];
@@ -43,15 +47,34 @@ test('first authorization preserves user activation then waits for confirmation 
   const pending = actions.connect();
   expect(hid.requestCount).toBe(1);
   await pending;
-  const dialog = store.getState().dialog;
-  if (dialog?.kind !== 'confirm') throw new Error('Expected a read confirmation');
-  expect(renderMessage(dialog.title)).toBe('键盘已连接，即将读取配置');
+  expect(store.getState().dialog).toBeNull();
+  expect(store.getState().profile).toBeNull();
   expect(device.sent.map((packet) => packet[1])).toEqual([0xf9]);
   await acceptRead(store);
   expect(store.getState().profile?.records).toHaveLength(198);
   expect(writes(device)).toHaveLength(0);
 });
-test('reconnection refreshes clean state and preserves unsaved form inputs', async () => {
+test('connecting from the guide does not open a read confirmation before an explicit read action', async () => {
+  const device = new FakeDevice(), hid = new FakeHID();
+  hid.selection = [device];
+  const { store, session, actions } = application(hid);
+  await actions.start();
+  actions.navigate('connect');
+  await actions.connect();
+  expect(store.getState().session.connected).toBe(true);
+  expect(store.getState().dialog).toBeNull();
+  expect(device.sent.map(packet => packet[1])).toEqual([0xf9]);
+  actions.navigate('devices');
+  session.notify();
+  await ready(store);
+  expect(store.getState().dialog).toBeNull();
+  const configuring = actions.configureDevice();
+  expect(store.getState().dialog?.kind).toBe('confirm');
+  await acceptRead(store);
+  await configuring;
+  expect(store.getState().page).toBe('editor');
+});
+test('reconnection preserves the current editor until the user explicitly reads again', async () => {
   const device = new FakeDevice(),
     hid = new FakeHID([device]);
   const { store, actions } = application(hid);
@@ -60,19 +83,23 @@ test('reconnection refreshes clean state and preserves unsaved form inputs', asy
   hid.disconnect(device);
   device.profile.setDefinition(0, { type: 0, keys: [43] });
   hid.connect(device);
+  await ready(store);
+  expect(store.getState().form.sequence).toBe('Esc');
+  expect(store.getState().dialog).toBeNull();
   await acceptRead(store);
   expect(store.getState().form.sequence).toBe('A');
   actions.updateForm({ sequence: 'Command\nC' });
   hid.disconnect(device);
   device.profile.setDefinition(0, { type: 0, keys: [44] });
   hid.connect(device);
-  await acceptRead(store);
+  await ready(store);
   expect(store.getState().form.sequence).toBe('Command\nC');
-  expect(renderMessage(store.getState().status)).toMatch(/编辑内容已保留/);
+  expect(store.getState().dialog).toBeNull();
+  expect(store.getState().session.hasLiveBaseline).toBe(false);
   expect(store.getState().canWrite).toBe(false);
   expect(writes(device)).toHaveLength(0);
 });
-test('an offline import survives automatic read but cannot be written until rebound by import', async () => {
+test('an offline import survives connection and must be explicitly rebound before writing', async () => {
   const device = new FakeDevice(fixture(9)),
     hid = new FakeHID();
   const { store, actions } = application(hid);
@@ -82,14 +109,15 @@ test('an offline import survives automatic read but cannot be written until rebo
   await actions.importFile(profileFile(imported));
   hid.selection = [device];
   await actions.connect();
-  await acceptRead(store);
   expect(store.getState().profile?.summary(0)).toBe('A');
+  expect(store.getState().dialog).toBeNull();
   expect(store.getState().canWrite).toBe(false);
+  await acceptRead(store);
   await actions.importFile(profileFile(imported));
   expect(store.getState().canWrite).toBe(true);
   expect(store.getState().profile?.records.slice(198)).toEqual(device.profile.records.slice(198));
 });
-test('automatic parse failure stays connected and does not loop; manual read retries', async () => {
+test('a read parse failure stays connected and does not loop; another explicit read retries', async () => {
   const device = new FakeDevice();
   device.readOverride = device.profile.reports.slice(0, 10);
   const { store, actions } = application(new FakeHID([device]));
@@ -165,13 +193,14 @@ test('cancelling a connection read sends no configuration commands and does not 
   const device = new FakeDevice(), hid = new FakeHID([device]);
   const { store, session, actions, backups } = application(hid);
   await actions.start();
+  const initialRead = actions.read();
   const confirmation = store.getState().dialog;
   await actions.read();
   await actions.write();
   actions.showHelp();
   expect(store.getState().dialog).toBe(confirmation);
   actions.closeDialog();
-  await Promise.resolve();
+  await initialRead;
   session.notify();
   hid.connect(device);
   await ready(store);
@@ -219,10 +248,12 @@ test('read consent cannot carry over to a reconnected device', async () => {
   const hid = new FakeHID([first]);
   const { store, actions } = application(hid);
   await actions.start();
+  const reading = actions.read();
   hid.disconnect(first);
   hid.connect(next);
   await ready(store);
   actions.confirm(true);
+  await reading;
   await vi.waitFor(() => expect(store.getState().dialog?.kind).toBe('message'));
   expect(renderMessage(store.getState().status)).toContain('重新确认读取');
   expect(first.sent.map((packet) => packet[1])).toEqual([0xf9]);
@@ -232,7 +263,7 @@ test('read consent cannot carry over to a reconnected device', async () => {
   expect(store.getState().profile?.summary(0)).toBe('S');
 });
 
-test('a connection prompt waits for an existing dialog to close and stopping cancels it', async () => {
+test('connecting cannot replace another dialog, and stopping cancels an explicit read prompt', async () => {
   const device = new FakeDevice();
   const { store, actions } = application(new FakeHID([device]));
   actions.showHelp();
@@ -240,8 +271,11 @@ test('a connection prompt waits for an existing dialog to close and stopping can
   expect(store.getState().dialog?.kind).toBe('help');
   expect(device.sent.map((packet) => packet[1])).toEqual([0xf9]);
   actions.closeDialog();
+  expect(store.getState().dialog).toBeNull();
+  const reading = actions.read();
   expect(store.getState().dialog?.kind).toBe('confirm');
   await actions.stop();
+  await reading;
   expect(store.getState().dialog).toBeNull();
   expect(store.getState().hardwareOperation).toBeNull();
   expect(device.sent.map((packet) => packet[1])).toEqual([0xf9]);

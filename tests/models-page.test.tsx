@@ -8,7 +8,7 @@ import { defaultModel } from '../src/devices';
 import type { ModelTool } from '../src/model-tools';
 import { FakeDevice, FakeHID } from './helpers';
 import { modelFixture, test68 } from './model-fixtures';
-import { application, memoryBackups, profileFile, acceptRead } from './store-helpers';
+import { application, memoryBackups, profileFile, acceptRead, ready } from './store-helpers';
 
 afterEach(cleanup);
 
@@ -88,10 +88,11 @@ test('connecting a different model preserves pending edits and requires loading 
   await act(async () => {
     hid.disconnect(atom);
     hid.connect(next);
-    await acceptRead(store);
+    await ready(store);
   });
   expect(session.model).toBe(test68);
-  expect(session.lastRead?.profile.model).toBe(test68);
+  expect(session.lastRead).toBeNull();
+  expect(store.getState().dialog).toBeNull();
   expect(store.getState().model).toBe(defaultModel);
   expect(store.getState().canWrite).toBe(false);
   expect(screen.getByLabelText(/按键序列/)).toHaveValue('Command\nC');

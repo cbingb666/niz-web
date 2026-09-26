@@ -1151,9 +1151,6 @@ main {
 .guide-visual-label { display: flex; align-items: center; gap: 10px; color: var(--muted-foreground); font-size: .75rem; letter-spacing: .06em; }
 .guide-visual-label .status-dot { width: 6px; height: 6px; box-shadow: none; }
 .guide-visual .device-illustration { width: 100%; margin: 20px auto 12px; mask-image: radial-gradient(ellipse at center, #000 58%, transparent 78%); }
-.device-illustration-animated { animation: device-float 4.5s ease-in-out infinite; }
-.guide-visual[data-step='1'] .device-illustration { animation-duration: 3s; }
-.guide-visual[data-connected='true'] .device-illustration { animation: none; }
 .guide-visual-caption { display: flex; align-items: center; gap: 14px; margin-top: auto; animation: guide-caption-in 300ms ease-out; }
 .guide-caption-icon { display: flex; align-items: center; justify-content: center; width: 44px; height: 44px; flex: none; border: 1px solid #6de3bc40; border-radius: 12px; background: #6de3bc0d; color: var(--primary); }
 .guide-caption-icon svg { width: 22px; height: 22px; }
@@ -1190,7 +1187,35 @@ main {
 .guide-privacy { display: flex; align-items: flex-start; gap: 6px; margin: 12px 2px 0; font-size: .75rem; line-height: 1.7; color: var(--muted-foreground); }
 .guide-privacy svg { width: 14px; height: 14px; margin-top: 3px; flex: none; }
 .guide-demo { background: #6de3bc04; }
-@keyframes device-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+.cable-demo, .permission-demo { width: 100%; margin: 0; }
+.cable-demo > svg { display: block; width: min(100%, 440px); margin: auto; color: var(--muted-foreground); }
+.diagram-computer, .diagram-keyboard { color: #c2ccd1; }
+.diagram-wire { stroke: var(--primary); stroke-width: 3; stroke-linecap: round; }
+.diagram-plug { color: var(--primary); animation: insert-usb 4s ease-in-out infinite; }
+.diagram-contact { stroke: var(--primary); stroke-width: 2; fill: none; opacity: 0; animation: usb-contact 4s ease-in-out infinite; }
+.cable-demo figcaption, .permission-demo figcaption { text-align: center; margin-top: 18px; font-size: .875rem; color: var(--muted-foreground); }
+.permission-window { position: relative; width: min(100%, 350px); margin: 24px auto 0; border: 1px solid #526269; border-radius: 14px; background: #1c252a; box-shadow: 0 16px 38px #0003; overflow: hidden; pointer-events: none; }
+.permission-window-header { display: flex; align-items: center; gap: 9px; padding: 14px 16px; border-bottom: 1px solid var(--border); font-size: .75rem; color: var(--muted-foreground); }
+.permission-window-header svg { width: 16px; height: 16px; }
+.window-dots { margin-left: auto; letter-spacing: 2px; }
+.permission-window-content { padding: 22px 18px 18px; }
+.permission-window-content > strong { font-size: .875rem; font-weight: 550; }
+.permission-device-row { display: flex; align-items: center; gap: 12px; padding: 16px 12px; margin: 18px 0 28px; border: 1px solid var(--border); border-radius: 8px; font-size: .875rem; animation: select-device-row 5s infinite; }
+.permission-device-row > svg { width: 22px; height: 22px; color: var(--muted-foreground); }
+.permission-radio { width: 14px; height: 14px; flex: none; border: 1px solid var(--muted-foreground); border-radius: 50%; animation: select-device-radio 5s infinite; }
+.permission-window-actions { display: flex; align-items: center; justify-content: flex-end; gap: 18px; font-size: .8125rem; color: var(--muted-foreground); }
+.permission-confirm { display: block; padding: 7px 18px; background: var(--primary); color: var(--primary-foreground); border-radius: 7px; animation: confirm-device 5s infinite; }
+.permission-pointer { position: absolute; left: 40px; top: 138px; width: 24px; height: 24px; fill: var(--foreground); stroke: var(--background); stroke-width: 1.5px; filter: drop-shadow(0 1px 3px #0008); animation: select-device-pointer 5s ease-in-out infinite; }
+.connection-result-art { position: relative; width: 100%; }
+.connection-result-mark { position: absolute; left: 50%; bottom: 8%; display: flex; align-items: center; justify-content: center; transform: translateX(-50%); width: 52px; height: 52px; background: var(--background); border: 1px solid #6de3bc50; border-radius: 50%; color: var(--primary); }
+.connection-result-mark svg { width: 30px; height: 30px; }
+.connection-result-art[data-connected='false'] .connection-result-mark { color: var(--warning); border-color: var(--warning); }
+@keyframes insert-usb { 0%, 15%, 100% { transform: translateY(17px); } 35%, 75% { transform: translateY(0); } }
+@keyframes usb-contact { 0%, 25%, 80%, 100% { opacity: 0; } 40%, 70% { opacity: .8; } }
+@keyframes select-device-row { 0%, 25%, 100% { background: transparent; border-color: var(--border); } 35%, 90% { background: #6de3bc10; border-color: #6de3bc70; } }
+@keyframes select-device-radio { 0%, 25%, 100% { background: transparent; border-color: var(--muted-foreground); } 35%, 90% { background: var(--primary); border-color: var(--primary); box-shadow: inset 0 0 0 3px var(--panel); } }
+@keyframes confirm-device { 0%, 65%, 85%, 100% { opacity: .65; } 75% { opacity: 1; } }
+@keyframes select-device-pointer { 0%, 100% { opacity: 0; transform: translate(60px, -20px); } 15%, 30% { opacity: 1; transform: translate(0, 0); } 36% { transform: scale(.88); } 45% { transform: scale(1); } 70%, 85% { opacity: 1; transform: translate(180px, 87px); } 95% { opacity: 0; transform: translate(180px, 87px); } }
 @keyframes guide-caption-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes guide-stage-in { from { opacity: 0; transform: translateX(14px) scale(.98); } to { opacity: 1; transform: translateX(0) scale(1); } }
 @media (max-width: 1240px) {
@@ -1231,6 +1256,10 @@ main {
   .guide-demo > button, .resume-profile > button { width: 100%; margin: 0; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .device-illustration-animated, .guide-visual-caption, .guide-step-copy, .guide-illustration-stage { animation: none; }
+  .guide-visual-caption, .guide-step-copy, .guide-illustration-stage { animation: none; }
   .guide-progress span { transition: none; }
+  .diagram-plug, .diagram-contact, .permission-device-row, .permission-radio, .permission-confirm, .permission-pointer { animation: none; }
+  .permission-pointer { display: none; }
+  .permission-radio { background: var(--primary); box-shadow: inset 0 0 0 3px var(--panel); }
+  .permission-device-row { border-color: #6de3bc70; }
 }

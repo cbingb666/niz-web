@@ -34,7 +34,7 @@ export function DeviceManager() {
         <span className="device-transport"><Cable aria-hidden="true" />USB</span>
       </div>
       {session.connected ? <article className="device-card" aria-label={name}>
-        <div className="device-card-art"><DeviceIllustration variant="keyboard" /></div>
+        <div className="device-card-art"><DeviceIllustration /></div>
         <div className="device-card-content">
           <span className="device-status"><span className="status-dot connected" />{t('connection.connectedShort')}</span>
           <h3>{name}</h3>
@@ -48,7 +48,7 @@ export function DeviceManager() {
           </Button>
         </div>
       </article> : <div className="devices-empty">
-        <div className="device-card-art"><DeviceIllustration variant="keyboard" /></div>
+        <div className="device-card-art"><DeviceIllustration /></div>
         <div className="devices-empty-copy">
           <span className="device-status offline"><span className="status-dot" />{t('connection.waiting')}</span>
           <h3>{t('devices.emptyTitle')}</h3>

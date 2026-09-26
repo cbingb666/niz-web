@@ -41,7 +41,7 @@ test('the guide presents one step at a time and only its second step can request
   expect(hid.requestCount).toBe(0);
 });
 
-test('authorization and a confirmed read gate completion before opening the real device configuration', async () => {
+test('every guide step requires a click, and configuration is read only after choosing Configure device', async () => {
   const device = new FakeDevice(), hid = new FakeHID();
   let select!: (devices: ConfigDevice[]) => void;
   vi.spyOn(hid, 'requestDevice').mockImplementation(() => new Promise(resolve => { select = resolve; }));
@@ -58,24 +58,33 @@ test('authorization and a confirmed read gate completion before opening the real
   expect(screen.queryByRole('button', { name: '完成，查看设备' })).not.toBeInTheDocument();
   await act(async () => {
     select([device]);
-    await vi.waitFor(() => expect(store.getState().dialog?.kind).toBe('confirm'));
+    await vi.waitFor(() => expect(store.getState().session.connected).toBe(true));
   });
   expect(device.sent.map(packet => packet[1])).toEqual([0xf9]);
-  await act(async () => { fireEvent.click(screen.getByRole('button', { name: '取消' })); });
-  expect(screen.getByRole('heading', { name: '读取键盘的当前配置' })).toHaveFocus();
+  expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+  expect(screen.getByRole('heading', { name: '授权浏览器访问' })).toBeVisible();
   expect(screen.queryByRole('button', { name: '完成，查看设备' })).not.toBeInTheDocument();
   expect(store.getState().profile).toBeNull();
-  fireEvent.click(screen.getByRole('button', { name: '读取键盘配置' }));
-  await act(() => acceptRead(store));
-  expect(screen.getByRole('heading', { name: '一切就绪' })).toHaveFocus();
-  const sent = device.sent.slice();
+  fireEvent.click(screen.getByRole('button', { name: '下一步' }));
+  expect(screen.getByRole('heading', { name: '键盘已连接' })).toHaveFocus();
+  fireEvent.click(screen.getByRole('button', { name: '上一步' }));
+  expect(screen.getByRole('heading', { name: '授权浏览器访问' })).toHaveFocus();
+  expect(hid.requestDevice).toHaveBeenCalledOnce();
+  fireEvent.click(screen.getByRole('button', { name: '下一步' }));
   fireEvent.click(screen.getByRole('button', { name: '完成，查看设备' }));
+  expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
   const card = screen.getByRole('article', { name: 'ATOM66' });
   expect(card).toHaveTextContent(device.profile.version);
-  expect(card).toHaveTextContent('已读取配置');
+  expect(card).toHaveTextContent('尚未读取配置');
+  expect(device.sent.map(packet => packet[1])).toEqual([0xf9]);
   await openDeviceEditor();
+  expect(screen.getByRole('alertdialog', { name: '确认读取键盘配置' })).toBeVisible();
+  await act(() => acceptRead(store));
   expect(screen.getByRole('region', { name: '按键布局' })).toBeVisible();
   expect(store.getState().source).toBe('read');
+  const sent = device.sent.slice();
+  fireEvent.click(screen.getByRole('button', { name: '设备管理' }));
+  await openDeviceEditor();
   expect(device.sent).toEqual(sent);
 });
 
@@ -96,34 +105,24 @@ test.each(['cancel', 'error'] as const)('a device picker %s stays on the authori
   expect(store.getState().profile).toBeNull();
 });
 
-test('a read failure remains on step three and disconnection returns to authorization with local edits retained', async () => {
+test('a disconnect at the last step requires reconnecting and never enables Finish', async () => {
   const device = new FakeDevice(), hid = new FakeHID([device]);
   const { store, actions } = application(hid);
   render(<App store={store} usbAvailable />);
   await act(() => actions.start());
-  await act(async () => { actions.confirm(false); });
   openGuide();
-  device.readOverride = device.profile.reports.slice(0, 10);
-  fireEvent.click(screen.getByRole('button', { name: '读取键盘配置' }));
-  await act(async () => {
-    actions.confirm(true);
-    await vi.waitFor(() => expect(store.getState().dialog?.kind).toBe('message'));
-    await ready(store);
-  });
-  fireEvent.click(screen.getByRole('button', { name: '知道了' }));
-  expect(screen.getByRole('heading', { name: '读取键盘的当前配置' })).toBeVisible();
-  expect(screen.queryByRole('button', { name: '完成，查看设备' })).not.toBeInTheDocument();
-  device.readOverride = undefined;
-  fireEvent.click(screen.getByRole('button', { name: '读取键盘配置' }));
-  await act(() => acceptRead(store));
-  const profile = store.getState().profile!.toJSON();
+  expect(screen.getByRole('heading', { name: '连接 USB 数据线' })).toBeVisible();
+  confirmCable();
+  fireEvent.click(screen.getByRole('button', { name: '下一步' }));
   await act(async () => { hid.disconnect(device); await ready(store); });
-  expect(screen.getByRole('heading', { name: '授权浏览器访问' })).toBeVisible();
+  expect(screen.getByRole('heading', { name: '键盘已断开' })).toHaveFocus();
   expect(screen.queryByRole('button', { name: '完成，查看设备' })).not.toBeInTheDocument();
-  expect(store.getState().profile!.toJSON()).toEqual(profile);
+  fireEvent.click(screen.getByRole('button', { name: '返回连接步骤' }));
+  expect(screen.getByRole('heading', { name: '授权浏览器访问' })).toHaveFocus();
+  expect(screen.getByRole('button', { name: '连接键盘' })).toBeEnabled();
   fireEvent.click(screen.getByRole('button', { name: '返回设备管理' }));
   expect(screen.queryByRole('article', { name: 'ATOM66' })).not.toBeInTheDocument();
-  expect(screen.getByRole('button', { name: '继续编辑' })).toBeEnabled();
+  expect(store.getState().profile).toBeNull();
 });
 
 test('configuring a connected device cannot silently replace a demo with drafts', async () => {
@@ -134,7 +133,7 @@ test('configuring a connected device cannot silently replace a demo with drafts'
   actions.updateForm({ view: 'advanced', sequence: 'unfinished macro' });
   const profile = store.getState().profile!.toJSON();
   render(<App store={store} usbAvailable />);
-  await act(async () => { await actions.start(); await acceptRead(store); });
+  await act(() => actions.start());
   fireEvent.click(screen.getByRole('button', { name: '设备管理' }));
   fireEvent.click(screen.getByRole('button', { name: '配置设备' }));
   const confirmation = screen.getByRole('alertdialog', { name: '确认读取键盘配置' });
