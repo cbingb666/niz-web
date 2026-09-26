@@ -114,9 +114,13 @@ test('corrupt imports and invalid form edits preserve the last valid configurati
   expect(store.getState().profile?.toJSON()).toEqual(before);
   actions.closeDialog();
   actions.updateForm({ sequence: 'unknown key' });
-  expect(actions.selectKey(1)).toBe(false);
-  expect(store.getState().key).toBe(0);
+  expect(actions.selectKey(1)).toBe(true);
+  expect(store.getState().key).toBe(1);
+  expect(store.getState().draftIndices).toEqual([0]);
+  actions.selectKey(0);
   expect(store.getState().form.sequence).toBe('unknown key');
+  expect(actions.saveForm()).toBe(false);
+  expect(renderMessage(store.getState().formError)).toContain('无法识别按键');
   expect(store.getState().profile?.toJSON()).toEqual(before);
 });
 test('discard confirmation can cancel or replace edited state without touching hardware', async () => {
@@ -140,7 +144,11 @@ test('write requires confirmation; cancellation sends no hardware write', async 
   await acceptRead(store);
   const before = device.sent.slice();
   actions.updateForm({ sequence: 'A' });
+  expect(actions.saveForm()).toBe(true);
+  const staged = store.getState().profile!.toJSON();
   const pending = actions.write();
+  actions.assignKey(0);
+  expect(store.getState().profile!.toJSON()).toEqual(staged);
   const dialog = store.getState().dialog;
   if (dialog?.kind !== 'confirm') throw new Error('Expected a write confirmation');
   expect(renderMessage(dialog.body)).toContain('键盘按键将被锁定');
@@ -244,6 +252,7 @@ test('confirmed write backs up, writes, verifies and clears dirty state', async 
   await actions.start();
   await acceptRead(store);
   actions.updateForm({ sequence: 'A' });
+  expect(actions.saveForm()).toBe(true);
   const pending = actions.write();
   actions.confirm(true);
   await pending;
@@ -260,6 +269,7 @@ test('connection change during confirmation invalidates the pending write', asyn
   await actions.start();
   await acceptRead(store);
   actions.updateForm({ sequence: 'A' });
+  expect(actions.saveForm()).toBe(true);
   const pending = actions.write();
   hid.disconnect(device);
   actions.confirm(true);
@@ -275,6 +285,7 @@ test('backup rejection after confirmation never sends a write command', async ()
   await acceptRead(store);
   actions.updateForm({ sequence: 'A' });
   vi.mocked(backups.save).mockRejectedValue(new Error('quota exceeded'));
+  expect(actions.saveForm()).toBe(true);
   const pending = actions.write();
   actions.confirm(true);
   await pending;

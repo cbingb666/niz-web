@@ -3,6 +3,7 @@ import '@testing-library/jest-dom/vitest';
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, expect, test } from 'vitest';
 import { App } from '../src/app';
+import { chooseMappingType } from './page-helpers';
 import { defaultModel } from '../src/devices';
 import type { ModelTool } from '../src/model-tools';
 import { FakeDevice, FakeHID } from './helpers';
@@ -15,29 +16,38 @@ test('connection renders the loaded geometry, layers and counters and edits the 
   const models = [defaultModel, test68];
   const device = new FakeDevice(modelFixture(test68, 4));
   const { store, actions } = application(new FakeHID([device]), memoryBackups(models), {}, { models });
+  device.profile.setDefinition(0, { type: 0, keys: [156] });
   const tools: ModelTool[] = [];
   render(<App store={store} usbAvailable />);
   await act(async () => {
     await actions.start({ registerTool: (tool) => tools.push(tool) });
     await acceptRead(store);
   });
-  expect(screen.getAllByRole('button', { name: /第 \d+ 键/ })).toHaveLength(68);
-  expect(screen.getAllByRole('tab')).toHaveLength(2);
+  expect(screen.getAllByRole('button', { name: /第 \d+ 键/ })).toHaveLength(136);
+  expect(screen.queryByRole('group', { name: '编辑层' })).not.toBeInTheDocument();
+  expect(screen.queryByRole('combobox', { name: '编辑层' })).not.toBeInTheDocument();
   expect(screen.getByText('4 组记录完整保留 · 编辑前 2 组')).toBeInTheDocument();
   expect(tools.at(-2)?.inputSchema).toMatchObject({ properties: { layer: { maximum: 1 } } });
-  fireEvent.click(screen.getByRole('button', { name: /第 68 键 K68/ }));
-  fireEvent.mouseDown(screen.getByRole('tab', { name: 'Function' }), { button: 0, ctrlKey: false });
+  fireEvent.click(screen.getByRole('button', { name: /Primary，第 68 键，/ }));
+  fireEvent.click(screen.getByRole('button', { name: /Function，第 68 键，/ }));
   expect(store.getState().key).toBe(67);
   expect(store.getState().layer).toBe(1);
+  await chooseMappingType('宏 / 高级');
   fireEvent.change(screen.getByLabelText(/按键序列/), { target: { value: 'C' } });
-  fireEvent.click(screen.getByRole('button', { name: '保存此键修改' }));
+  fireEvent.click(screen.getByRole('button', { name: '应用这次编辑' }));
   expect(store.getState().profile?.definition(135).keys).toEqual([58]);
-  expect(store.getState().changes).toEqual([135]);
-  const last = screen.getByRole('button', { name: /第 68 键 K68/ });
+  expect(store.getState().changes).toEqual([67, 135]);
+  expect(store.getState().profile?.definition(67).keys).toEqual([58]);
+  const last = screen.getByRole('button', { name: /Function，第 68 键，/ });
   fireEvent.keyDown(last, { key: 'ArrowUp' });
-  expect(screen.getByRole('button', { name: /第 35 键 K35/ })).toHaveFocus();
-  fireEvent.click(screen.getByRole('checkbox', { name: '显示按键计数' }));
-  expect(last).toHaveTextContent('6,700');
+  expect(screen.getByRole('button', { name: /Function，第 35 键，/ })).toHaveFocus();
+  fireEvent.click(screen.getByRole('checkbox', { name: '显示计数' }));
+  expect(screen.getByRole('group', { name: '键位 #68' })).toHaveTextContent('6,700');
+  expect(screen.queryByRole('button', { name: /Function，第/ })).not.toBeInTheDocument();
+  const primary = screen.getByRole('button', { name: /Primary，第 35 键，/ });
+  fireEvent.keyDown(primary, { key: 'ArrowDown', altKey: true });
+  expect(primary).toHaveFocus();
+  expect(store.getState().layer).toBe(0);
 });
 
 test('offline import and backup restore retain their model and update the page tools', async () => {
@@ -58,7 +68,7 @@ test('offline import and backup restore retain their model and update the page t
   expect(download).toHaveBeenCalledWith('配置', profile.toJSON());
   await act(() => actions.importBackup(id));
   expect(store.getState().profile?.toJSON()).toEqual(profile.toJSON());
-  expect(screen.getAllByRole('button', { name: /第 \d+ 键/ })).toHaveLength(68);
+  expect(screen.getAllByRole('button', { name: /第 \d+ 键/ })).toHaveLength(136);
 });
 
 test('connecting a different model preserves pending edits and requires loading the new device', async () => {
@@ -71,6 +81,7 @@ test('connecting a different model preserves pending edits and requires loading 
     await actions.start();
     await acceptRead(store);
   });
+  await chooseMappingType('宏 / 高级');
   fireEvent.change(screen.getByLabelText(/按键序列/), { target: { value: 'Command\nC' } });
   await act(async () => {
     hid.disconnect(atom);
@@ -89,5 +100,5 @@ test('connecting a different model preserves pending edits and requires loading 
     await read;
   });
   expect(store.getState().model).toBe(test68);
-  expect(screen.getAllByRole('button', { name: /第 \d+ 键/ })).toHaveLength(68);
+  expect(screen.getAllByRole('button', { name: /第 \d+ 键/ })).toHaveLength(136);
 });

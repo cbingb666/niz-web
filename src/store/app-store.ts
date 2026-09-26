@@ -22,15 +22,18 @@ import {
   assert,
   demoProfile,
   hex,
+  integer,
   mergeImported,
   parseKey,
   parseSequence,
   sequenceText,
+  type KeyDefinition,
 } from '../protocol';
 import type { BackupRow, Backups } from '../storage';
 import type { ConnectionState, OperationProgress } from '../types/hid';
 
 export interface EditorForm {
+  view?: 'key' | 'chord' | 'system' | 'advanced';
   type: string;
   sequence: string;
   interval: string;
@@ -39,10 +42,12 @@ export interface EditorForm {
   picker: string;
   color: string;
 }
+export interface ChangeReview { before: Profile; after: Profile; indices: number[]; lights: boolean }
 export type AppDialog =
-  | { kind: 'confirm'; title: Message; body: Message; label: Message }
+  | { kind: 'confirm'; title: Message; body: Message; label: Message; review?: ChangeReview }
   | { kind: 'message'; title: Message; body: Message }
-  | { kind: 'backups' | 'help' };
+  | { kind: 'backups' | 'help' | 'activity' | 'device' }
+  | { kind: 'changes'; review: ChangeReview };
 export interface SessionView {
   model: KeyboardModel | null;
   state: ConnectionState;
@@ -66,6 +71,8 @@ export interface AppState {
   model: KeyboardModel;
   locale: Locale;
   profile: Profile | null;
+  baseline: Profile | null;
+  generation: number;
   source: EditorSource;
   key: number;
   layer: number;
@@ -75,7 +82,13 @@ export interface AppState {
   canWrite: boolean;
   form: EditorForm;
   formDirty: boolean;
+  drafts: Record<number, EditorForm>;
+  draftIndices: number[];
+  formError: Message;
+  canUndo: boolean;
+  canRedo: boolean;
   showCounts: boolean;
+  showKeyNumbers: boolean;
   session: SessionView;
   busy: Message;
   hardwareOperation: 'read' | 'write' | null;
@@ -102,14 +115,22 @@ export interface AppActions {
   selectKey(key: number, layer?: number): boolean;
   updateForm(form: Partial<EditorForm>): void;
   saveForm(announce?: boolean): boolean;
+  assignKey(code: number): void;
+  discardForm(): void;
+  undo(): void;
+  redo(): void;
+  showChanges(): void;
   resetKey(): void;
   addKey(): void;
   applyColor(all?: boolean): void;
   setShowCounts(show: boolean): void;
+  setShowKeyNumbers(show: boolean): void;
   showBackups(): Promise<void>;
   importBackup(id: string): Promise<void>;
   downloadBackup(id: string): Promise<void>;
   showHelp(): void;
+  showActivity(): void;
+  showDeviceDetails(): void;
   closeDialog(): void;
   confirm(accepted: boolean): void;
   write(): Promise<void>;
@@ -165,6 +186,11 @@ export function createAppStore(dependencies: AppDependencies) {
       set({
         model: editor.model,
         profile: editor.profile?.clone() ?? null,
+        baseline: editor.baseline?.clone() ?? null,
+        generation: editor.generation,
+        canUndo: editor.canUndo,
+        canRedo: editor.canRedo,
+        draftIndices: Object.keys(get().drafts).map(Number),
         source: editor.source,
         key: editor.key,
         layer: editor.layer,
@@ -176,15 +202,18 @@ export function createAppStore(dependencies: AppDependencies) {
           editor.source !== 'demo' &&
           editor.boundEpoch === session.epoch &&
           session.hasLiveBaseline &&
-          (editor.dirty || get().formDirty),
+          editor.dirty && !Object.keys(get().drafts).length,
       });
       if (started && toolsModel !== editor.model) refreshTools();
     }
-    function loadForm() {
+    function loadForm(reset = false) {
+      if (reset) set({ drafts: {} });
       const definition = editor.profile?.definition(editor.index);
+      const draft = get().drafts[editor.index];
       set({
-        formDirty: false,
-        form: definition
+        formDirty: !!draft,
+        formError: '',
+        form: draft ?? (definition
           ? {
               type: String(definition.type),
               sequence: sequenceText(definition, (code) => localizedKeyName(code, get().locale)),
@@ -196,7 +225,7 @@ export function createAppStore(dependencies: AppDependencies) {
                 ? '#' + hex(editor.profile.lights.slice(editor.key * 3, editor.key * 3 + 3))
                 : '#42ddb4',
             }
-          : emptyForm(),
+          : emptyForm()),
       });
       syncEditor();
     }
@@ -228,15 +257,16 @@ export function createAppStore(dependencies: AppDependencies) {
       title: Message,
       body: Message,
       label: Message = msg('common.continue'),
+      review?: ChangeReview,
     ): Promise<boolean> {
       if (resolveConfirmation || disposed) return Promise.resolve(false);
       return new Promise((resolve) => {
         resolveConfirmation = resolve;
-        set({ dialog: { kind: 'confirm', title, body, label } });
+        set({ dialog: { kind: 'confirm', title, body, label, review } });
       });
     }
     async function discardIfNeeded(action: Message) {
-      if (!editor.dirty && !get().formDirty) return true;
+      if (!editor.dirty && !get().draftIndices.length) return true;
       const accepted = await confirm(
         msg('confirm.replaceTitle', { action }),
         msg('confirm.replaceBody'),
@@ -283,7 +313,7 @@ export function createAppStore(dependencies: AppDependencies) {
       if (disposed || !session.connected || isLocked(get()) || get().dialog) return;
       const epoch = session.epoch;
       const preserve =
-        automatic && (get().formDirty || editor.dirty || (!!editor.profile && editor.source !== 'read'));
+        automatic && (get().draftIndices.length > 0 || editor.dirty || (!!editor.profile && editor.source !== 'read'));
       // A cancelled connection prompt must not appear again until a new connection
       // or an explicit Read action. Consent is valid only for this connection epoch.
       autoReadEpoch = epoch;
@@ -300,7 +330,7 @@ export function createAppStore(dependencies: AppDependencies) {
         msg('confirm.readBody'),
         preserve
           ? joinMessages('\n\n', msg('confirm.readPreserve'))
-          : editor.dirty || get().formDirty
+          : editor.dirty || get().draftIndices.length
             ? joinMessages('\n\n', msg('confirm.replaceBody'))
             : '',
       );
@@ -323,7 +353,7 @@ export function createAppStore(dependencies: AppDependencies) {
           syncEditor();
         } else {
           editor.load(profile, { epoch, source: 'read' });
-          loadForm();
+          loadForm(true);
         }
         log(
           msg(automatic ? 'status.autoReadSuccess' : 'status.readSuccess', {
@@ -376,22 +406,40 @@ export function createAppStore(dependencies: AppDependencies) {
         const form = get().form;
         const definition = parseSequence(form.sequence, {
           type: Number(form.type),
-          interval: Number(form.interval),
-          cycles: Number(form.cycles),
+          interval: Number(form.type) > 0
+            ? integer(form.interval.trim() ? Number(form.interval) : NaN, 65535, msg('field.interval'))
+            : Number(form.interval),
+          cycles: Number(form.type) === 2
+            ? integer(form.cycles.trim() ? Number(form.cycles) : NaN, 255, msg('field.cycles'), 1)
+            : Number(form.cycles),
           customDelay: form.customDelay,
         });
-        editor.applyDefinitions([{ index: editor.index, definition }]);
-        set({ formDirty: false });
+        applyDefinition(definition);
         if (announce)
           log(msg('status.keySaved', {
-            layer: editor.model.layers[editor.layer], key: editor.model.keys[editor.key].label,
+            layer: editor.model.layers[editor.layer], key: `#${String(editor.key + 1).padStart(2, '0')}`,
           }));
-        syncEditor();
         return true;
       } catch (error) {
-        fail(error);
+        set({ formError: protocolError(error).description });
         return false;
       }
+    }
+    function assertNoRelatedDrafts(allLayers: boolean) {
+      if (allLayers)
+        assert(!get().draftIndices.some(index => index !== editor.index && index % editor.model.keyCount === editor.key), msg('mapping.fnDrafts'));
+    }
+    function applyDefinition(definition: KeyDefinition) {
+      assertNoRelatedDrafts(editor.isFn(definition) || editor.hasFnAt(editor.key));
+      editor.applyDefinitions([{ index: editor.index, definition }]);
+      const drafts = { ...get().drafts };
+      delete drafts[editor.index];
+      set({ drafts, status: msg('mapping.staged') });
+      loadForm();
+    }
+    function review(): ChangeReview | undefined {
+      if (!editor.profile || !editor.baseline) return;
+      return { before: editor.baseline.clone(), after: editor.profile.clone(), indices: editor.changes, lights: editor.lightsChanged };
     }
     function stageImport(profile: Profile, label: Message) {
       const live = session.hasLiveBaseline;
@@ -402,7 +450,7 @@ export function createAppStore(dependencies: AppDependencies) {
         epoch: live ? session.epoch : null,
         source: 'import',
       });
-      loadForm();
+      loadForm(true);
       const status = live ? msg('status.importLive') : msg('status.importOffline');
       set({ status });
       log(msg('status.importLabel', { label, status }));
@@ -415,7 +463,7 @@ export function createAppStore(dependencies: AppDependencies) {
         {
           editor,
           session,
-          canStage: () => !isLocked(get()) && !get().formDirty && !get().dialog,
+          canStage: () => !isLocked(get()) && !get().draftIndices.length && !get().dialog,
           onStaged: () => {
             loadForm();
             log(msg('status.toolsStaged'));
@@ -476,7 +524,7 @@ export function createAppStore(dependencies: AppDependencies) {
           for (let i = 0; i < profile.model.keyCount; i++) profile.lights.set(profile.model.demoColor, i * 3);
         }
         editor.load(profile, { source: 'demo' });
-        loadForm();
+        loadForm(true);
         const status = msg('status.demo');
         set({ status });
         log(status);
@@ -495,7 +543,7 @@ export function createAppStore(dependencies: AppDependencies) {
         });
       },
       exportProfile() {
-        if (!isLocked(get()) && saveForm() && editor.profile) {
+        if (!isLocked(get()) && !get().draftIndices.length && editor.profile) {
           download(renderMessage(msg('download.profile'), get().locale), editor.profile.toJSON());
           log(msg('status.exported'));
         }
@@ -505,25 +553,60 @@ export function createAppStore(dependencies: AppDependencies) {
           download(renderMessage(msg('download.diagnostic'), get().locale), session.lastCapture);
       },
       selectKey(key, layer = editor.layer) {
-        if (isLocked(get()) || !saveForm()) return false;
+        if (isLocked(get())) return false;
         editor.select(key, layer);
+        // Choosing the front-edge mapping explicitly returns to mapping view.
+        if (layer === 1 && get().showCounts) set({ showCounts: false });
         loadForm();
         return true;
       },
       updateForm(patch) {
         if (isLocked(get()) || !editor.profile) return;
-        set((state) => ({
-          form: { ...state.form, ...patch },
-          formDirty: state.formDirty || Object.keys(patch).some((key) => key !== 'picker' && key !== 'color'),
-        }));
+        set((state) => {
+          const form = { ...state.form, ...patch };
+          const formDirty = state.formDirty || Object.keys(patch).some((key) => key !== 'picker' && key !== 'color' && key !== 'view');
+          return { form, formDirty, formError: '', drafts: formDirty ? { ...state.drafts, [editor.index]: form } : state.drafts };
+        });
         syncEditor();
       },
       saveForm,
+      assignKey(code) {
+        if (isLocked(get()) || !editor.profile) return;
+        try { applyDefinition({ type: 0, keys: [code] }); }
+        catch (error) { set({ formError: protocolError(error).description }); }
+      },
+      discardForm() {
+        if (isLocked(get())) return;
+        const drafts = { ...get().drafts };
+        delete drafts[editor.index];
+        set({ drafts });
+        loadForm();
+      },
+      undo() {
+        if (isLocked(get())) return;
+        editor.undo();
+        loadForm();
+        set({ status: msg('mapping.undone') });
+      },
+      redo() {
+        if (isLocked(get())) return;
+        editor.redo();
+        loadForm();
+        set({ status: msg('mapping.redone') });
+      },
+      showChanges() {
+        if (isLocked(get())) return;
+        const changes = review();
+        if (changes) set({ dialog: { kind: 'changes', review: changes } });
+      },
       resetKey() {
         if (isLocked(get()) || !editor.profile) return;
-        editor.resetKey();
-        loadForm();
-        log(msg('status.resetKey'));
+        try {
+          assertNoRelatedDrafts(editor.hasFnAt(editor.key) || editor.hasFnAt(editor.key, editor.baseline));
+          editor.resetKey();
+          actions.discardForm();
+          log(msg('status.resetKey'));
+        } catch (error) { set({ formError: protocolError(error).description }); }
       },
       addKey() {
         if (isLocked(get()) || !editor.profile) return;
@@ -551,7 +634,15 @@ export function createAppStore(dependencies: AppDependencies) {
       },
       setShowCounts(showCounts) {
         if (isLocked(get())) return;
+        if (showCounts && editor.layer === 1 && editor.model.capabilities(editor.profile?.version ?? '').counters) {
+          editor.select(editor.key, 0);
+          loadForm();
+        }
         set({ showCounts });
+      },
+      setShowKeyNumbers(showKeyNumbers) {
+        if (isLocked(get())) return;
+        set({ showKeyNumbers });
       },
       async showBackups() {
         if (isLocked(get())) return;
@@ -581,6 +672,14 @@ export function createAppStore(dependencies: AppDependencies) {
         if (isLocked(get())) return;
         set({ dialog: { kind: 'help' } });
       },
+      showActivity() {
+        if (isLocked(get())) return;
+        set({ dialog: { kind: 'activity' } });
+      },
+      showDeviceDetails() {
+        if (isLocked(get()) || !get().session.connected) return;
+        set({ dialog: { kind: 'device' } });
+      },
       closeDialog() {
         if (resolveConfirmation) actions.confirm(false);
         else {
@@ -595,7 +694,7 @@ export function createAppStore(dependencies: AppDependencies) {
         resolve?.(accepted);
       },
       async write() {
-        if (isLocked(get()) || get().dialog || !saveForm() || !editor.canWrite(session) || !editor.profile) return;
+        if (isLocked(get()) || get().dialog || get().draftIndices.length || !editor.canWrite(session) || !editor.profile) return;
         try {
           editor.profile.validateForWriting();
         } catch (error) {
@@ -605,14 +704,6 @@ export function createAppStore(dependencies: AppDependencies) {
         const target = editor.profile.clone(),
           epoch = session.epoch,
           changes = editor.changes;
-        const { keyCount, editableRecords, layers, keys } = target.model;
-        const labels = changes
-          .slice(0, 12)
-          .map((index) =>
-            index < editableRecords
-              ? joinMessages(layers[Math.floor(index / keyCount)], ' · ', keys[index % keyCount].label)
-              : msg('confirm.extendedKey', { group: Math.floor(index / keyCount) + 1, key: (index % keyCount) + 1 }),
-          );
         const summary = joinMessages(
           msg('confirm.keyLock'),
           '\n\n',
@@ -620,15 +711,12 @@ export function createAppStore(dependencies: AppDependencies) {
             count: changes.length,
             lighting: editor.lightsChanged ? msg('confirm.lighting') : '',
           }),
-          '\n',
-          joinMessages(...labels.flatMap((label, index) => (index ? ['\n', label] : [label]))),
-          changes.length > 12 ? '…' : '',
           '\n\n',
           msg('confirm.writeBody'),
           '\n\n',
           msg('confirm.writeValidation'),
         );
-        if (!(await confirm(msg('confirm.writeTitle'), summary, msg('confirm.writeAction')))) {
+        if (!(await confirm(msg('confirm.writeTitle'), summary, msg('confirm.writeAction'), review()))) {
           maybeAutoRead();
           return;
         }
@@ -639,7 +727,7 @@ export function createAppStore(dependencies: AppDependencies) {
         await operation(msg('status.preparingWrite'), async () => {
           const result = await session.write(target, saveBackup, progress);
           editor.load(result.profile, { epoch: session.epoch, source: 'read' });
-          loadForm();
+          loadForm(true);
           const status = msg('status.writeComplete');
           set({ status });
           log(status);
@@ -650,6 +738,8 @@ export function createAppStore(dependencies: AppDependencies) {
       model: editor.model,
       locale: dependencies.locale ?? defaultLocale,
       profile: null,
+      baseline: null,
+      generation: 0,
       source: '',
       key: 0,
       layer: 0,
@@ -659,7 +749,13 @@ export function createAppStore(dependencies: AppDependencies) {
       canWrite: false,
       form: emptyForm(),
       formDirty: false,
+      drafts: {},
+      draftIndices: [],
+      formError: '',
+      canUndo: false,
+      canRedo: false,
       showCounts: false,
+      showKeyNumbers: false,
       session: sessionView(),
       busy: '',
       hardwareOperation: null,

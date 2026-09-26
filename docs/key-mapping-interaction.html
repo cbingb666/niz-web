@@ -1,0 +1,367 @@
+<style>
+  #niz-remap-proposal {
+    --niz-bg: light-dark(#f5f7f8, #111416);
+    --niz-panel: light-dark(#ffffff, #191e22);
+    --niz-key: light-dark(#f9fafb, #242c31);
+    --niz-ink: light-dark(#202c32, #eef1f4);
+    --niz-muted: light-dark(#53646f, #a0adb6);
+    --niz-border: light-dark(#d7e0e5, #38434a);
+    --niz-green: light-dark(#14614c, #6de3bc);
+    --niz-green-ink: light-dark(#ffffff, #10231d);
+    --niz-tint: light-dark(#e4f4ed, #203c32);
+    --niz-amber: light-dark(#905900, #f0b56b);
+    --niz-red: light-dark(#b3253f, #ff9caa);
+    --niz-key-height: 55px;
+    color: var(--niz-ink); background: var(--niz-bg); border: 1px solid var(--niz-border); border-radius: 14px;
+    font: 14px/1.5 -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', sans-serif;
+    width: 100%; box-sizing: border-box; overflow-wrap: anywhere;
+  }
+  #niz-remap-proposal * { box-sizing: border-box; }
+  #niz-remap-proposal [hidden] { display: none !important; }
+  #niz-remap-proposal h2, #niz-remap-proposal h3, #niz-remap-proposal p { margin: 0; }
+  #niz-remap-proposal button, #niz-remap-proposal input, #niz-remap-proposal select { font: inherit; color: inherit; }
+  #niz-remap-proposal button { cursor: pointer; }
+  #niz-remap-proposal button:disabled { opacity: .42; cursor: default; }
+  #niz-remap-proposal .nr-muted { color: var(--niz-muted); }
+  #niz-remap-proposal .nr-small { font-size: 12px; }
+  #niz-remap-proposal .nr-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding: 18px 22px; border-bottom: 1px solid var(--niz-border); }
+  #niz-remap-proposal .nr-brand { display: flex; gap: 12px; align-items: center; }
+  #niz-remap-proposal .nr-logo { color: var(--niz-green); font-size: 22px; font-weight: 500; letter-spacing: 2px; }
+  #niz-remap-proposal .nr-demo { color: var(--niz-muted); padding: 4px 9px; border: 1px solid var(--niz-border); border-radius: 6px; font-size: 12px; }
+  #niz-remap-proposal .nr-workspace { display: grid; grid-template-columns: minmax(0, 1fr) 302px; }
+  #niz-remap-proposal .nr-canvas { min-width: 0; padding: 22px 18px; }
+  #niz-remap-proposal .nr-device { display: flex; justify-content: space-between; gap: 12px; align-items: center; margin-bottom: 18px; }
+  #niz-remap-proposal h2 { font-size: 18px; font-weight: 500; }
+  #niz-remap-proposal h3 { font-size: 16px; font-weight: 500; }
+  #niz-remap-proposal .nr-layers { display: flex; gap: 5px; flex-wrap: wrap; }
+  #niz-remap-proposal .nr-layer { border: 1px solid transparent; background: transparent; border-radius: 7px; padding: 7px 10px; color: var(--niz-muted); }
+  #niz-remap-proposal .nr-layer[aria-pressed='true'] { background: var(--niz-panel); color: var(--niz-ink); border-color: var(--niz-border); }
+  #niz-remap-proposal .nr-count { color: var(--niz-amber); font-size: 12px; margin-left: 4px; }
+  #niz-remap-proposal .nr-layer-hint { margin: 10px 0 20px; min-height: 18px; }
+  #niz-remap-proposal .nr-board { padding: 9px; border: 1px solid var(--niz-border); border-radius: 11px; background: var(--niz-panel); }
+  #niz-remap-proposal .nr-row { display: flex; gap: 4px; margin-top: 4px; }
+  #niz-remap-proposal .nr-row:first-child { margin-top: 0; }
+  #niz-remap-proposal .nr-key { flex: var(--nr-weight) 1 0; min-width: 0; min-height: var(--niz-key-height); padding: 4px 3px; border: 1px solid var(--niz-border); border-radius: 5px; background: var(--niz-key); text-align: left; display: flex; flex-direction: column; justify-content: space-between; position: relative; }
+  #niz-remap-proposal .nr-key[aria-pressed='true'] { border-color: var(--niz-green); box-shadow: 0 0 0 1px var(--niz-green); background: var(--niz-tint); }
+  #niz-remap-proposal .nr-physical { font-size: 11px; color: var(--niz-muted); }
+  #niz-remap-proposal .nr-assignment { font-size: 12px; font-weight: 500; line-height: 1.15; text-align: center; margin-block: 5px; }
+  #niz-remap-proposal .nr-changed::after { content: ''; width: 4px; height: 4px; border-radius: 50%; background: var(--niz-amber); position: absolute; right: 3px; top: 3px; }
+  #niz-remap-proposal .nr-candidate::before { content: '…'; position: absolute; right: 3px; bottom: 0; color: var(--niz-amber); }
+  #niz-remap-proposal .nr-legend { display: flex; gap: 16px; flex-wrap: wrap; margin: 12px 0 24px; }
+  #niz-remap-proposal .nr-legend b { color: var(--niz-amber); font-weight: 500; }
+  #niz-remap-proposal .nr-change-heading { display: flex; justify-content: space-between; align-items: center; margin-bottom: 9px; }
+  #niz-remap-proposal .nr-change { display: grid; grid-template-columns: minmax(110px, 1fr) minmax(100px, 1.2fr); gap: 10px; background: transparent; width: 100%; text-align: left; padding: 9px 0; border: 0; border-top: 1px solid var(--niz-border); }
+  #niz-remap-proposal .nr-change span:last-child { text-align: right; }
+  #niz-remap-proposal .nr-editor { border-left: 1px solid var(--niz-border); background: var(--niz-panel); padding: 21px 17px; min-width: 0; }
+  #niz-remap-proposal .nr-context { color: var(--niz-muted); font-size: 12px; margin-bottom: 8px; }
+  #niz-remap-proposal .nr-mapping { display: flex; align-items: center; gap: 11px; margin-bottom: 12px; }
+  #niz-remap-proposal .nr-keycap { background: var(--niz-key); border: 1px solid var(--niz-border); border-bottom-width: 3px; border-radius: 8px; padding: 9px 10px; min-width: 43px; text-align: center; font-size: 16px; }
+  #niz-remap-proposal .nr-target { font-size: 18px; font-weight: 500; }
+  #niz-remap-proposal .nr-btn { border: 1px solid var(--niz-border); border-radius: 7px; padding: 7px 10px; background: var(--niz-panel); }
+  #niz-remap-proposal .nr-btn:hover:not(:disabled), #niz-remap-proposal .nr-option:hover { border-color: var(--niz-green); background: var(--niz-tint); }
+  #niz-remap-proposal .nr-primary { background: var(--niz-green); color: var(--niz-green-ink); border-color: var(--niz-green); }
+  #niz-remap-proposal .nr-primary:hover:not(:disabled) { background: var(--niz-green); color: var(--niz-green-ink); }
+  #niz-remap-proposal .nr-link { color: var(--niz-green); border: 0; padding: 0; background: transparent; font-size: 12px; }
+  #niz-remap-proposal .nr-categories { display: grid; grid-template-columns: repeat(4, 1fr); gap: 3px; padding: 3px; background: var(--niz-bg); border-radius: 8px; margin: 21px 0 15px; }
+  #niz-remap-proposal .nr-category { padding: 6px 2px; border: 1px solid transparent; border-radius: 6px; background: transparent; font-size: 12px; color: var(--niz-muted); }
+  #niz-remap-proposal .nr-category[aria-pressed='true'] { background: var(--niz-panel); color: var(--niz-ink); border-color: var(--niz-border); }
+  #niz-remap-proposal input, #niz-remap-proposal select { min-width: 0; width: 100%; background: var(--niz-panel); border: 1px solid var(--niz-border); border-radius: 7px; padding: 8px; }
+  #niz-remap-proposal input[type='number'] { width: 90px; }
+  #niz-remap-proposal .nr-options { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; margin: 12px 0; }
+  #niz-remap-proposal .nr-option { border: 1px solid var(--niz-border); border-radius: 7px; background: var(--niz-panel); padding: 9px 8px; text-align: left; font-size: 13px; }
+  #niz-remap-proposal .nr-option[aria-pressed='true'] { background: var(--niz-tint); color: var(--niz-green); border-color: var(--niz-green); }
+  #niz-remap-proposal .nr-field { display: grid; gap: 7px; margin: 13px 0; }
+  #niz-remap-proposal .nr-inline { display: flex; gap: 7px; flex-wrap: wrap; align-items: center; }
+  #niz-remap-proposal .nr-mods { display: flex; gap: 5px; flex-wrap: wrap; margin: 12px 0; }
+  #niz-remap-proposal .nr-mods [aria-pressed='true'] { border-color: var(--niz-green); color: var(--niz-green); background: var(--niz-tint); }
+  #niz-remap-proposal .nr-step { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
+  #niz-remap-proposal .nr-step select { flex: 1; }
+  #niz-remap-proposal .nr-delay { margin: 7px 0 7px 24px; }
+  #niz-remap-proposal .nr-notice { color: var(--niz-muted); min-height: 40px; padding-top: 14px; font-size: 12px; }
+  #niz-remap-proposal .nr-error { color: var(--niz-red); }
+  #niz-remap-proposal .nr-fn { margin-top: 14px; padding: 10px; border-left: 2px solid var(--niz-green); background: var(--niz-tint); font-size: 12px; }
+  #niz-remap-proposal .nr-footer { padding: 15px 20px; border-top: 1px solid var(--niz-border); display: flex; justify-content: space-between; gap: 14px; align-items: center; flex-wrap: wrap; background: var(--niz-panel); border-radius: 0 0 14px 14px; }
+  #niz-remap-proposal .nr-footer-actions { display: flex; gap: 7px; align-items: center; flex-wrap: wrap; }
+  #niz-remap-proposal .nr-review { padding: 22px; border-top: 1px solid var(--niz-border); background: var(--niz-panel); }
+  #niz-remap-proposal .nr-review-row { display: grid; grid-template-columns: minmax(100px, 1fr) minmax(80px, 1fr) 20px minmax(80px, 1fr); gap: 8px; padding: 10px 0; border-bottom: 1px solid var(--niz-border); align-items: center; }
+  #niz-remap-proposal .nr-review-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }
+  #niz-remap-proposal[data-placement='bottom'] .nr-workspace { grid-template-columns: 1fr; }
+  #niz-remap-proposal[data-placement='bottom'] .nr-editor { border-left: 0; border-top: 1px solid var(--niz-border); }
+  #niz-remap-proposal[data-placement='bottom'] .nr-options { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  @media (max-width: 880px) {
+    #niz-remap-proposal .nr-workspace { grid-template-columns: 1fr; }
+    #niz-remap-proposal .nr-editor { border-left: 0; border-top: 1px solid var(--niz-border); }
+    #niz-remap-proposal .nr-options { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  }
+  @media (max-width: 560px) {
+    #niz-remap-proposal .nr-top, #niz-remap-proposal .nr-canvas, #niz-remap-proposal .nr-editor, #niz-remap-proposal .nr-review { padding: 16px 12px; }
+    #niz-remap-proposal .nr-row { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); margin-top: 13px; }
+    #niz-remap-proposal .nr-row:first-child { margin-top: 0; }
+    #niz-remap-proposal .nr-key { min-height: 53px; }
+    #niz-remap-proposal .nr-options, #niz-remap-proposal[data-placement='bottom'] .nr-options { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    #niz-remap-proposal .nr-review-row { grid-template-columns: 1fr 20px 1fr; }
+    #niz-remap-proposal .nr-review-row > :first-child { grid-column: 1 / -1; }
+    #niz-remap-proposal .nr-footer-actions { width: 100%; }
+    #niz-remap-proposal .nr-footer-actions .nr-primary { flex: 1; }
+    #niz-remap-proposal .nr-footer { padding: 14px 12px; }
+  }
+  @media (pointer: coarse) {
+    #niz-remap-proposal button { min-height: 44px; }
+    #niz-remap-proposal input, #niz-remap-proposal select { min-height: 44px; font-size: 16px; }
+  }
+</style>
+
+<div id="niz-remap-proposal" aria-label="NIZ 按键映射交互方案" data-placement="right">
+  <header class="nr-top">
+    <div class="nr-brand"><span class="nr-logo">NIZ</span><span>按键映射</span></div>
+    <span class="nr-demo">交互示意 · 离线演示</span>
+  </header>
+  <div class="nr-workspace">
+    <section class="nr-canvas" aria-label="物理键位与待写入改动">
+      <div class="nr-device"><h2>ATOM66</h2><span class="nr-muted nr-small">66 键 · 3 层</span></div>
+      <div class="nr-layers" aria-label="选择编辑层" data-region="layers"></div>
+      <p class="nr-layer-hint nr-muted nr-small" data-region="layer-hint"></p>
+      <div class="nr-board" aria-label="ATOM66 物理键盘布局" data-region="board"></div>
+      <div class="nr-legend nr-small nr-muted"><span>上：原键名　下：当前功能</span><span><b>●</b> 待写入　… 未完成编辑</span></div>
+      <div class="nr-change-heading"><span>待写入改动</span><span class="nr-small nr-muted" data-region="change-count"></span></div>
+      <div data-region="changes"></div>
+    </section>
+    <aside class="nr-editor" aria-label="选中键位的功能编辑器">
+      <div class="nr-context" data-region="context"></div>
+      <div class="nr-mapping"><span class="nr-keycap" data-region="physical"></span><span class="nr-muted">→</span><span class="nr-target" data-region="target"></span></div>
+      <button class="nr-link" type="button" data-action="restore">还原此键至载入时</button>
+      <div class="nr-categories" aria-label="选择功能类型">
+        <button class="nr-category" type="button" data-category="key" aria-pressed="true">按键</button>
+        <button class="nr-category" type="button" data-category="chord" aria-pressed="false">快捷键</button>
+        <button class="nr-category" type="button" data-category="system" aria-pressed="false">系统</button>
+        <button class="nr-category" type="button" data-category="macro" aria-pressed="false">宏 / 连发</button>
+      </div>
+      <div data-region="picker">
+        <label class="nr-small nr-muted" for="nr-search">选择目标功能，点击后自动暂存</label>
+        <input id="nr-search" type="search" placeholder="搜索按键，如 Esc、空格" autocomplete="off">
+        <div class="nr-options" data-region="options"></div>
+      </div>
+      <div data-region="advanced" hidden></div>
+      <p class="nr-fn" data-region="fn-note" hidden></p>
+      <p class="nr-notice" data-region="notice" aria-live="polite">从键盘上选一个键，再选择它要执行的功能。</p>
+    </aside>
+  </div>
+  <section class="nr-review" aria-label="写入差异预览" data-region="review" hidden>
+    <div class="nr-device"><h3>核对改动</h3><span class="nr-demo">模拟流程</span></div>
+    <p class="nr-muted nr-small">载入时 → 即将写入。真实读写期间，键盘将暂时无法输入。</p>
+    <div data-region="review-list"></div>
+    <div class="nr-review-actions"><button type="button" class="nr-btn" data-action="close-review">继续编辑</button><button type="button" class="nr-btn nr-primary" data-action="simulate">模拟写入完成</button></div>
+  </section>
+  <footer class="nr-footer">
+    <div><div data-region="summary" aria-live="polite">尚无修改</div><p class="nr-small nr-muted" data-region="status">选择功能后先暂存，核对后再写入。</p></div>
+    <div class="nr-footer-actions"><button type="button" class="nr-btn" data-action="undo" disabled>撤销</button><button type="button" class="nr-btn" data-action="redo" disabled>重做</button><button type="button" class="nr-btn nr-primary" data-action="review" disabled>预览写入</button></div>
+  </footer>
+</div>
+
+<script>
+(() => {
+  const root = document.getElementById('niz-remap-proposal');
+  const get = (name) => root.querySelector('[data-region="' + name + '"]');
+  const esc = (value) => String(value).replace(/[&<>"']/g, (char) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
+  const labels = "Esc|1|2|3|4|5|6|7|8|9|0|-|=|\\|`|Tab|Q|W|E|R|T|Y|U|I|O|P|[|]|⌫|Caps|A|S|D|F|G|H|J|K|L|;|'|Return|Shift|Z|X|C|V|B|N|M|,|.|/|Shift / ↑|R Fn|Ctrl|Win|Alt|L Fn|Space|Alt|Menu|Ctrl|←|↓|→".split('|');
+  const widths = [Array(15).fill(1), [1.5,...Array(12).fill(1),1.5], [1.75,...Array(11).fill(1),2.25], [2.25,...Array(10).fill(1),1.75,1], [1.25,1.25,1.25,1.25,4,1,1,1,1,1,1]];
+  const layers = ['普通层', '右 Fn 层', '左 Fn 层'];
+  const names = {28:'Backspace',29:'Caps Lock',41:'Enter',42:'左 Shift',53:'右 Shift',54:'右 Fn',55:'左 Ctrl',56:'左 Command / Win',57:'左 Alt',58:'左 Fn',59:'Space',60:'右 Alt',62:'右 Ctrl'};
+  const physical = (index) => names[index] || labels[index];
+  const single = (name) => ({kind:'key', label:name});
+  let baseline = layers.map((_, layer) => labels.map((_, index) => single(index === 54 ? '右 Fn' : index === 58 ? '左 Fn' : layer === 0 ? physical(index) : index > 0 && index < 13 ? 'F' + index : '未设置')));
+  const copy = (value) => JSON.parse(JSON.stringify(value));
+  const same = (a,b) => JSON.stringify(a) === JSON.stringify(b);
+  let mappings = copy(baseline), selected = 29, layer = 0, category = 'key';
+  let history = [], future = [], drafts = {}, reviewing = false, capture = false;
+  let notice = '从键盘上选一个键，再选择它要执行的功能。', error = false, simulated = false;
+  const view = {placement:'right', density:'comfortable'};
+  const address = () => layer + ':' + selected;
+  const fn = (mapping) => mapping.kind === 'key' && ['左 Fn','右 Fn'].includes(mapping.label);
+  const compact = (mapping) => ({'未设置':'—','Caps Lock':'Caps','Backspace':'⌫','左 Ctrl':'Ctrl','右 Ctrl':'Ctrl','左 Command / Win':'⌘ / Win','左 Shift':'Shift','右 Shift':'Shift','左 Alt':'Alt','右 Alt':'Alt','左 Fn':'L Fn','右 Fn':'R Fn','Space':'空格','音量 +':'音量+','音量 -':'音量−','播放 / 暂停':'播放','无功能':'禁用'}[mapping.label] || (mapping.kind === 'macro' ? '宏' : mapping.kind === 'repeat' ? '连发' : mapping.label));
+  const describe = (mapping) => mapping.kind==='macro' ? mapping.steps.join(' → ')+' · '+mapping.interval+' ms · '+(mapping.play==='once'?mapping.cycles+' 次':mapping.play==='hold'?'按住播放':'再次按下停止') : mapping.kind==='repeat' ? mapping.label+' · '+mapping.interval+' ms' : mapping.label;
+  const changes = () => mappings.flatMap((row, l) => row.flatMap((to, k) => same(to,baseline[l][k]) ? [] : [{layer:l,key:k,from:baseline[l][k],to}]));
+  const keys = [
+    ['Esc','escape 退出'],['左 Ctrl','control 控制'],['Caps Lock','caps 大写'],['Backspace','退格'],['Enter','return 回车'],['Space','空格'],['Delete','删除'],['Tab','制表'],['Home','行首'],['End','行尾'],['Page Up','上翻页'],['Page Down','下翻页'],['←','左箭头'],['↓','下箭头'],['↑','上箭头'],['→','右箭头'],['左 Command / Win','meta command win windows'],['左 Alt','option alt'],['右 Ctrl','control'],['右 Alt','option'],['左 Shift','shift'],['右 Shift','shift'],...Array.from({length:12},(_,i)=>['F'+(i+1),'功能键']),...Array.from('ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789').map(k=>[k,'']),['无功能','禁用']
+  ];
+  const system = [['音量 +','volume 加大'],['音量 -','volume 减小'],['静音','mute'],['播放 / 暂停','play pause'],['上一曲','previous'],['下一曲','next'],['鼠标左键','mouse'],['鼠标右键','mouse'],['左 Fn','lfn'],['右 Fn','rfn'],['无功能','禁用']];
+  const primaryKeys = ['C','V','X','Z','A','S','D','F','J','K','L','Enter','Tab','Esc','Space'];
+  function selectMarkup(values, current) { return values.map(v=>'<option value="'+esc(v)+'"'+(v===current?' selected':'')+'>'+esc(v)+'</option>').join(''); }
+  function say(message, isError=false) { notice=message; error=isError; }
+  function inferCategory(value) { return value.kind==='chord'?'chord':value.kind==='macro'||value.kind==='repeat'?'macro':system.some(([name])=>name===value.label)?'system':'key'; }
+  function currentDraft() {
+    const existing=drafts[address()];
+    if(existing && ((category==='chord' && existing.kind==='chord') || (category==='macro' && existing.kind!=='chord'))) return copy(existing);
+    const mapped=mappings[layer][selected];
+    if(category==='chord') return mapped.kind==='chord' ? copy(mapped) : {kind:'chord',mods:['Ctrl'],key:'C'};
+    return mapped.kind==='macro'||mapped.kind==='repeat' ? copy(mapped) : {kind:'macro',steps:['A','B'],interval:30,play:'once',cycles:1};
+  }
+  function updateDraft(patch, repaint=true) {
+    const value=currentDraft(); Object.assign(value,patch); delete value.label;
+    drafts[address()]=value; reviewing=false; say('这次编辑尚未应用；切换键位后仍会保留。');
+    if(repaint) render(); else { renderBoard(); renderFooter(); get('notice').textContent=notice; get('notice').classList.remove('nr-error'); get('notice').removeAttribute('role'); }
+  }
+  function apply(value) {
+    const affectsAll=fn(value)||mappings.some(row=>fn(row[selected]));
+    const next=copy(mappings);
+    (affectsAll?[0,1,2]:[layer]).forEach(l=>{next[l][selected]=copy(value);});
+    if(!next[0].some(fn)) { say('至少保留一个 Fn：先把另一个键设为 Fn，再修改这里。',true); render(); return; }
+    if(!same(next,mappings)) { history.push(copy(mappings)); future=[]; mappings=next; simulated=false; }
+    if(affectsAll) [0,1,2].forEach(l=>delete drafts[l+':'+selected]); else delete drafts[address()];
+    capture=false; reviewing=false;
+    say(affectsAll?'已暂存：此键位的三个层一起改变，可一次撤销。':'已暂存 '+physical(selected)+' → '+value.label+'，尚未写入键盘。');
+    render();
+  }
+  function chooseKey(k,l=layer) {
+    selected=k; layer=l; capture=false;
+    category=drafts[address()] ? (drafts[address()].kind==='chord'?'chord':'macro') : inferCategory(mappings[layer][selected]);
+    root.querySelector('#nr-search').value='';
+    say(drafts[address()]?'已恢复这次尚未应用的编辑。':'选择目标功能，修改会先暂存。');
+    render();
+  }
+  function renderBoard() {
+    const list=changes();
+    get('layers').innerHTML=layers.map((name,l)=>{const n=list.filter(c=>c.layer===l).length;return '<button type="button" class="nr-layer" data-layer="'+l+'" aria-pressed="'+(l===layer)+'">'+name+(n?'<span class="nr-count">'+n+'</span>':'')+'</button>';}).join('');
+    get('layer-hint').textContent=layer===0?'直接按下键盘时生效':'按住'+(layer===1?'右':'左')+' Fn 时生效';
+    let position=0;
+    get('board').innerHTML=widths.map(row=>'<div class="nr-row">'+row.map(weight=>{
+      const k=position++, value=mappings[layer][k], changed=!same(value,baseline[layer][k]), candidate=Boolean(drafts[layer+':'+k]);
+      return '<button type="button" class="nr-key'+(changed?' nr-changed':'')+(candidate?' nr-candidate':'')+'" data-key="'+k+'" style="--nr-weight:'+weight+'" aria-pressed="'+(selected===k)+'" aria-label="'+esc(layers[layer]+'，'+physical(k)+'，当前 '+value.label+(changed?'，待写入':'')+(candidate?'，有未完成编辑':''))+'"><span class="nr-physical">'+esc(labels[k])+'</span><span class="nr-assignment">'+esc(compact(value))+'</span></button>';
+    }).join('')+'</div>').join('');
+    get('change-count').textContent=list.length?new Set(list.map(c=>c.key)).size+' 个键位 · '+list.length+' 处映射':'';
+    const pending=Object.keys(drafts);
+    get('changes').innerHTML=(list.length?list.slice(0,4).map(c=>'<button class="nr-change" type="button" data-change="'+c.layer+':'+c.key+'"><span>'+layers[c.layer]+' · '+esc(physical(c.key))+'</span><span><span class="nr-muted">'+esc(describe(c.from))+'</span> → '+esc(describe(c.to))+'</span></button>').join('')+(list.length>4?'<p class="nr-small nr-muted">另有 '+(list.length-4)+' 处，可在写入预览中查看。</p>':''):'<p class="nr-muted nr-small">改动会显示在这里，随时可以撤销。</p>')+pending.map(id=>{const [l,k]=id.split(':').map(Number);return '<button type="button" class="nr-change" data-change="'+id+'"><span>'+layers[l]+' · '+esc(physical(k))+'</span><span>未完成编辑 →</span></button>';}).join('');
+  }
+  function renderOptions() {
+    const query=root.querySelector('#nr-search').value.trim().toLowerCase();
+    const source=category==='system'?system:keys;
+    const result=source.filter(([name,aliases])=>(name+' '+aliases).toLowerCase().includes(query));
+    const visible=query||category==='system'?result:result.slice(0,8);
+    get('options').innerHTML=visible.length?visible.map(([name])=>'<button type="button" class="nr-option" data-target="'+esc(name)+'" aria-pressed="'+(mappings[layer][selected].label===name)+'">'+esc(name)+'</button>').join(''):'<p class="nr-muted nr-small">没有匹配的功能</p>';
+  }
+  function renderAdvanced() {
+    const value=currentDraft(), modified=Boolean(drafts[address()]);
+    const discard=modified?'<button type="button" class="nr-link" data-action="discard">放弃这次编辑</button>':'';
+    if(category==='chord') {
+      const combo=[...value.mods,value.key].join(' + ');
+      get('advanced').innerHTML='<p class="nr-muted nr-small">同时按下</p><div class="nr-mods">'+['Ctrl','Alt','Shift','Command / Win'].map(mod=>'<button type="button" class="nr-btn" data-mod="'+esc(mod)+'" aria-pressed="'+value.mods.includes(mod)+'">'+esc(mod)+'</button>').join('')+'</div><label class="nr-field">主键<select data-field="chord-key">'+selectMarkup(primaryKeys,value.key)+'</select></label><button type="button" class="nr-btn" data-action="capture">'+(capture?'正在录入 · 点击停止':'按下快捷键录入')+'</button><p class="nr-muted nr-small" style="margin-top:8px">系统保留的快捷键可用上方选项设置。</p><div class="nr-field"><span>'+esc(combo)+'</span><button type="button" class="nr-btn nr-primary" data-action="apply-advanced">使用此快捷键</button>'+discard+'</div>';
+    } else {
+      const repeat=value.kind==='repeat';
+      get('advanced').innerHTML='<label class="nr-field">执行方式<select data-field="macro-kind">'+selectMarkup(['顺序宏','按住连发'],repeat?'按住连发':'顺序宏')+'</select></label>'+(repeat?'<p class="nr-muted nr-small">按住时重复发送</p>':'<p class="nr-muted nr-small">按顺序依次执行</p>')+value.steps.map((step,i)=>'<div class="nr-step"><span class="nr-muted nr-small">'+(i+1)+'</span><select aria-label="第 '+(i+1)+' 步按键" data-step="'+i+'">'+selectMarkup(primaryKeys,step)+'</select>'+(!repeat&&value.steps.length>1?'<button type="button" class="nr-btn" aria-label="删除第 '+(i+1)+' 步" data-remove="'+i+'">×</button>':'')+'</div>'+(!repeat&&i<value.steps.length-1?'<p class="nr-delay nr-muted nr-small">↓ 等待 '+esc(value.interval)+' ms</p>':'')).join('')+(!repeat?'<button type="button" class="nr-link" style="margin-top:10px" data-action="add-step">＋ 添加步骤</button>':'')+'<label class="nr-field">'+(repeat?'重复间隔':'统一步间延迟')+'<span class="nr-inline"><input type="number" min="0" max="65535" step="1" data-field="interval" value="'+esc(value.interval)+'"><span class="nr-muted">ms</span></span></label>'+(!repeat?'<label class="nr-field">播放方式<select data-field="play">'+[['once','指定次数'],['hold','按住播放'],['toggle','再次按下停止']].map(([id,name])=>'<option value="'+id+'"'+(value.play===id?' selected':'')+'>'+name+'</option>').join('')+'</select></label>'+(value.play==='once'?'<label class="nr-field">次数<input type="number" min="1" max="255" step="1" data-field="cycles" value="'+esc(value.cycles)+'"></label>':''):'')+'<div class="nr-field"><button type="button" class="nr-btn nr-primary" data-action="apply-advanced">'+(repeat?'应用连发':'应用宏')+'</button>'+discard+'</div>';
+    }
+  }
+  function renderFooter() {
+    const list=changes(), pending=Object.keys(drafts).length;
+    get('summary').textContent=pending?pending+' 处编辑尚未应用':list.length?'已暂存 '+new Set(list.map(c=>c.key)).size+' 个键位 · '+list.length+' 处映射':simulated?'模拟写入已完成':'尚无修改';
+    get('status').textContent=pending?'完成或放弃这些编辑后，即可预览写入。':list.length?'尚未写入键盘 · 刷新页面会丢失本次演示改动':simulated?'实际键盘未更改，可继续体验改键。':'选择功能后先暂存，核对后再写入。';
+    root.querySelector('[data-action="undo"]').disabled=!history.length;
+    root.querySelector('[data-action="redo"]').disabled=!future.length;
+    root.querySelector('[data-action="review"]').disabled=!list.length||pending>0;
+  }
+  function render() {
+    const active=document.activeElement;
+    const focusKeys=['key','layer','category','target','action','field','step','mod','remove','change'];
+    const focusKey=active&&root.contains(active)?focusKeys.find(key=>active.dataset[key]!==undefined):undefined;
+    const focusValue=focusKey?active.dataset[focusKey]:undefined;
+    root.dataset.placement=view.placement;
+    root.style.setProperty('--niz-key-height',view.density==='compact'?'45px':'55px');
+    renderBoard();
+    get('context').textContent=layers[layer]+' · 键位 '+String(selected+1).padStart(2,'0');
+    get('physical').textContent=physical(selected);
+    get('target').textContent=mappings[layer][selected].label;
+    const restoreAll=mappings.some(row=>fn(row[selected]))||baseline.some(row=>fn(row[selected]));
+    root.querySelector('[data-action="restore"]').disabled=!(restoreAll?[0,1,2]:[layer]).some(l=>!same(mappings[l][selected],baseline[l][selected])||drafts[l+':'+selected]);
+    root.querySelectorAll('[data-category]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.category===category)));
+    const advanced=category==='chord'||category==='macro';
+    get('picker').hidden=advanced; get('advanced').hidden=!advanced;
+    if(advanced) renderAdvanced(); else renderOptions();
+    const fnContext=mappings.some(row=>fn(row[selected]))||category==='system';
+    get('fn-note').hidden=!fnContext;
+    get('fn-note').textContent=mappings.some(row=>fn(row[selected]))?'这个位置为 Fn。修改会同步三个层；至少保留一个 Fn。':'分配 Fn 会同步这个键位的三个层。';
+    get('notice').textContent=notice; get('notice').classList.toggle('nr-error',error);
+    if(error) get('notice').setAttribute('role','alert'); else get('notice').removeAttribute('role');
+    renderFooter();
+    const list=changes();
+    get('review').hidden=!reviewing||!list.length;
+    get('review-list').innerHTML=reviewing?list.map(c=>'<div class="nr-review-row"><span>'+layers[c.layer]+' · '+esc(physical(c.key))+'</span><span class="nr-muted">'+esc(describe(c.from))+'</span><span>→</span><span>'+esc(describe(c.to))+'</span></div>').join(''):'';
+    if(focusKey&&!root.contains(active)) {
+      const replacement=Array.from(root.querySelectorAll('[data-'+focusKey+']')).find(element=>element.dataset[focusKey]===focusValue);
+      if(replacement&&!replacement.disabled) replacement.focus({preventScroll:true});
+    }
+  }
+  function applyAdvanced() {
+    const value=currentDraft();
+    if(value.kind==='chord') value.label=[...value.mods,value.key].join(' + ');
+    else {
+      const interval=Number(value.interval), cycles=Number(value.cycles);
+      if(value.interval===''||!Number.isInteger(interval)||interval<0||interval>65535) { say('间隔需为 0–65535 ms 的整数。',true); render(); return; }
+      if(value.kind==='macro'&&value.play==='once'&&(value.cycles===''||!Number.isInteger(cycles)||cycles<1||cycles>255)) { say('播放次数需为 1–255 的整数。',true); render(); return; }
+      value.interval=interval; value.cycles=cycles;
+      value.label=value.kind==='repeat'?'连发 '+value.steps[0]:'宏 · '+value.steps.length+' 步';
+    }
+    apply(value);
+  }
+  root.addEventListener('click',event=>{
+    const button=event.target.closest('button'); if(!button||button.disabled) return;
+    const data=button.dataset;
+    if(data.key!==undefined) { chooseKey(Number(data.key)); return; }
+    if(data.layer!==undefined) { chooseKey(selected,Number(data.layer)); return; }
+    if(data.change) { const [l,k]=data.change.split(':').map(Number); chooseKey(k,l); return; }
+    if(data.category) { category=data.category; capture=false; root.querySelector('#nr-search').value=''; render(); return; }
+    if(data.target) { apply(single(data.target)); return; }
+    if(data.mod) { const value=currentDraft(); updateDraft({mods:value.mods.includes(data.mod)?value.mods.filter(mod=>mod!==data.mod):[...value.mods,data.mod]}); return; }
+    if(data.remove!==undefined) { const value=currentDraft(); updateDraft({steps:value.steps.filter((_,i)=>i!==Number(data.remove))}); return; }
+    if(data.action==='restore') {
+      const next=copy(mappings), all=mappings.some(row=>fn(row[selected]))||baseline.some(row=>fn(row[selected]));
+      (all?[0,1,2]:[layer]).forEach(l=>{next[l][selected]=copy(baseline[l][selected]);});
+      if(!next[0].some(fn)) {say('先恢复另一个 Fn，再还原这个键。',true);render();return;}
+      if(!same(next,mappings)) {history.push(copy(mappings));future=[];mappings=next;}
+      (all?[0,1,2]:[layer]).forEach(l=>delete drafts[l+':'+selected]);
+      reviewing=false; say('已还原至载入时的映射，可以撤销。'); render();
+    }
+    if(data.action==='undo'||data.action==='redo') {
+      const undo=data.action==='undo', source=undo?history:future, destination=undo?future:history;
+      if(source.length) { destination.push(copy(mappings));mappings=source.pop();reviewing=false;simulated=false;say(undo?'已撤销上一笔已应用的修改。':'已重做上一笔修改。');render(); }
+    }
+    if(data.action==='discard') {delete drafts[address()];say('已放弃这次未应用的编辑。');render();}
+    if(data.action==='capture') {capture=!capture;render();if(capture) root.querySelector('[data-action="capture"]').focus();}
+    if(data.action==='apply-advanced') applyAdvanced();
+    if(data.action==='add-step') {const value=currentDraft();updateDraft({steps:[...value.steps,'C']});}
+    if(data.action==='review') {reviewing=true;capture=false;render();root.querySelector('[data-action="close-review"]').focus();}
+    if(data.action==='close-review') {reviewing=false;render();root.querySelector('[data-action="review"]').focus();}
+    if(data.action==='simulate') {baseline=copy(mappings);history=[];future=[];reviewing=false;simulated=true;say('模拟完成；实际键盘未更改。');render();}
+  });
+  root.querySelector('#nr-search').addEventListener('input',renderOptions);
+  root.addEventListener('change',event=>{
+    const data=event.target.dataset, value=event.target.value;
+    if(data.step!==undefined) {const draft=currentDraft();draft.steps[Number(data.step)]=value;updateDraft({steps:draft.steps});}
+    if(data.field==='chord-key') updateDraft({key:value});
+    if(data.field==='macro-kind') {const draft=currentDraft();updateDraft({kind:value==='按住连发'?'repeat':'macro',steps:value==='按住连发'?[draft.steps[0]]:draft.steps});}
+    if(data.field==='play') updateDraft({play:value});
+    if(data.field==='interval'||data.field==='cycles') updateDraft({[data.field]:value});
+  });
+  root.addEventListener('input',event=>{
+    const field=event.target.dataset.field;
+    if(field==='interval'||field==='cycles') updateDraft({[field]:event.target.value},false);
+  });
+  root.addEventListener('focusout',event=>{
+    if(capture&&event.target.dataset.action==='capture') {capture=false;event.target.textContent='按下快捷键录入';}
+  });
+  root.addEventListener('keydown',event=>{
+    if(!capture||event.target.dataset.action!=='capture') return;
+    event.preventDefault();
+    if(event.key==='Escape') {capture=false;render();return;}
+    if(['Control','Shift','Alt','Meta'].includes(event.key)) return;
+    const key=event.key.length===1?event.key.toUpperCase():event.key;
+    if(!primaryKeys.includes(key)) {say('此示意未收录该按键，请使用主键选项。',true);capture=false;render();return;}
+    const mods=[]; if(event.ctrlKey)mods.push('Ctrl');if(event.altKey)mods.push('Alt');if(event.shiftKey)mods.push('Shift');if(event.metaKey)mods.push('Command / Win');
+    capture=false;updateDraft({kind:'chord',mods,key});
+  });
+  render();
+  if(globalThis.Tweak) {
+    const tweak=new globalThis.Tweak({container:root,onChange:render});
+    tweak.addSelect(view,'placement',{label:'编辑器位置',options:[{label:'右侧（推荐）',value:'right'},{label:'键盘下方',value:'bottom'}]});
+    tweak.addSelect(view,'density',{label:'键帽密度',options:[{label:'舒适',value:'comfortable'},{label:'紧凑',value:'compact'}]});
+  }
+})();
+</script>

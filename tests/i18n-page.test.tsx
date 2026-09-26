@@ -3,6 +3,7 @@ import '@testing-library/jest-dom/vitest';
 import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { afterEach, beforeAll, expect, test, vi } from 'vitest';
 import { App } from '../src/app';
+import { chooseMappingType } from './page-helpers';
 import { application, profileFile, acceptRead } from './store-helpers';
 import { FakeDevice, FakeHID, fixture } from './helpers';
 import { msg } from '../src/i18n/core';
@@ -33,7 +34,7 @@ test('the language control changes the UI and remembers the choice on reload', a
   await act(() => actions.start());
   await chooseEnglish();
   expect(screen.getByRole('button', { name: 'Connect keyboard' })).toBeDisabled();
-  expect(screen.getByRole('button', { name: 'Write to keyboard' })).toBeDisabled();
+  expect(screen.getByRole('button', { name: 'Review and write' })).toBeDisabled();
   expect(screen.getByText('USB is unavailable in this environment')).toBeInTheDocument();
   expect(screen.getByText(/This browser does not support WebHID/)).toBeInTheDocument();
   expect(document.documentElement.lang).toBe('en');
@@ -51,35 +52,37 @@ test('English editing uses translated names and preserves unsaved input when ret
   const profile = fixture(9);
   profile.setDefinition(0, { type: 0, keys: [68, 58] });
   await act(() => actions.importFile(profileFile(profile)));
+  await chooseMappingType('Macro / Advanced');
   expect(screen.getByLabelText(/Key sequence/)).toHaveValue('Left Command\nC');
-  expect(screen.getByRole('button', { name: /Normal, key 1 Esc, Left Command \+ C/ })).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: /Normal, key 1, Left Command \+ C/ })).toBeInTheDocument();
   fireEvent.change(screen.getByLabelText(/Key sequence/), { target: { value: 'Left Shift\nA' } });
   await act(async () => {
     actions.setLocale('zh-CN');
   });
   expect(screen.getByLabelText(/按键序列/)).toHaveValue('Left Shift\nA');
-  fireEvent.click(screen.getByRole('button', { name: '保存此键修改' }));
+  fireEvent.click(screen.getByRole('button', { name: '应用这次编辑' }));
   expect(store.getState().profile?.definition(0).keys).toEqual([55, 43]);
-  expect(screen.getByRole('button', { name: /第 1 键 Esc，左 Shift \+ A，已修改/ })).toBeInTheDocument();
-  expect(screen.getByRole('button', { name: '写入键盘' })).toBeDisabled();
+  expect(screen.getByRole('button', { name: /普通层，第 1 键，左 Shift \+ A，已修改/ })).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: '核对并写入' })).toBeDisabled();
 });
 test('help, validation errors and close controls are translated', async () => {
   const { store, actions } = application(null, undefined, { locale: 'en' });
   render(<App store={store} />);
   fireEvent.click(screen.getByRole('button', { name: 'Open help' }));
-  let dialog = screen.getByRole('dialog', { name: 'Help' });
+  const dialog = screen.getByRole('dialog', { name: 'Help' });
   expect(within(dialog).getByText(/Extended groups are preserved/)).toBeInTheDocument();
   fireEvent.click(within(dialog).getByRole('button', { name: 'Close' }));
   await act(() => actions.demo());
+  await chooseMappingType('Macro / Advanced');
   fireEvent.change(screen.getByLabelText(/Key sequence/), { target: { value: 'unrecognized-key' } });
-  fireEvent.click(screen.getByRole('button', { name: 'Save key changes' }));
-  dialog = screen.getByRole('dialog', { name: 'Operation unsuccessful' });
-  expect(within(dialog).getByText(/Unknown key “unrecognized-key”/)).toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: 'Apply this edit' }));
+  expect(screen.getByRole('alert')).toHaveTextContent(/Unknown key “unrecognized-key”/);
+  expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   await act(async () => {
     actions.setLocale('zh-CN');
   });
-  expect(screen.getByRole('dialog', { name: '操作未完成' })).toHaveTextContent('无法识别按键');
-  expect(screen.getByRole('button', { name: '知道了' })).toBeInTheDocument();
+  expect(screen.getByRole('alert')).toHaveTextContent('无法识别按键');
+  expect(screen.getByRole('button', { name: '放弃这次编辑' })).toBeInTheDocument();
 });
 test('connection details, read history and historic backup reasons follow the selected language', async () => {
   const device = new FakeDevice(fixture(9)),
@@ -92,8 +95,11 @@ test('connection details, read history and historic backup reasons follow the se
   });
   const sent = device.sent.slice();
   await chooseEnglish();
-  expect(screen.getByText(/Connected · ATOM66 fixture/)).toBeInTheDocument();
-  expect(screen.getByText(/Read after connecting complete: 9 groups, 594 records/)).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: 'Connected · ATOM66' })).toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: 'Activity' }));
+  const activity = screen.getByRole('dialog', { name: 'Activity' });
+  expect(within(activity).getByText(/Read after connecting complete: 9 groups, 594 records/)).toBeInTheDocument();
+  fireEvent.click(within(activity).getByRole('button', { name: 'Close' }));
   expect(device.sent).toEqual(sent);
   await act(async () => {
     fireEvent.click(screen.getByRole('button', { name: /Local backups/ }));

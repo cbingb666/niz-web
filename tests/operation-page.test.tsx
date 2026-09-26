@@ -54,9 +54,12 @@ test('read confirmation explains auto-connection; confirmation alone opens a glo
   fireEvent.pointerDown(document.body);
   expect(screen.getByRole('alertdialog', { name: '正在读取配置' })).toBeInTheDocument();
   actions.showHelp();
+  actions.showActivity();
+  actions.showDeviceDetails();
   actions.setLocale('en');
   actions.setShowCounts(true);
-  expect(store.getState()).toMatchObject({ hardwareOperation: 'read', locale: 'zh-CN', showCounts: false });
+  actions.setShowKeyNumbers(true);
+  expect(store.getState()).toMatchObject({ hardwareOperation: 'read', locale: 'zh-CN', showCounts: false, showKeyNumbers: false });
   await act(async () => {
     backupGate.release();
     await ready(store);
@@ -85,9 +88,9 @@ test('write progress locks the whole transaction, including backup and read-back
     if (packet[1] === 0xf2 && ++reads === 2) await readbackGate.promise;
     await send(id, packet);
   });
-  fireEvent.change(screen.getByLabelText(/按键序列/), { target: { value: 'A' } });
+  await act(() => actions.assignKey(43));
   const before = device.sent.slice();
-  fireEvent.click(screen.getByRole('button', { name: '写入键盘' }));
+  fireEvent.click(screen.getByRole('button', { name: '核对并写入' }));
   const confirmation = screen.getByRole('alertdialog', { name: '确认写入键盘' });
   expect(confirmation).toHaveTextContent('键盘按键将被锁定');
   expect(device.sent).toEqual(before);
@@ -140,8 +143,8 @@ test.each(['read', 'write'] as const)('%s failure unlocks the page and exposes a
   if (operation === 'write') {
     await act(() => acceptRead(store));
     device.failOn = 0xf1;
-    fireEvent.change(screen.getByLabelText(/按键序列/), { target: { value: 'A' } });
-    fireEvent.click(screen.getByRole('button', { name: '写入键盘' }));
+    await act(() => actions.assignKey(43));
+    fireEvent.click(screen.getByRole('button', { name: '核对并写入' }));
   } else device.readOverride = device.profile.reports.slice(0, 10);
   await act(async () => {
     fireEvent.click(screen.getByRole('button', { name: operation === 'read' ? '确认并读取' : '备份并写入' }));

@@ -1,5 +1,5 @@
 import { useI18n } from '@/i18n/use-i18n';
-import { Cable, Unplug } from 'lucide-react';
+import { Cable } from 'lucide-react';
 import { useAppStore } from '@/store/context';
 import { isLocked } from '@/store/app-store';
 import { Button } from './ui/button';
@@ -7,9 +7,9 @@ import { Button } from './ui/button';
 export function ConnectionPanel({ usbAvailable }: { usbAvailable: boolean }) {
   const { t, text } = useI18n();
   const session = useAppStore((state) => state.session);
-  const reading = useAppStore((state) => state.reading);
   const locked = useAppStore(isLocked);
   const actions = useAppStore((state) => state.actions);
+  if (session.connected) return null;
   const titles = {
     waiting: t('connection.waiting'),
     connecting: t('connection.connecting'),
@@ -26,22 +26,12 @@ export function ConnectionPanel({ usbAvailable }: { usbAvailable: boolean }) {
           <h2 id="connection-title">{titles[session.state]}</h2>
         </div>
         <p id="connection-detail">
-          {session.connected
-            ? `${session.version} · ${reading ? t('connection.reading') : session.hasLiveBaseline ? t('connection.loaded') : t('connection.notRead')}`
-            : text(session.message) || t('connection.initial')}
+          {text(session.message) || t('connection.initial')}
         </p>
       </div>
-      {session.connected ? (
-        <Button variant="outline" disabled={locked} onClick={actions.disconnect}>
-          <Unplug />
-          {t('connection.disconnect')}
-        </Button>
-      ) : (
-        <Button disabled={!usbAvailable || locked} onClick={actions.connect}>
-          <Cable />
-          {t('connection.connect')}
-        </Button>
-      )}
+      <Button disabled={!usbAvailable || locked} onClick={actions.connect}>
+        <Cable />{t('connection.connect')}
+      </Button>
     </section>
   );
 }

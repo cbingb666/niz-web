@@ -2,6 +2,9 @@ import { useI18n } from '@/i18n/use-i18n';
 import { backupReason } from '@/i18n/core';
 import { useAppStore } from '@/store/context';
 import { OperationOverlay } from './operation-overlay';
+import { ChangeReview } from './change-review';
+import { ActivityLog } from './activity-log';
+import { DeviceDetails } from './connected-device';
 import { Button } from './ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from './ui/dialog';
 import {
@@ -29,11 +32,12 @@ export function AppDialogs() {
           if (!open) actions.confirm(false);
         }}
       >
-        <AlertDialogContent>
+        <AlertDialogContent className={dialog.review ? 'review-dialog' : undefined}>
           <AlertDialogTitle>{text(dialog.title)}</AlertDialogTitle>
           <AlertDialogDescription className="whitespace-pre-wrap leading-relaxed">
             {text(dialog.body)}
           </AlertDialogDescription>
+          {dialog.review && <ChangeReview review={dialog.review} />}
           <div className="flex justify-end gap-3">
             <AlertDialogCancel onClick={() => actions.confirm(false)}>{t('common.cancel')}</AlertDialogCancel>
             <AlertDialogAction onClick={() => actions.confirm(true)}>{text(dialog.label)}</AlertDialogAction>
@@ -48,8 +52,21 @@ export function AppDialogs() {
         if (!open) actions.closeDialog();
       }}
     >
-      <DialogContent closeLabel={t('common.close')}>
-        {dialog.kind === 'message' ? (
+      <DialogContent closeLabel={t('common.close')} className={dialog.kind === 'changes' ? 'review-dialog' : dialog.kind === 'activity' ? 'activity-dialog' : undefined}
+        onCloseAutoFocus={event => {
+          const trigger = dialog.kind === 'activity' ? 'activity-trigger' : dialog.kind === 'device' ? 'device-details-trigger' : null;
+          if (trigger) { event.preventDefault(); (document.getElementById(trigger) ?? document.getElementById('activity-trigger'))?.focus(); }
+        }}>
+        {dialog.kind === 'changes' ? <>
+          <DialogHeader><DialogTitle>{t('mapping.reviewTitle')}</DialogTitle><DialogDescription>{t('mapping.reviewHint')}</DialogDescription></DialogHeader>
+          <ChangeReview review={dialog.review} />
+        </> : dialog.kind === 'activity' ? <>
+          <DialogHeader><DialogTitle>{t('activity.title')}</DialogTitle><DialogDescription>{t('activity.description')}</DialogDescription></DialogHeader>
+          <ActivityLog />
+        </> : dialog.kind === 'device' ? <>
+          <DialogHeader><DialogTitle>{t('connection.details')}</DialogTitle><DialogDescription>{t('connection.detailsDescription')}</DialogDescription></DialogHeader>
+          <DeviceDetails />
+        </> : dialog.kind === 'message' ? (
           <>
             <DialogHeader>
               <DialogTitle>{text(dialog.title)}</DialogTitle>

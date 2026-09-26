@@ -41,10 +41,8 @@ test('switching language preserves unsaved and invalid input, selection and dirt
   expect(store.getState().profile?.toJSON()).toEqual(profile);
   expect(store.getState()).toMatchObject({ key: 8, layer: 2, formDirty: true });
   expect(actions.saveForm()).toBe(false);
-  const dialog = store.getState().dialog;
-  expect(dialog?.kind).toBe('message');
-  if (dialog?.kind !== 'message') throw new Error('Expected an error dialog');
-  expect(renderMessage(dialog.body, 'en')).toContain('Unknown key');
+  expect(store.getState().dialog).toBeNull();
+  expect(renderMessage(store.getState().formError, 'en')).toContain('Unknown key');
   expect(store.getState().profile?.toJSON()).toEqual(profile);
 });
 test('existing status and activity entries translate without adding new entries', async () => {
@@ -65,6 +63,7 @@ test('a language change leaves pending confirmation and the HID session intact',
   await actions.start();
   await acceptRead(store);
   actions.updateForm({ sequence: 'A' });
+  expect(actions.saveForm()).toBe(true);
   const pending = actions.write();
   const dialog = store.getState().dialog,
     epoch = session.epoch,
