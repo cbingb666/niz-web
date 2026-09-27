@@ -513,7 +513,7 @@ test('write confirmation includes parameter-level differences and cancellation h
   fireEvent.click(screen.getByRole('button', { name: '应用这次编辑' }));
   const sent = device.sent.slice();
   fireEvent.click(screen.getByRole('button', { name: '核对并写入' }));
-  const dialog = screen.getByRole('alertdialog', { name: '确认写入键盘' });
+  const dialog = screen.getByRole('alertdialog', { name: '键盘将暂时锁定' });
   const cells = within(dialog).getAllByRole('cell');
   expect(cells[0]).toHaveTextContent('间隔 30 ms');
   expect(cells[1]).toHaveTextContent('间隔 80 ms');

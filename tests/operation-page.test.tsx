@@ -6,8 +6,29 @@ import { App } from '../src/app';
 import { FakeDevice, FakeHID } from './helpers';
 import { acceptRead, application, memoryBackups, ready } from './store-helpers';
 import { openDeviceEditor } from './page-helpers';
+import { translate } from '../src/i18n/core';
 
 afterEach(cleanup);
+
+test.each(['zh-CN', 'en'] as const)('%s read confirmation explains the lock and cancellation sends no commands', async locale => {
+  const device = new FakeDevice();
+  const { store, actions } = application(new FakeHID([device]), undefined, { locale });
+  render(<App store={store} usbAvailable />);
+  await act(() => actions.start());
+  const before = device.sent.slice();
+  fireEvent.click(screen.getByRole('button', { name: translate(locale, 'devices.configure') }));
+  const dialog = screen.getByRole('alertdialog', { name: translate(locale, 'confirm.readTitle') });
+  expect(within(dialog).getByRole('img', { name: translate(locale, 'confirm.lockIllustration') })).toBeVisible();
+  expect(dialog).toHaveTextContent(translate(locale, 'confirm.readBody'));
+  expect(dialog).toHaveAccessibleDescription(new RegExp(translate(locale, 'confirm.readBody').replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+  expect(within(dialog).getByText(translate(locale, 'operation.keepConnected'), { exact: false })).toBeVisible();
+  const cancel = within(dialog).getByRole('button', { name: translate(locale, 'common.cancel') });
+  expect(cancel).toHaveFocus();
+  await act(async () => { fireEvent.click(cancel); });
+  expect(device.sent).toEqual(before);
+  expect(store.getState().hardwareOperation).toBeNull();
+  expect(store.getState().profile).toBeNull();
+});
 
 function gate() {
   let release!: () => void;
@@ -28,9 +49,9 @@ test('Configure device requests consent; confirmation alone opens a global non-d
   await act(() => actions.start());
   expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
   fireEvent.click(screen.getByRole('button', { name: '配置设备' }));
-  const confirmation = screen.getByRole('alertdialog', { name: '确认读取键盘配置' });
-  expect(confirmation).toHaveTextContent('已连接设备：ATOM66 fixture');
-  expect(confirmation).toHaveTextContent('键盘按键将被锁定');
+  const confirmation = screen.getByRole('alertdialog', { name: '键盘将暂时锁定' });
+  expect(confirmation).not.toHaveTextContent('ATOM66 fixture');
+  expect(confirmation).toHaveTextContent('无法输入');
   expect(within(confirmation).getByRole('button', { name: '取消' })).toHaveFocus();
   expect(device.sent.map((packet) => packet[1])).toEqual([0xf9]);
   expect(screen.queryByRole('progressbar')).not.toBeInTheDocument();
@@ -39,18 +60,22 @@ test('Configure device requests consent; confirmation alone opens a global non-d
   expect(device.sent.map((packet) => packet[1])).toEqual([0xf9]);
 
   fireEvent.click(screen.getByRole('button', { name: '配置设备' }));
-  const retry = screen.getByRole('alertdialog', { name: '确认读取键盘配置' });
+  const retry = screen.getByRole('alertdialog', { name: '键盘将暂时锁定' });
   await act(async () => {
-    fireEvent.click(within(retry).getByRole('button', { name: '确认并读取' }));
+    fireEvent.click(within(retry).getByRole('button', { name: '开始读取' }));
     await vi.waitFor(() => expect(backups.save).toHaveBeenCalledOnce());
   });
   const overlay = screen.getByRole('alertdialog', { name: '正在读取配置' });
   expect(overlay).toHaveClass('operation-overlay');
+  expect(within(overlay).getByRole('img', { name: translate('zh-CN', 'operation.transferIllustration') })).toBeVisible();
   expect(overlay).toHaveFocus();
   expect(view.container.querySelector('[inert]')).toHaveAttribute('aria-busy', 'true');
-  expect(overlay).toHaveTextContent('键盘按键暂时锁定');
+  expect(overlay).toHaveTextContent('键盘暂时无法输入');
   expect(overlay).toHaveTextContent('正在保存本地备份');
   expect(screen.getByRole('progressbar')).not.toHaveAttribute('aria-valuenow');
+  expect(within(overlay).queryByRole('list')).not.toBeInTheDocument();
+  expect(overlay.querySelector('.operation-progress-fill')).toBeNull();
+  expect(overlay.querySelectorAll('.operation-spinner')).toHaveLength(1);
   expect(overlay.querySelector('.operation-count')).toBeNull();
   expect(within(overlay).queryByRole('button')).not.toBeInTheDocument();
   fireEvent.keyDown(overlay, { key: 'Escape' });
@@ -97,14 +122,22 @@ test('write progress locks the whole transaction, including backup and read-back
   await act(() => actions.assignKey(43));
   const before = device.sent.slice();
   fireEvent.click(screen.getByRole('button', { name: '核对并写入' }));
-  const confirmation = screen.getByRole('alertdialog', { name: '确认写入键盘' });
-  expect(confirmation).toHaveTextContent('键盘按键将被锁定');
+  const confirmation = screen.getByRole('alertdialog', { name: '键盘将暂时锁定' });
+  expect(confirmation).toHaveTextContent('无法输入');
+  expect(within(confirmation).getByRole('img', { name: translate('zh-CN', 'confirm.lockIllustration') })).toBeVisible();
+  expect(within(confirmation).getByText('实机写入尚未验证。', { exact: false })).toBeVisible();
+  expect(confirmation.querySelector('.confirmation-review')).not.toHaveAttribute('open');
+  expect(within(confirmation).getByRole('table')).not.toBeVisible();
+  fireEvent.click(within(confirmation).getByText('查看改动明细', { selector: 'summary' }));
+  expect(within(confirmation).getByRole('table')).toBeVisible();
+  expect(within(confirmation).getByRole('button', { name: '取消' })).toBeEnabled();
   expect(device.sent).toEqual(before);
   await act(async () => {
-    fireEvent.click(within(confirmation).getByRole('button', { name: '备份并写入' }));
+    fireEvent.click(within(confirmation).getByRole('button', { name: '开始写入' }));
     await vi.waitFor(() => expect(store.getState().progress?.phase).toBe('backup'));
   });
   expect(screen.getByRole('alertdialog', { name: '正在写入配置' })).toHaveTextContent('正在保存本地备份');
+  expect(within(screen.getByRole('alertdialog', { name: '正在写入配置' })).getByRole('img', { name: translate('zh-CN', 'operation.transferIllustration') })).toBeVisible();
   expect(screen.getByRole('progressbar')).not.toHaveAttribute('aria-valuenow');
   expect(view.container.querySelector('[inert]')).not.toBeNull();
   await act(async () => {
@@ -114,8 +147,9 @@ test('write progress locks the whole transaction, including backup and read-back
     }));
   });
   expect(screen.getByRole('progressbar')).toHaveAttribute('aria-valuenow', String(Math.floor(20 / 198 * 100)));
-  expect(screen.getByText('20 / 198 个数据包')).toBeInTheDocument();
-  expect(screen.getByText('当前阶段进度')).toBeInTheDocument();
+  expect(screen.queryByText('20 / 198 个数据包')).not.toBeInTheDocument();
+  expect(screen.queryByText('传输详情')).not.toBeInTheDocument();
+  expect(screen.getByRole('progressbar')).toHaveAttribute('aria-valuetext', '正在发送按键配置…');
   await act(async () => {
     writeGate.release();
     await vi.waitFor(() => expect(store.getState().progress?.phase).toBe('settle'), { timeout: 5_000 });
@@ -126,9 +160,9 @@ test('write progress locks the whole transaction, including backup and read-back
     await vi.waitFor(() => expect(store.getState().progress?.phase).toBe('readback'));
   });
   const overlay = screen.getByRole('alertdialog', { name: '正在写入配置' });
-  expect(overlay).toHaveTextContent('正在回读按键配置');
+  expect(overlay).toHaveTextContent('正在核对键盘中的按键设置');
   expect(screen.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '0');
-  expect(overlay).toHaveTextContent('0 / 198 个数据包');
+  expect(screen.getByRole('progressbar')).toHaveAttribute('aria-valuetext', '正在核对键盘中的按键设置…');
   fireEvent.keyDown(overlay, { key: 'Escape' });
   expect(store.getState().hardwareOperation).toBe('write');
   await act(async () => {
@@ -157,7 +191,7 @@ test.each(['read', 'write'] as const)('%s failure unlocks the page and exposes a
     fireEvent.click(screen.getByRole('button', { name: '配置设备' }));
   }
   await act(async () => {
-    fireEvent.click(screen.getByRole('button', { name: operation === 'read' ? '确认并读取' : '备份并写入' }));
+    fireEvent.click(screen.getByRole('button', { name: operation === 'read' ? '开始读取' : '开始写入' }));
     await vi.waitFor(() => expect(store.getState().dialog?.kind).toBe('message'));
     await ready(store);
   });

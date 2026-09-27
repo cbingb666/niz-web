@@ -72,9 +72,9 @@ test('a language change leaves pending confirmation and the HID session intact',
   expect(store.getState().dialog).toBe(dialog);
   expect(dialog?.kind).toBe('confirm');
   if (dialog?.kind !== 'confirm') throw new Error('Expected a confirmation');
-  expect(renderMessage(dialog.title, 'en')).toBe('Confirm keyboard write');
-  expect(renderMessage(dialog.body, 'en')).toContain('1 key record');
-  expect(renderMessage(dialog.body, 'en')).toContain('keyboard keys will be locked');
+  expect(renderMessage(dialog.title, 'en')).toBe('Your keyboard will be temporarily locked');
+  expect(renderMessage(dialog.body, 'en')).toContain('1 key mapping');
+  expect(renderMessage(dialog.body, 'en')).toContain('cannot type while settings are being written');
   expect(session.epoch).toBe(epoch);
   expect(device.openCount).toBe(1);
   expect(device.sent).toEqual(reports);

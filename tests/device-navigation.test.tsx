@@ -230,7 +230,7 @@ test('every guide step requires a click, and configuration is read only after ch
   expect(card).toHaveTextContent('尚未读取配置');
   expect(device.sent.map(packet => packet[1])).toEqual([0xf9]);
   await openDeviceEditor();
-  expect(screen.getByRole('alertdialog', { name: '确认读取键盘配置' })).toBeVisible();
+  expect(screen.getByRole('alertdialog', { name: '键盘将暂时锁定' })).toBeVisible();
   await act(() => acceptRead(store));
   expect(screen.getByRole('region', { name: '按键布局' })).toBeVisible();
   expect(store.getState().source).toBe('read');
@@ -322,8 +322,8 @@ test('configuring a connected device cannot silently replace a demo with drafts'
   fireEvent.click(screen.getByRole('button', { name: '设备管理' }));
   await act(async () => { fireEvent.click(screen.getByRole('button', { name: '保留编辑并返回' })); });
   fireEvent.click(screen.getByRole('button', { name: '配置设备' }));
-  const confirmation = screen.getByRole('alertdialog', { name: '确认读取键盘配置' });
-  expect(confirmation).toHaveTextContent('当前有未写入的修改');
+  const confirmation = screen.getByRole('alertdialog', { name: '键盘将暂时锁定' });
+  expect(confirmation).toHaveTextContent('未写入的修改会被替换');
   await act(async () => { fireEvent.click(within(confirmation).getByRole('button', { name: '取消' })); });
   expect(store.getState().page).toBe('devices');
   expect(store.getState().profile!.toJSON()).toEqual(profile);
@@ -347,6 +347,7 @@ test.each([
   render(<App store={store} />);
   fireEvent.click(screen.getByRole('button', { name: entry }));
   expect(screen.getByRole('alertdialog', { name: '返回设备管理？' })).toHaveTextContent('编辑内容会保留');
+  expect(within(screen.getByRole('alertdialog')).queryByRole('img')).not.toBeInTheDocument();
   expect(store.getState().page).toBe('editor');
   await act(async () => { fireEvent.click(screen.getByRole('button', { name: '取消' })); });
   expect(store.getState().page).toBe('editor');

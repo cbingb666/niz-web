@@ -43,8 +43,14 @@ export interface EditorForm {
   color: string;
 }
 export interface ChangeReview { before: Profile; after: Profile; indices: number[]; lights: boolean }
+interface ConfirmationDetails {
+  locksKeyboard?: boolean;
+  notice?: Message;
+  warning?: Message;
+  review?: ChangeReview;
+}
 export type AppDialog =
-  | { kind: 'confirm'; title: Message; body: Message; label: Message; review?: ChangeReview }
+  | ({ kind: 'confirm'; title: Message; body: Message; label: Message } & ConfirmationDetails)
   | { kind: 'message'; title: Message; body: Message }
   | { kind: 'backups' | 'help' | 'activity' | 'device' }
   | { kind: 'changes'; review: ChangeReview };
@@ -317,12 +323,12 @@ export function createAppStore(dependencies: AppDependencies) {
       title: Message,
       body: Message,
       label: Message = msg('common.continue'),
-      review?: ChangeReview,
+      details: ConfirmationDetails = {},
     ): Promise<boolean> {
       if (resolveConfirmation || disposed) return Promise.resolve(false);
       return new Promise((resolve) => {
         resolveConfirmation = resolve;
-        set({ dialog: { kind: 'confirm', title, body, label, review } });
+        set({ dialog: { kind: 'confirm', title, body, label, ...details } });
       });
     }
     async function discardIfNeeded(action: Message) {
@@ -374,16 +380,11 @@ export function createAppStore(dependencies: AppDependencies) {
       // its confirmation is valid only for this connection epoch.
       set({ status: msg('status.readConfirmation') });
       const title = msg('confirm.readTitle');
-      const body = joinMessages(
-        msg('confirm.connectedDevice', { product: sessionView().product }), '\n\n',
-        msg('confirm.keyLock'),
-        '\n\n',
-        msg('confirm.readBody'),
-        editor.dirty || get().draftIndices.length
-          ? joinMessages('\n\n', msg('confirm.replaceBody'))
-          : '',
-      );
-      if (!(await confirm(title, body, msg('confirm.readAction')))) {
+      if (!(await confirm(title, msg('confirm.readBody'), msg('confirm.readAction'), {
+        locksKeyboard: true,
+        notice: msg('operation.keepConnected'),
+        warning: editor.dirty || get().draftIndices.length ? msg('confirm.replaceBody') : undefined,
+      }))) {
         if (!disposed && epoch === session.epoch) set({ status: msg('status.readCancelled') });
         return;
       }
@@ -780,12 +781,13 @@ export function createAppStore(dependencies: AppDependencies) {
             count: changes.length,
             lighting: editor.lightsChanged ? msg('confirm.lighting') : '',
           }),
-          '\n\n',
-          msg('confirm.writeBody'),
-          '\n\n',
-          msg('confirm.writeValidation'),
         );
-        if (!(await confirm(msg('confirm.writeTitle'), summary, msg('confirm.writeAction'), review()))) {
+        if (!(await confirm(msg('confirm.writeTitle'), summary, msg('confirm.writeAction'), {
+          locksKeyboard: true,
+          notice: msg('operation.keepConnected'),
+          warning: msg('confirm.writeValidation'),
+          review: review(),
+        }))) {
           return;
         }
         if (epoch !== session.epoch) {

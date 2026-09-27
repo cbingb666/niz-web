@@ -2,19 +2,12 @@ import { useI18n } from '@/i18n/use-i18n';
 import { backupReason } from '@/i18n/core';
 import { useAppStore } from '@/store/context';
 import { OperationOverlay } from './operation-overlay';
+import { ConfirmationDialog } from './confirmation-dialog';
 import { ChangeReview } from './change-review';
 import { ActivityLog } from './activity-log';
 import { DeviceDetails } from './connected-device';
 import { Button } from './ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from './ui/dialog';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogTitle,
-} from './ui/alert-dialog';
 
 export function AppDialogs() {
   const { t, text, locale, count } = useI18n();
@@ -24,27 +17,7 @@ export function AppDialogs() {
   const actions = useAppStore((state) => state.actions);
   if (operation) return <OperationOverlay operation={operation} />;
   if (!dialog) return null;
-  if (dialog.kind === 'confirm')
-    return (
-      <AlertDialog
-        open
-        onOpenChange={(open) => {
-          if (!open) actions.confirm(false);
-        }}
-      >
-        <AlertDialogContent className={dialog.review ? 'review-dialog' : undefined}>
-          <AlertDialogTitle>{text(dialog.title)}</AlertDialogTitle>
-          <AlertDialogDescription className="whitespace-pre-wrap leading-relaxed">
-            {text(dialog.body)}
-          </AlertDialogDescription>
-          {dialog.review && <ChangeReview review={dialog.review} />}
-          <div className="flex justify-end gap-3">
-            <AlertDialogCancel onClick={() => actions.confirm(false)}>{t('common.cancel')}</AlertDialogCancel>
-            <AlertDialogAction onClick={() => actions.confirm(true)}>{text(dialog.label)}</AlertDialogAction>
-          </div>
-        </AlertDialogContent>
-      </AlertDialog>
-    );
+  if (dialog.kind === 'confirm') return <ConfirmationDialog dialog={dialog} onConfirm={actions.confirm} />;
   return (
     <Dialog
       open

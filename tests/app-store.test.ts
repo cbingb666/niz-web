@@ -19,9 +19,8 @@ test('startup only identifies the device; configuring asks before reading and ba
   const dialog = store.getState().dialog;
   expect(dialog?.kind).toBe('confirm');
   if (dialog?.kind !== 'confirm') throw new Error('Expected a read confirmation');
-  expect(renderMessage(dialog.title)).toBe('确认读取键盘配置');
-  expect(renderMessage(dialog.body)).toContain('ATOM66 fixture');
-  expect(renderMessage(dialog.body)).toContain('键盘按键将被锁定');
+  expect(renderMessage(dialog.title)).toBe('键盘将暂时锁定');
+  expect(renderMessage(dialog.body)).toContain('无法输入');
   expect(device.sent.map((packet) => packet[1])).toEqual([0xf9]);
   expect(store.getState().profile).toBeNull();
   expect(backups.save).not.toHaveBeenCalled();
@@ -179,7 +178,7 @@ test('write requires confirmation; cancellation sends no hardware write', async 
   expect(store.getState().profile!.toJSON()).toEqual(staged);
   const dialog = store.getState().dialog;
   if (dialog?.kind !== 'confirm') throw new Error('Expected a write confirmation');
-  expect(renderMessage(dialog.body)).toContain('键盘按键将被锁定');
+  expect(renderMessage(dialog.body)).toContain('无法输入');
   expect(device.sent).toEqual(before);
   expect(writes(device)).toHaveLength(0);
   actions.confirm(false);
@@ -211,7 +210,7 @@ test('cancelling a connection read sends no configuration commands and does not 
   const read = actions.read();
   const retry = store.getState().dialog;
   if (retry?.kind !== 'confirm') throw new Error('Expected a manual read confirmation');
-  expect(renderMessage(retry.title)).toBe('确认读取键盘配置');
+  expect(renderMessage(retry.title)).toBe('键盘将暂时锁定');
   await acceptRead(store);
   await read;
   expect(store.getState().profile).not.toBeNull();
@@ -227,8 +226,8 @@ test('manual read combines the lock warning with edit replacement consent and ca
   const cancelled = actions.read();
   const dialog = store.getState().dialog;
   if (dialog?.kind !== 'confirm') throw new Error('Expected a read confirmation');
-  expect(renderMessage(dialog.body)).toContain('键盘按键将被锁定');
-  expect(renderMessage(dialog.body)).toContain('未写入的修改');
+  expect(renderMessage(dialog.body)).toContain('无法输入');
+  expect(renderMessage(dialog.warning!)).toContain('未写入的修改');
   expect(store.getState().hardwareOperation).toBeNull();
   actions.confirm(false);
   await cancelled;
