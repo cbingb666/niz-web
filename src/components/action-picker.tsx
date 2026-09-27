@@ -1,5 +1,5 @@
 import { useId, useRef, useState, type KeyboardEvent } from 'react';
-import { KEY_NAMES, ENGLISH_KEY_NAMES, localizedKeyName } from '@/i18n/key-names';
+import { KEY_NAMES, ENGLISH_KEY_NAMES, KEY_DESCRIPTIONS, keyDescription, localizedKeyName } from '@/i18n/key-names';
 import { keyAbbreviation, keycapName } from '@/i18n/key-labels';
 import { useI18n } from '@/i18n/use-i18n';
 import { useAppStore } from '@/store/context';
@@ -36,7 +36,7 @@ export function ActionPicker({ kind = 'key', value, disabled, onChoose }: {
   const matches = KEY_NAMES.map((_, code) => code).filter((code) => {
     if (code === 200) return false;
     if (/^#\d+$/.test(search)) return code === Number(search.slice(1));
-    if (search) return normalizeSearch(`${localizedKeyName(code, locale)} ${keycapName(code)} ${KEY_NAMES[code]} ${ENGLISH_KEY_NAMES[code]} ${code === 70 ? '空格' : ''} ${code === 67 || code === 74 ? 'ctrl' : ''}`).includes(search);
+    if (search) return normalizeSearch(`${localizedKeyName(code, locale)} ${keycapName(code)} ${KEY_NAMES[code]} ${ENGLISH_KEY_NAMES[code]} ${Object.values(KEY_DESCRIPTIONS[code] ?? {}).join(' ')} ${code === 70 ? '空格' : ''} ${code === 67 || code === 74 ? 'ctrl' : ''}`).includes(search);
     return group === 'common' ? common.includes(code) : group === 'all' || groupFor(code) === group;
   });
   if (!search && group === 'common') matches.sort((a, b) => common.indexOf(a) - common.indexOf(b));
@@ -69,6 +69,7 @@ export function ActionPicker({ kind = 'key', value, disabled, onChoose }: {
     <div className="action-options" ref={options}>
       {matches.map((code, index) => {
         const abbreviation = keyAbbreviation(code, locale);
+        const description = keyDescription(code, locale);
         return <Button key={code} type="button" variant="outline" className={`action-option ${search && index === highlight ? 'search-highlight' : ''}`}
           disabled={disabled} aria-pressed={code === value} onClick={() => onChoose(code)}>
           <span>{localizedKeyName(code, locale)}</span>
@@ -76,6 +77,7 @@ export function ActionPicker({ kind = 'key', value, disabled, onChoose }: {
             {abbreviation && <span className="key-abbreviation" aria-hidden="true" title={t('mapping.abbreviation', { name: abbreviation })}>{abbreviation}</span>}
             {search && <span className="action-category">{t(`mapping.${groupFor(code)}`)}</span>}
           </span>}
+          {description && <span className="action-description">{description}</span>}
         </Button>;
       })}
       {!matches.length && <p className="field-hint">{t('mapping.noResults')}</p>}

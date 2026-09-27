@@ -1,7 +1,7 @@
 import { useEffect, useId, useState, type KeyboardEvent } from 'react';
 import { Keyboard, RotateCcw, X } from 'lucide-react';
 import { useI18n } from '@/i18n/use-i18n';
-import { localizedKeyName } from '@/i18n/key-names';
+import { keyDescription, localizedKeyName } from '@/i18n/key-names';
 import { keycapSummary, localizedSummary } from '@/i18n/profile';
 import { parseKey, parseSequence } from '@/protocol';
 import { useAppStore } from '@/store/context';
@@ -100,6 +100,7 @@ export function KeyEditor() {
   }));
   const target = profile ? localizedSummary(profile, layer * model.keyCount + key, locale) : '—';
   const mapping = `#${String(key + 1).padStart(2, '0')} - ${text(model.layers[layer])} -> ${target}`;
+  const description = definition?.keys.length === 1 ? keyDescription(definition.keys[0], locale) : undefined;
   return <aside className="inspector" aria-label={t('editor.section')} tabIndex={0}>
     <div className="inspector-header">
     <div className="key-editor-heading">
@@ -109,7 +110,9 @@ export function KeyEditor() {
     <figure className="mapping-preview" aria-label={t('mapping.previewTitle')}>
       <KeycapSample legends={model.layers.map((_, index) => profile ? keycapSummary(profile, index * model.keyCount + key) : '—')}
         position={key} measureKey={key} activeLayer={layer} changed={changes.some(index => index % model.keyCount === key)} showNumber={false} />
-      <figcaption aria-live="polite" title={mapping}>{mapping}</figcaption>
+      <figcaption aria-live="polite" title={[mapping, description].filter(Boolean).join('\n')}>
+        {mapping}{description && <span className="action-description block">{description}</span>}
+      </figcaption>
     </figure>
     </div>
     <div className="inspector-content" tabIndex={0} aria-label={t('mapping.categories')}>

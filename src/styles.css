@@ -690,7 +690,7 @@ main {
 .action-option[aria-pressed='true'] { border-color: var(--primary); background: var(--accent); color: var(--primary); }
 .action-option.search-highlight { border-color: var(--primary); }
 .action-option-meta { display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 8px; }
-.action-category, .key-abbreviation { color: var(--muted-foreground); font-size: 0.75rem; font-weight: 400; }
+.action-category, .key-abbreviation, .action-description { color: var(--muted-foreground); font-size: 0.75rem; font-weight: 400; }
 .fn-scope { margin: 12px 0; padding: 9px 12px; border-left: 2px solid var(--primary); background: var(--accent); font-size: 0.875rem; }
 .editor-state { color: var(--muted-foreground); font-size: 0.875rem; margin-top: 17px; }
 .editor-error { color: #ffb3bb; background: #391f29; border-radius: 7px; padding: 10px; font-size: 0.875rem; margin-top: 14px; }

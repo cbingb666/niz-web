@@ -122,6 +122,19 @@ export const SIDED_KEY_NAMES: Readonly<Record<number, string>> = {
   68: 'L Cmd', 72: 'R Cmd', 69: 'L Alt', 71: 'R Alt',
   156: 'R Fn', 166: 'L Fn',
 };
+
+// Document macOS behavior without changing key names or wire codes.
+// https://docs.qmk.fm/keycodes_basic#lock-keys
+// https://docs.qmk.fm/keycodes_basic#commands
+export const KEY_DESCRIPTIONS: Readonly<Record<number, Readonly<Record<Locale, string>>>> = {
+  79: { 'zh-CN': 'macOS：降低屏幕亮度', en: 'macOS: decrease screen brightness' },
+  80: { 'zh-CN': 'macOS：提高屏幕亮度', en: 'macOS: increase screen brightness' },
+  144: { 'zh-CN': '降低键盘灯光亮度', en: 'Decrease keyboard backlight brightness' },
+  145: { 'zh-CN': '提高键盘灯光亮度', en: 'Increase keyboard backlight brightness' },
+};
+export function keyDescription(code: number, locale: Locale): string | undefined {
+  return KEY_DESCRIPTIONS[code]?.[locale];
+}
 export function localizedKeyName(code: number, locale: Locale): string {
   return (
     SIDED_KEY_NAMES[code] ??

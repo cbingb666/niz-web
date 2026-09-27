@@ -7,7 +7,7 @@ import { chooseMappingType, openDeviceEditor } from './page-helpers';
 import { application, acceptRead, profileFile } from './store-helpers';
 import { FakeDevice, FakeHID, fixture } from './helpers';
 import { renderMessage, translate } from '../src/i18n/core';
-import { localizedKeyName } from '../src/i18n/key-names';
+import { keyDescription, localizedKeyName } from '../src/i18n/key-names';
 import type { ModelTool } from '../src/model-tools';
 
 // Radix measures the checkbox's hidden form input; jsdom does not implement layout observers.
@@ -18,6 +18,26 @@ beforeAll(() => vi.stubGlobal('ResizeObserver', class {
 }));
 afterAll(() => vi.unstubAllGlobals());
 afterEach(cleanup);
+
+test.each(['zh-CN', 'en'] as const)('%s brightness descriptions keep the original actions and names', async locale => {
+  const { store, actions } = application(null, undefined, { locale });
+  const view = render(<App store={store} />);
+  await act(() => actions.demo());
+  for (const query of ['屏幕亮度', 'screen brightness']) {
+    fireEvent.change(screen.getByRole('searchbox'), { target: { value: query } });
+    expect(view.container.querySelectorAll('.action-option')).toHaveLength(2);
+  }
+  for (const [code, name] of [[79, 'Scroll Lock'], [80, 'Pause']] as const) {
+    const option = screen.getByRole('button', { name: label => label.startsWith(name) });
+    expect(within(option).getByText(keyDescription(code, locale)!)).toHaveClass('action-description');
+    fireEvent.click(option);
+    expect(store.getState().profile!.definition(0).keys).toEqual([code]);
+    expect(store.getState().form.sequence).toBe(name);
+    expect(view.container.querySelector('.mapping-preview figcaption')).toHaveTextContent(keyDescription(code, locale)!);
+  }
+  await chooseMappingType(translate(locale, 'mapping.advanced'));
+  expect(view.container.querySelector('option[value="Pause · #80"]')?.getAttribute('label')).toContain(keyDescription(80, locale));
+});
 
 test('long function labels use matching abbreviations in the keyboard and selected-key preview', async () => {
   const { store, actions } = application();
