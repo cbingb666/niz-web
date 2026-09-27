@@ -35,7 +35,7 @@ test('the language control changes the UI and remembers the choice on reload', a
   expect(screen.getByRole('combobox', { name: '语言' })).toHaveTextContent(/^$/);
   expect(screen.getByRole('combobox', { name: '语言' })).toHaveAttribute('title', '语言: 简体中文');
   await chooseEnglish();
-  expect(screen.getByRole('heading', { name: 'Devices' })).toBeInTheDocument();
+  expect(screen.getByRole('heading', { name: 'Connect your keyboard' })).toBeInTheDocument();
   fireEvent.click(screen.getByRole('button', { name: 'Connect a device' }));
   expect(screen.getByRole('heading', { name: 'Check that your device is supported' })).toBeVisible();
   confirmSupportedModel();

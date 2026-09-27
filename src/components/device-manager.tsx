@@ -20,17 +20,17 @@ export function DeviceManager() {
   const localProfile = profile && (!session.connected || source !== 'read' || stale);
 
   return <div className="device-page">
-    <div className="device-page-heading">
+    {devices.length > 0 && <div className="device-page-heading">
       <div>
         <h2 id="page-title" tabIndex={-1}>{t('devices.title')}</h2>
       </div>
-      {devices.length > 0 && <Button disabled={locked} onClick={() => actions.navigate('connect')}><Plus />{t('devices.add')}</Button>}
-    </div>
+      <Button disabled={locked} onClick={() => actions.navigate('connect')}><Plus />{t('devices.add')}</Button>
+    </div>}
 
-    <section className="device-list" aria-label={t('devices.connected')}>
-      <div className="device-list-heading">
+    <section className="device-list" aria-label={t(devices.length ? 'devices.connected' : 'devices.emptyTitle')}>
+      {devices.length > 0 && <div className="device-list-heading">
         <h3>{t('devices.connected')}<span className="device-count">{devices.length}</span></h3>
-      </div>
+      </div>}
       {devices.length ? <div className="device-card-grid" data-multiple={devices.length > 1}>{devices.map(device => {
         const name = text(deviceName(device, devices));
         return <article key={device.id} className="device-card" aria-label={name}>
@@ -57,11 +57,12 @@ export function DeviceManager() {
       })}</div> : <div className="devices-empty">
         <div className="devices-empty-art"><ConnectionIllustration step="cable" connected={false} /></div>
         <div className="devices-empty-copy">
-          <h3>{t('devices.emptyTitle')}</h3>
+          <h2 id="page-title" tabIndex={-1}>{t('devices.emptyTitle')}</h2>
           <p>{t('devices.emptyDescription')}</p>
-          <Button disabled={locked} onClick={() => actions.navigate('connect')}>
+          <Button aria-describedby="connection-next-step" disabled={locked} onClick={() => actions.navigate('connect')}>
             {t('devices.add')}<ArrowRight />
           </Button>
+          <p id="connection-next-step" className="devices-empty-next">{t('devices.emptyNext')}</p>
         </div>
       </div>}
     </section>

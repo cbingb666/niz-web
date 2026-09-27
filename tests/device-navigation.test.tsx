@@ -19,7 +19,7 @@ function confirmCable() {
   fireEvent.click(screen.getByRole('button', { name: '已连接数据线，下一步' }));
 }
 
-test.each(['zh-CN', 'en'] as const)('%s empty devices page has one connection entry and a USB diagram', async locale => {
+test.each(['zh-CN', 'en'] as const)('%s empty devices page explains its single connection entry and next step', async locale => {
   const hid = new FakeHID();
   const { store, actions } = application(hid, undefined, { locale });
   const view = render(<App store={store} usbAvailable />);
@@ -28,6 +28,10 @@ test.each(['zh-CN', 'en'] as const)('%s empty devices page has one connection en
   expect(buttons).toHaveLength(1);
   const empty = view.container.querySelector('.devices-empty')!;
   expect(empty).toContainElement(buttons[0]);
+  expect(screen.getAllByRole('heading', { level: 2 })).toHaveLength(1);
+  expect(screen.getByRole('heading', { name: translate(locale, 'devices.emptyTitle') })).toBeVisible();
+  expect(screen.queryByRole('heading', { name: translate(locale, 'devices.connected') })).not.toBeInTheDocument();
+  expect(buttons[0]).toHaveAccessibleDescription(translate(locale, 'devices.emptyNext'));
   expect(view.container.querySelector('.device-page-heading button')).toBeNull();
   expect(empty.querySelector('img')).toBeNull();
   expect(within(empty as HTMLElement).getByRole('figure', { name: translate(locale, 'guide.cableIllustration') })).toBeVisible();
@@ -38,6 +42,8 @@ test.each(['zh-CN', 'en'] as const)('%s empty devices page has one connection en
   expect(nameplate).toHaveTextContent(translate(locale, 'guide.nameplateCaption'));
   expect(nameplate.querySelector('img')).toBeNull();
   expect(hid.requestCount).toBe(0);
+  fireEvent.click(screen.getByRole('button', { name: translate(locale, 'devices.back') }));
+  expect(screen.getByRole('heading', { name: translate(locale, 'devices.emptyTitle') })).toHaveFocus();
 });
 
 test('the authorization step can open the picker when a keyboard is already connected', async () => {
@@ -161,7 +167,7 @@ test('the guide presents one step at a time and only its third step can request 
   const { store, actions } = application(hid);
   render(<App store={store} usbAvailable />);
   await act(() => actions.start());
-  expect(screen.getByRole('heading', { name: '设备管理' })).toBeVisible();
+  expect(screen.getByRole('heading', { name: '连接键盘' })).toBeVisible();
   expect(screen.queryByRole('button', { name: '离线演示' })).not.toBeInTheDocument();
   expect(screen.queryByRole('button', { name: '配置设备' })).not.toBeInTheDocument();
   openGuide();
@@ -307,7 +313,7 @@ test.each([
   expect(store.getState().page).toBe('editor');
   fireEvent.click(screen.getByRole('button', { name: entry }));
   await act(async () => { fireEvent.click(screen.getByRole('button', { name: '保留编辑并返回' })); });
-  expect(screen.getByRole('heading', { name: '设备管理' })).toBeVisible();
+  expect(screen.getByRole('heading', { name: '连接键盘' })).toBeVisible();
   expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
   fireEvent.click(screen.getByRole('button', { name: '继续编辑' }));
   expect(store.getState().page).toBe('editor');
@@ -322,6 +328,6 @@ test('returning from an unchanged editor needs no confirmation', async () => {
   await actions.demo();
   render(<App store={store} />);
   fireEvent.click(screen.getByRole('button', { name: '返回设备管理' }));
-  expect(screen.getByRole('heading', { name: '设备管理' })).toBeVisible();
+  expect(screen.getByRole('heading', { name: '连接键盘' })).toBeVisible();
   expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
 });

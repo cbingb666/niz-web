@@ -72,7 +72,7 @@ test('the header shows the device breadcrumb and disconnecting from the footer r
   expect(store.getState().session.connected).toBe(false);
   expect(footer.queryByRole('button', { name: '断开' })).not.toBeInTheDocument();
   expect(view.container.querySelector('.commit-bar')).toBeNull();
-  expect(screen.getByRole('heading', { name: '设备管理' })).toBeVisible();
+  expect(screen.getByRole('heading', { name: '连接键盘' })).toBeVisible();
   expect(view.container.querySelector('.app-header')!.textContent).toBe(initialHeader);
   expect(screen.queryByRole('navigation', { name: '页面导航' })).not.toBeInTheDocument();
   expect(screen.getByRole('button', { name: '连接设备' })).toBeEnabled();
@@ -235,7 +235,7 @@ test('React boots on Devices without WebHID and the guide opens a usable offline
   const { store, actions } = application();
   render(<App store={store} notices={['当前浏览器不支持 WebHID。']} />);
   await act(() => actions.start());
-  expect(screen.getByRole('heading', { name: '设备管理' })).toBeInTheDocument();
+  expect(screen.getByRole('heading', { name: '连接键盘' })).toBeInTheDocument();
   expect(screen.queryByRole('region', { name: '按键布局' })).not.toBeInTheDocument();
   fireEvent.click(screen.getByRole('button', { name: '连接设备' }));
   confirmSupportedModel();

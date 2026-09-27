@@ -36,7 +36,8 @@ test('production is one offline HTML with hash CSP and HID permissions', async (
         dom.window.document.querySelector('meta[name="description"]')?.getAttribute('content'),
       ).toContain('Configure supported NIZ');
       const document = dom.window.document;
-      expect(document.getElementById('root')?.textContent).toContain('Connected devices');
+      expect(document.getElementById('page-title')?.textContent).toBe('Connect your keyboard');
+      expect(document.querySelector('.device-count')).toBeNull();
       expect(document.querySelector('.devices-empty .cable-demo svg')).not.toBeNull();
       expect(document.querySelector('.devices-empty img')).toBeNull();
       Array.from(document.querySelectorAll('button')).find(button => button.textContent === 'Connect a device')!.click();
