@@ -42,7 +42,7 @@ test('production is one offline HTML with hash CSP and HID permissions', async (
       expect(document.querySelector('.devices-empty img')).toBeNull();
       Array.from(document.querySelectorAll('button')).find(button => button.textContent === 'Connect a device')!.click();
       await vi.waitFor(() => expect(document.querySelector('.connection-guide-page')).not.toBeNull());
-      expect(document.getElementById('guide-step-title')?.textContent).toBe('Check that your device is supported');
+      expect(document.getElementById('page-title')?.textContent).toBe('Check the model underneath');
       expect(document.querySelector('.support-preview svg')).not.toBeNull();
       expect(document.querySelector('.support-preview img')).toBeNull();
       const supportNext = Array.from(document.querySelectorAll('button')).find(button => button.textContent === 'Model confirmed — next')!;

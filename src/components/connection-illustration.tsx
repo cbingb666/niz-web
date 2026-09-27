@@ -1,9 +1,9 @@
-import { CheckCircle2, Globe2, Keyboard, Laptop, MousePointer2, RotateCcw, Unplug } from 'lucide-react';
+import { CheckCircle2, Globe2, Keyboard, Laptop, RotateCcw, Unplug } from 'lucide-react';
 import { defaultModel } from '@/devices';
 import { useI18n } from '@/i18n/use-i18n';
 import { DeviceIllustration } from './device-illustration';
 
-/** Instructional diagrams: the animation explains an action, never device status. */
+/** Static instructions; only the final result reflects the actual connection. */
 export function ConnectionIllustration({ step, connected }: { step: 'support' | 'cable' | 'permission' | 'complete'; connected: boolean }) {
   const { t } = useI18n();
   if (step === 'support') return <figure className="support-preview" aria-label={t('guide.nameplateIllustration')}>
@@ -39,7 +39,6 @@ export function ConnectionIllustration({ step, connected }: { step: 'support' | 
         <path d="M215 158h10m-10 5h10M220 173v12" />
       </g>
       <Keyboard x={104} y={200} width={232} height={108} strokeWidth={.8} className="diagram-keyboard" />
-      <circle cx={220} cy={139} r={10} className="diagram-contact" />
     </svg>
     <figcaption>{t('guide.connectionLabel')}</figcaption>
   </figure>;
@@ -48,10 +47,9 @@ export function ConnectionIllustration({ step, connected }: { step: 'support' | 
       <div className="permission-window-header"><Globe2 /><span>{t('guide.pickerWindow')}</span><span className="window-dots">•••</span></div>
       <div className="permission-window-content">
         <strong>{t('guide.pickerTitle')}</strong>
-        <div className="permission-device-row"><span className="permission-radio" /><Keyboard /><span>{defaultModel.name}</span></div>
-        <div className="permission-window-actions"><span>{t('common.cancel')}</span><span className="permission-confirm">{t('guide.pickerConnect')}</span></div>
+        <div className="permission-device-row"><span className="diagram-step-number">1</span><span className="permission-radio" /><Keyboard /><span>{defaultModel.name}</span></div>
+        <div className="permission-window-actions"><span>{t('common.cancel')}</span><span className="diagram-step-number">2</span><span className="permission-confirm">{t('guide.pickerConnect')}</span></div>
       </div>
-      <MousePointer2 className="permission-pointer" />
     </div>
     <figcaption>{t('guide.pickerCaption')}</figcaption>
   </figure>;

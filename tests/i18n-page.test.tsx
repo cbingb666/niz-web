@@ -37,7 +37,7 @@ test('the language control changes the UI and remembers the choice on reload', a
   await chooseEnglish();
   expect(screen.getByRole('heading', { name: 'Connect your keyboard' })).toBeInTheDocument();
   fireEvent.click(screen.getByRole('button', { name: 'Connect a device' }));
-  expect(screen.getByRole('heading', { name: 'Check that your device is supported' })).toBeVisible();
+  expect(screen.getByRole('heading', { name: 'Check the model underneath' })).toBeVisible();
   confirmSupportedModel();
   fireEvent.click(screen.getByRole('button', { name: 'Cable connected — next' }));
   expect(screen.getByRole('button', { name: 'Connect keyboard' })).toBeDisabled();
