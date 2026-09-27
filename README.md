@@ -4,6 +4,8 @@
 
 Remap keys, set up macros, and back up your NIZ keyboard configuration in a browser. Connect directly over USB, with no configuration software to install. **Currently supports ATOM66 only.**
 
+![ATOM66 key layout showing normal, left Fn, and right Fn mappings, with the 1 key's left Fn mapping selected as F1.](docs/images/three-layer-keymap.jpg)
+
 **[Open NIZ Web](https://cbingb666.github.io/niz-web/)** · [User guide](docs/usage.md) · [Report a bug](https://github.com/cbingb666/niz-web/issues/new?template=bug-report.yml)
 
 > [!WARNING]

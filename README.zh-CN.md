@@ -4,6 +4,8 @@
 
 在浏览器里为 NIZ 键盘改键、设置宏和备份配置。通过 USB 直接连接，无需安装配置软件。**目前仅支持 ATOM66。**
 
+![ATOM66 三层映射界面，数字 1 键的左 Fn 映射 F1 已选中。](docs/images/three-layer-keymap.jpg)
+
 **[打开 NIZ Web](https://cbingb666.github.io/niz-web/)** · [使用指南](docs/usage.zh-CN.md) · [报告问题](https://github.com/cbingb666/niz-web/issues/new?template=bug-report.yml)
 
 > [!WARNING]
