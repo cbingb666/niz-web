@@ -44,6 +44,7 @@ test('the header shows the device breadcrumb and disconnecting from the footer r
   const { store, actions } = application(new FakeHID([device]));
   const view = render(<App store={store} usbAvailable />);
   const initialHeader = view.container.querySelector('.app-header')!.textContent;
+  expect(screen.queryByRole('navigation', { name: '页面导航' })).not.toBeInTheDocument();
   await act(async () => { await actions.start(); await acceptRead(store); await actions.configureDevice(); });
   const header = within(view.container.querySelector<HTMLElement>('.app-header')!);
   const footer = within(view.container.querySelector<HTMLElement>('.commit-bar')!);
@@ -73,6 +74,7 @@ test('the header shows the device breadcrumb and disconnecting from the footer r
   expect(view.container.querySelector('.commit-bar')).toBeNull();
   expect(screen.getByRole('heading', { name: '设备管理' })).toBeVisible();
   expect(view.container.querySelector('.app-header')!.textContent).toBe(initialHeader);
+  expect(screen.queryByRole('navigation', { name: '页面导航' })).not.toBeInTheDocument();
   expect(screen.getByRole('button', { name: '连接设备' })).toBeEnabled();
 });
 

@@ -32,6 +32,8 @@ test('the language control changes the UI and remembers the choice on reload', a
   });
   const view = render(<App store={store} notices={[msg('environment.unsupported')]} />);
   await act(() => actions.start());
+  expect(screen.getByRole('combobox', { name: '语言' })).toHaveTextContent(/^$/);
+  expect(screen.getByRole('combobox', { name: '语言' })).toHaveAttribute('title', '语言: 简体中文');
   await chooseEnglish();
   expect(screen.getByRole('heading', { name: 'Devices' })).toBeInTheDocument();
   fireEvent.click(screen.getByRole('button', { name: 'Connect a device' }));
@@ -48,7 +50,8 @@ test('the language control changes the UI and remembers the choice on reload', a
   view.unmount();
   const reloaded = application(null, undefined, { locale: browserLocale() });
   render(<App store={reloaded.store} />);
-  expect(screen.getByRole('combobox', { name: 'Language' })).toHaveTextContent('English');
+  expect(screen.getByRole('combobox', { name: 'Language' })).toHaveTextContent(/^$/);
+  expect(screen.getByRole('combobox', { name: 'Language' })).toHaveAttribute('title', 'Language: English');
   fireEvent.click(screen.getByRole('button', { name: 'Connect a device' }));
   expect(screen.getByRole('button', { name: 'Offline demo' })).toBeInTheDocument();
 });

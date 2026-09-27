@@ -117,15 +117,14 @@ function Header() {
       <div className="brand">
         <h1>NIZ Web</h1>
       </div>
-      <nav className="page-navigation" aria-label={t('devices.navigation')}>
+      {page !== 'devices' && <nav className="page-navigation" aria-label={t('devices.navigation')}>
         <ol>
-          <li>{page === 'devices' ? <span aria-current="page">{t('devices.title')}</span>
-            : <Button variant="ghost" size="sm" disabled={locked} onClick={() => navigate('devices')}>{t('devices.title')}</Button>}</li>
-          {page !== 'devices' && <li className="breadcrumb-current">
+          <li><Button variant="ghost" size="sm" disabled={locked} onClick={() => navigate('devices')}>{t('devices.title')}</Button></li>
+          <li className="breadcrumb-current">
             <ChevronRight aria-hidden="true" /><span aria-current="page" title={currentPage}>{currentPage}</span>
-          </li>}
+          </li>
         </ol>
-      </nav>
+      </nav>}
       <div className="header-detail">
         <LanguageSwitcher />
         <Button variant="ghost" size="icon" aria-label={t('help.open')} disabled={locked} onClick={showHelp}>

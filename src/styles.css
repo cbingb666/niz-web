@@ -659,10 +659,6 @@ main {
   }
 }
 
-.language-select {
-  width: 148px;
-  flex-shrink: 0;
-}
 @media (max-width: 680px) {
   .app-header {
     flex-wrap: wrap;
@@ -1084,7 +1080,6 @@ main {
 @media (max-width: 520px) {
   .app-shell { --page-gutter: 12px; }
   .app-header .header-detail { gap: 4px; }
-  .app-header .language-select { width: 116px; padding-inline: 8px; gap: 6px; }
   .profile-actions { gap: 0; padding-left: 8px; }
   .profile-actions > button { width: 32px; padding: 6px; }
   .commit-bar { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: 'tools tools' 'details actions'; gap: 8px 12px; }
