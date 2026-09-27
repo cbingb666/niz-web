@@ -1,5 +1,5 @@
 import { useRef } from 'react';
-import { DatabaseBackup, Download, Logs, Upload } from 'lucide-react';
+import { DatabaseBackup, Download, ScrollText, Upload } from 'lucide-react';
 import { useI18n } from '@/i18n/use-i18n';
 import { isLocked } from '@/store/app-store';
 import { useAppStore } from '@/store/context';
@@ -20,7 +20,7 @@ export function ProfileActions() {
     <Button variant="ghost" title={t('backup.title')} disabled={locked} onClick={actions.showBackups}>
       <DatabaseBackup /><span className="sr-only">{t('backup.title')} {backupAvailable ? backupCount : t('common.unavailable')}</span>
     </Button>
-    <Button id="activity-trigger" variant="ghost" title={t('activity.title')} disabled={locked} aria-haspopup="dialog" onClick={actions.showActivity}><Logs /><span className="sr-only">{t('activity.title')}</span></Button>
+    <Button id="activity-trigger" variant="ghost" title={t('activity.title')} disabled={locked} aria-haspopup="dialog" onClick={actions.showActivity}><ScrollText /><span className="sr-only">{t('activity.title')}</span></Button>
     <input ref={input} type="file" aria-label={t('keyboard.importFile')} accept=".json,.pro,application/json" hidden
       onChange={event => {
         const file = event.currentTarget.files?.[0];
