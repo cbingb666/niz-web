@@ -44,7 +44,14 @@ export function standalone(): Plugin {
         '<!-- BUILD:CSP -->',
         `<meta http-equiv="Content-Security-Policy" content="${csp}">`,
       );
-      if (/<(?:script|link)\b[^>]*(?:src|href)=/.test(html.replace(/<script>[\s\S]*?<\/script>/g, '')))
+      // Vite embeds the favicon; keep rejecting every other runtime asset URL.
+      const runtimeMarkup = html
+        .replace(/<script>[\s\S]*?<\/script>/g, '')
+        .replace(
+          /<link\b[^>]*\brel="icon"[^>]*\bhref="data:image\/(?:x-icon|vnd\.microsoft\.icon);base64,[A-Za-z0-9+/=]+"[^>]*>/g,
+          '',
+        );
+      if (/<(?:script|link)\b[^>]*(?:src|href)=/.test(runtimeMarkup))
         throw new Error('Unexpected external runtime asset');
       await writeFile(file, html);
       await writeFile(

@@ -36,6 +36,13 @@ test('production is one offline HTML with hash CSP and HID permissions', async (
         dom.window.document.querySelector('meta[name="description"]')?.getAttribute('content'),
       ).toContain('Configure supported NIZ');
       const document = dom.window.document;
+      expect(document.querySelectorAll('link[href]')).toHaveLength(1);
+      const favicon = document.querySelector<HTMLLinkElement>('link[rel="icon"]');
+      const faviconUrl = favicon?.getAttribute('href') ?? '';
+      expect(faviconUrl).toMatch(/^data:image\/(?:x-icon|vnd\.microsoft\.icon);base64,/);
+      expect(Buffer.from(faviconUrl.split(',')[1], 'base64')).toEqual(
+        await readFile(resolve('src/assets/favicon.ico')),
+      );
       expect(document.getElementById('page-title')?.textContent).toBe('Connect your keyboard');
       expect(document.querySelector('.device-count')).toBeNull();
       expect(document.querySelector('.devices-empty .cable-demo svg')).not.toBeNull();
@@ -64,7 +71,7 @@ test('production is one offline HTML with hash CSP and HID permissions', async (
     expect(html).toContain(`script-src 'sha256-${digest}'`);
     expect(html).toContain("connect-src 'none'");
     expect(html.replace(/<script>[\s\S]*?<\/script>/g, '')).not.toMatch(
-      /<script[^>]+src=|<link[^>]+href=|<!-- BUILD:/,
+      /<script[^>]+src=|<!-- BUILD:/,
     );
     expect(script).not.toMatch(/\beval\s*\(|\bnew Function\s*\(/);
     expect(await readdir(outDir)).toEqual(expect.arrayContaining(['index.html', '_headers']));

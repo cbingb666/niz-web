@@ -117,7 +117,7 @@ ATOM66 支持完整三组或九组配置。V1.4.4 九组共 594 条记录，界�
 
 ## 构建与验证边界
 
-`scripts/standalone.ts` 将脚本与样式内联，按实际脚本计算 SHA-256 CSP，并将经典脚本放在挂载节点之后。生产 CSP 保留 `connect-src 'none'`，开发环境使用独立配置以允许 Vite 热更新。
+`scripts/standalone.ts` 将脚本与样式内联，按实际脚本计算 SHA-256 CSP，并将经典脚本放在挂载节点之后。Vite 将 `src/assets/favicon.ico` 以内联 data URL 嵌入 HTML。生产 CSP 保留 `connect-src 'none'`，开发环境使用独立配置以允许 Vite 热更新。
 
 产物为 `dist/index.html` 与 `dist/_headers`，无 CDN 或外部图片依赖。保留 `base: './'` 和仅发布 `dist/` 的边界；构建及 Pages 工作流见[贡献指南](../CONTRIBUTING.zh-CN.md#构建与静态部署)。
 

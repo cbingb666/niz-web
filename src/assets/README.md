@@ -1,4 +1,11 @@
-# 设备照片
+# 图片素材
+
+## 应用图标
+
+- `niz-web-icon.png`：NIZ Web 的薄荷绿 N 字键帽图源，1254 × 1254，透明背景 PNG。使用内置 ImageGen 生成，提示词和导出方法见 [favicon notes (English)](favicon.md)。
+- `favicon.ico`：由上述图源导出的多尺寸图标，包含 16、24、32、48、64、128、256 像素版本及透明通道；构建时内联到 HTML。
+
+## 设备照片
 
 - `atom66-product.webp`：NIZ ATOM66 白灰键帽整机实拍，3000 × 1159，透明背景、无损 WebP。保留为原始素材和商业精修的输入。
   - 来源：[Flashquark 的 NIZ Atom66 产品图库](https://flashquark.com/product/niz-atom66-bluetooth-rgb-electro-capacitative-keyboard/)。

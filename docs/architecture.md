@@ -117,7 +117,7 @@ Tool names retain their compatibility prefix, but results report the current edi
 
 ## Build and validation boundaries
 
-`scripts/standalone.ts` inlines scripts and styles, computes SHA-256 CSP hashes from the actual script, and places the classic script after the mount node. Production CSP keeps `connect-src 'none'`. Development uses a separate configuration for Vite hot updates.
+`scripts/standalone.ts` inlines scripts and styles, computes SHA-256 CSP hashes from the actual script, and places the classic script after the mount node. Vite embeds `src/assets/favicon.ico` as a data URL in the HTML. Production CSP keeps `connect-src 'none'`. Development uses a separate configuration for Vite hot updates.
 
 Output consists of `dist/index.html` and `dist/_headers`, with no CDN or external image dependencies. Keep `base: './'` and publish only `dist/`. See [Contributing](../CONTRIBUTING.md#build-and-static-hosting) for build and Pages workflow details.
 
