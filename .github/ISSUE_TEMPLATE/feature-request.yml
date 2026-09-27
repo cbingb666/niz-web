@@ -1,0 +1,24 @@
+name: Feature request
+description: Suggest an improvement or support for a keyboard model.
+body:
+  - type: textarea
+    id: need
+    attributes:
+      label: What would you like to do?
+      description: Describe one task or problem the app could handle better.
+    validations:
+      required: true
+  - type: textarea
+    id: suggestion
+    attributes:
+      label: Suggested change
+      description: Share an idea if you have one. You do not need a complete solution.
+    validations:
+      required: false
+  - type: textarea
+    id: references
+    attributes:
+      label: Examples or references
+      description: For a new keyboard model, include its name and public product or protocol links. Do not attach private read captures.
+    validations:
+      required: false

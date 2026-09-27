@@ -1,0 +1,58 @@
+name: Bug report
+description: Report a problem with connecting, editing, reading, or writing.
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Report one problem at a time. You can report offline issues without a keyboard.
+        Keep private configuration files and full read captures out of the issue.
+  - type: textarea
+    id: problem
+    attributes:
+      label: What happened?
+      description: Describe the problem or paste the error shown in the app.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: If it only happened once, describe what you were doing.
+      placeholder: |
+        1. Open ...
+        2. Click ...
+        3. See ...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect?
+    validations:
+      required: false
+  - type: textarea
+    id: environment
+    attributes:
+      label: Browser and system
+      description: Include versions if known, and how you opened the app.
+      placeholder: |
+        Browser and version:
+        Operating system and version:
+        App: GitHub Pages / local development server / saved HTML
+    validations:
+      required: true
+  - type: input
+    id: keyboard
+    attributes:
+      label: Keyboard and firmware
+      description: Leave blank if unavailable, or enter "offline demo".
+      placeholder: "For example: ATOM66, 66EC-S / V1.4.4"
+    validations:
+      required: false
+  - type: textarea
+    id: details
+    attributes:
+      label: Screenshots or other details
+      description: Remove private information before adding screenshots or error text.
+    validations:
+      required: false

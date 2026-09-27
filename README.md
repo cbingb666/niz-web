@@ -1,196 +1,73 @@
 # NIZ Web
 
-NIZ 键盘配置工具的纯 Web 移植测试版，**目前仅支持 ATOM66**。浏览器通过 WebHID 直接访问键盘的 USB 配置接口：没有本地 USB 中转程序、后端服务或云端配置存储。界面采用 React + TypeScript（strict）+ Vite + shadcn/ui，应用状态由 Zustand 管理；所有运行时代码随网页打包，不使用 CDN。目前仅保留 Web 版作为在用版本，源码位于项目根目录；官方原版软件按型号统一收集在 `drivers/`。
+**English** · [简体中文](README.zh-CN.md)
 
-项目包名、构建插件及构建测试环境统一使用 `niz-web` 命名；`ATOM66` 用于具体键盘型号，旧数据和页面工具中的兼容标识见下文“型号扩展”。
+Remap keys, set up macros, and back up your NIZ keyboard configuration in a browser. Connect directly over USB, with no configuration software to install. **Currently supports ATOM66 only.**
 
-## 目录结构
+**[Open NIZ Web](https://cbingb666.github.io/niz-web/)** · [User guide](docs/usage.md) · [Report a bug](https://github.com/cbingb666/niz-web/issues/new?template=bug-report.yml)
 
-```text
-.
-├── drivers/             # 官方原版驱动 / 配置软件，仅作参考
-├── src/
-│   ├── components/      # React 界面，ui/ 为 shadcn 源码组件
-│   ├── store/           # Zustand 应用状态、操作与 React 订阅
-│   ├── i18n/            # 中英文文案、按键名称与语言偏好
-│   ├── types/           # WebHID 配置接口类型
-│   ├── lib/             # 浏览器环境、下载与样式工具
-│   ├── devices/         # 型号定义、识别注册表；atom66/ 含布局及 .pro 转换
-│   ├── protocol.ts     # NIZ EC 报文解析与带型号归属的配置
-│   ├── hid.ts          # 设备通信、连接状态与写入保护
-│   ├── editor.ts       # 独立于 React 的编辑模型
-│   ├── storage.ts      # IndexedDB 事务备份
-│   └── model-tools.ts  # 可选 WebMCP 页面工具
-├── scripts/             # 单文件构建插件与私人样本回放
-├── tests/               # Vitest：协议、状态、React 交互与产物测试
-├── .github/workflows/   # GitHub Pages 检查、构建与部署
-├── .openai/hosting.json # 历史 Sites 配置，当前不用于同步或发布
-├── components.json      # shadcn/ui 配置
-├── index.html           # Vite 页面入口
-├── package-lock.json    # npm 依赖锁文件
-└── dist/index.html      # 构建生成的独立网页
-```
+> [!WARNING]
+> This is an experimental port. USB authorization, reads, writes, and RGB controls have not yet been validated on a real keyboard through the web app.
+> Start by reading the configuration and downloading a backup. Check its contents before trying a write. [Validation history (Chinese)](VALIDATION.md)
 
-后续型号的官方软件放入 `drivers/<型号>/`，同一型号有多个版本时再按版本或日期分目录，具体约定见 [drivers/README.md](drivers/README.md)。此目录只收集原始资料，不意味着网页已经支持相应型号；当前注册表只包含 ATOM66。
+## Get started
 
-## 型号扩展
+You need an ATOM66, a USB data cable, and desktop Chrome or Edge. Close other keyboard configuration tools first.
 
-`src/devices/atom66/model.ts` 集中维护 ATOM66 的 USB 筛选条件、固件识别、物理布局、编辑层、允许的配置组数、Fn 规则、计数 / RGB 能力及演示内容。`src/devices/model.ts` 定义这些信息的接口，并从布局和层数推导键数及记录范围；`src/devices/index.ts` 是受支持型号的唯一注册入口。
+1. **Connect your keyboard.** Open the app, click **Connect a device**, and follow the steps to check the model, plug in the cable, and grant access.
+2. **Read the configuration.** Back on the Devices page, click **Configure device** on the keyboard's card and confirm the read.
+3. **Download a backup.** After reading succeeds, click **Export configuration** to save the original JSON file.
+4. **Remap a key.** Click a mapping on a keycap and choose a new action. For shortcuts and macros, click **Apply this edit** when finished.
+5. **Write to the keyboard.** Click **Review and write**, check the changes, and confirm. Wait for writing and verification to finish.
 
-连接时先筛选 USB 配置接口，再读取固件，在候选型号中唯一匹配。未知或匹配多个型号的设备不会继续读取配置。`HIDSession` 保存识别出的型号；`Profile` 保存配置所属型号；编辑器、React 布局、方向键导航、确认摘要和页面工具都使用配置的型号信息。未载入配置时默认显示 ATOM66。
+**The keyboard is temporarily locked during reads and writes. You cannot type during this time.** Keep the USB cable connected until the operation finishes.
 
-添加型号的流程：
+To try the interface without a keyboard, choose **Offline demo** on the **Connect a device** page. Editing and importing change the configuration in the page; the keyboard changes only after you confirm a write.
 
-1. 从官方资料和真实只读样本确认 USB 标识、固件识别规则、按键顺序、布局、配置组数和设备能力。同一个 USB ID 不代表同一型号，不按报文数量猜测型号。
-2. 如果确认使用相同的 NIZ EC 报文及命令格式，在 `src/devices/<型号>/model.ts` 定义型号，并加入 `supportedModels`。计数读取长度、RGB 长度、记录寻址、编辑范围和 Fn 同步从型号定义取得。
-3. 如果命令、报文结构或键码含义不同，先实现对应的协议模块及转换，再扩展协议选择；当前 `protocol: 'niz-ec'` 只声明已实现的协议，不能仅添加型号参数就声称支持其他协议。Windows `.pro` 目前也仅支持 `src/devices/atom66/legacy.ts` 中明确识别的 ATOM66 格式。
-4. 增加真实样本的报文往返和设备行为验证后再宣称支持。`tests/model-fixtures.ts` 的 68 键 / 2 层 / 4 组型号仅用于检查结构可扩展性，未注册，也不对应受支持的实际产品。
+## Features
 
-新型号的 JSON 使用 `format: 'niz-web'`、`schema: 1` 和必填的 `model` 型号 ID。ATOM66 继续导出原有 `atom66-macos` 格式；导入旧文件及备份时明确归属 ATOM66。导入合并、配置比较和硬件写入都检查型号一致性，即使固件字符串及记录数量相同，也拒绝不同型号之间的混用。最小编辑组导入完整配置时保留设备的扩展组原始字节。
+- **Keys and macros:** Edit the normal, right Fn, and left Fn layers. Set shortcuts, rapid fire, and macros, with undo and redo.
+- **Configuration files:** Import JSON and ATOM66 Windows `.pro` files, export JSON, and manage local browser backups.
+- **Devices:** Manage multiple keyboards and read key counts. Set per-key colors on RGB models.
+- **Offline editing:** Try the app, import files, and edit without a connected keyboard. The interface supports Simplified Chinese and English.
 
-旧的 IndexedDB 名称 `atom66-web-backups`、语言偏好键 `atom66.locale` 和三个 `atom66_*` 页面工具名称继续保留，避免已有数据和调用失效。这些名称是兼容标识，不限制当前型号；页面工具会返回编辑器型号、键数、层名称，并在型号切换时重新注册相应的输入范围。ATOM66 诊断格式继续兼容，新型号诊断使用 `niz-read-capture` 并携带 `model`。
+## Where your configuration is saved
 
-原 `web/` 的文件（包括隐藏配置）已全部迁至根目录。原生 Mac 版、旧归档和交付 ZIP 不属于当前项目内容。
+Edits stay in the current page. **Export them before closing it.** Local backups are stored in the current browser. They do not move automatically to another browser or site address, and clearing site data may delete them.
 
-## 打开与连接
+Once loaded, the app does not upload your keyboard configuration or key counts. There is no cloud sync. Keep downloaded JSON files for recovery. See [Backups and recovery](docs/usage.md#backups-and-recovery).
 
-成品是 `dist/index.html`，所有代码与样式均包含在这一个文件中。
+## Current limitations
 
-1. 用支持 WebHID 的桌面版 Chrome 或 Edge 打开。若默认浏览器不支持，请使用浏览器的“打开文件”选择此文件。离线演示、导入和编辑不需要连接键盘。
-2. USB 连接和本地备份需要浏览器允许当前页面来源。正式使用推荐将 `dist/` 部署到 HTTPS 静态托管；直接打开 `file://` 时的权限取决于浏览器实现，未做实机确认。页面会显示环境检查结果。Safari 不提供此页面所需的 WebHID 接口时，只能使用离线功能。
-3. 首页为“设备管理”，展示当前已连接键盘的插图、型号、固件与配置状态。“连接设备”打开逐步引导：先核对并确认设备在支持型号列表中，再接好 USB 数据线并点击下一步，然后点击“连接键盘”授权浏览器；授权成功后仍需点击下一步，最后点击完成返回设备管理。每次只展示当前步骤的说明，不随设备状态自动跳步。连接前需退出其他 ATOM66 配置工具，网页不能跳过首次用户授权。
-4. 页面会识别并保留所有已授权、可用的受支持键盘，在设备管理页分别显示。已有设备连接时，引导第三步仍可点击“连接另一台键盘”打开浏览器选择窗口；取消或失败不会断开原设备，重复选择同一台也不会重复添加。手动连接和自动连接均不会弹出读取确认或读取按键配置。**点击对应设备卡片的“配置设备”才选择该键盘，并在必要时确认读取、保存备份，再进入工作台。** 主动断开时会调用 WebHID 的 `forget()` 清除当前站点对该设备的授权，因此刷新后也不会自动连回，需再次在浏览器窗口中选择。关闭页面或拔出数据线不清除授权。若浏览器不支持或清除授权失败，页面会明确提示在网站设置中手动移除设备授权。
-5. 取消或读取失败后不会循环弹窗或读取，可再次点击“配置设备”或“重新读取配置”重试。确认期间连接发生变化时，旧确认不能用于新连接。配置解析失败不会误报为没有连接键盘。重连保留已有的未写入修改、未保存输入或离线导入；显式读取时，替换编辑内容的说明会合并到同一个确认框中。
-6. 读写前的弹窗会明确告知：**操作期间键盘按键将被锁定，暂时无法输入。** 确认窗口以“键盘将暂时锁定”为标题，配合静态的键盘与锁示意，首先说明操作期间无法输入；按钮明确为“开始读取”或“开始写入”，取消按钮默认获得焦点。确认、加载与其他弹窗复用原有基础组件及样式。执行时用原有模态窗口居中显示当前状态、电脑与锁定键盘之间传输数据的静态示意，以及实际进度，整页仍被锁定，不能通过 Escape 或点击背景关闭。已知总量时才显示实际传输比例；不显示步骤编号和数据包明细，说明见下文。成功或失败后解除页面锁定；失败会显示可关闭的错误提示。
-7. 普通改键点击目标功能即暂存；快捷键和宏编辑完成后点击应用。点击“核对并写入”，先查看改动数量与锁键提示；“查看改动明细”可展开每个层 / 键位的前后差异。覆盖现有编辑的提醒和实机写入验证提示始终直接显示。确认后设备会被再次读取，检查没有外部改动；本地备份事务完成后才开始写入，最后回读验证。一次写入确认覆盖整个读写事务，不会在内部读取和回读时重复弹窗。
+- No firmware updates, sensor calibration, or global macro recording.
+- An interrupted write may leave partial changes. There is no automatic rollback. Read the keyboard again, check its state, and restore a backup from before the write if needed.
+- Connecting requires a browser with WebHID support. Other browsers can use offline features only.
 
-进度显示的是**当前阶段的数据传输进度**，不是整个操作耗时的估计：
+For connection, import, or write problems, see [Troubleshooting](docs/usage.md#troubleshooting).
 
-- 发送按键配置：按实际成功发送的数据包数 / 本次配置总包数计算比例，宏的续包也计入总量。发送停住或失败时，已完成数量不会继续增长。
-- RGB 和按键计数：按实际发送或接收字节数 / 当前型号所需字节数计算比例。
-- 回读：按已接收的数据包数 / 待校验配置的包数计算比例。收到超出目标数量的数据包时，不再显示该比例，继续记录实际数量并进行校验。
-- 初次读取和写前检查：读取流不会预先提供总包数，且宏会使包数变化，因此仅显示当前状态和一个小型等待指示，不推算百分比。实际收发数量仍由底层进度数据记录。
-- 本地备份、设备处理等待和结果校验：显示阶段状态和一个小型等待指示，没有虚构的百分比或扫动进度条。发送完成不代表写入已验证，页面持续锁定到整个操作成功或失败。
+## Run locally
 
-浏览器要求与授权机制参考 [Chrome 官方 WebHID 文档](https://developer.chrome.com/docs/capabilities/hid)。不要通过关闭浏览器安全限制来解决连接问题。嵌入页面可能被 `Permissions-Policy` 阻止，应使用允许 `hid=(self)` 的独立 HTTPS 页面。
-
-## 已移植功能
-
-### macOS 屏幕亮度快捷键
-
-现有 `Scroll Lock` 与 `Pause` 的映射选项和预览补充 macOS 用途说明：分别降低、提高屏幕亮度，参见 [QMK 按键文档](https://docs.qmk.fm/keycodes_basic#lock-keys)。可搜索“屏幕亮度 / screen brightness”找到这两个已有按键；名称、键帽和键码保持不变。“亮度 - / +”补充键盘灯光用途说明。该兼容路径尚未在真实 ATOM66 与 macOS 上验证；外接显示器还需支持系统亮度控制，参见 [Apple 快捷键说明](https://support.apple.com/en-us/102650)。
-
-### 设备管理与连接引导
-
-设备管理显示当前页面实际连接的所有键盘，使用设备名称区分；仅名称相同时附加页面内编号。连接引导与工作台使用相同的命名规则。每张设备卡片提供独立的配置和断开入口；拔线或断开其中一台不会关闭其他连接。连接引导按“确认型号 → 连接数据线 → 浏览器授权 → 连接完成”逐步推进，每步均由用户点击继续；型号列表来自程序实际支持的设备，勾选确认后才能进入接线步骤；第三步始终允许打开设备选择窗口，只有本次选中的设备连接成功才能继续。每步只保留一个主要指令和操作，进度、返回入口与键盘焦点明确。第一步用底部铭牌示意帮助核对型号，第二步用静态 USB 插头图解释接线，第三步用编号示意“选中键盘 → 点击连接”，第四步展示本次选择的真实设备。插图无自动播放或循环动画，排查说明按需展开；授权取消或失败后保留原因和重试提示。最后一步该设备断线时，必须返回连接步骤重试，不能完成。图示不作为具体型号的精确布局依据。
-
-“离线演示”入口仅位于连接引导页，载入后进入配置工作台。顶栏显示等宽字体品牌、面包屑导航、语言、帮助和 GitHub 链接；工作台面包屑为“设备管理 > 设备名称”；进入工作台使用设备卡片的“配置设备”或“继续编辑”。工作台的返回按钮位于键盘面板标题左侧，三列顶部保持对齐；通过返回按钮或面包屑返回设备管理时，若当前设备有未写入修改或未完成输入，会先要求确认。页面切换保留已暂存修改、未应用输入和撤销历史；设备管理中的“继续编辑”可恢复离线或断线后的编辑会话。点击“配置设备”时，若当前内容未绑定该连接，会先确认读取；取消不会覆盖原有内容。
-
-每台设备独立保存读取基线、按键编辑、草稿和撤销历史；切换设备不会混用这些内容，也不会向其他设备发送配置命令。增加连接本身不切换当前工作台。工作台中的当前设备断开或被拔出后，自动返回设备管理并保留编辑；断开其他设备不会跳转。断开按钮统一在悬停时使用错误色。未选中的设备断开后，其编辑内容仍可在设备管理中继续编辑或导出；所有设备的未写入改动都会参与离开页面时的提醒。设备编号只在本次页面中用于区分连接，不作为硬件序列号或跨页面身份。
-
-设备插图和操作示意均随构建内联，离线 HTML 不依赖外部图片服务。
-
-### 按键映射工作台
-
-键位统一用编号（#01、#02…）定位，不依赖型号预设的键帽标识。每个键位同时显示所有可编辑层的映射；ATOM66 同时显示普通层、右 Fn、左 Fn，默认编辑普通层。直接点击键帽中某层的映射切换编辑目标，右侧不再提供层级下拉框；仅当前键帽和其中选中的映射使用深浅不同的背景色高亮，不联动高亮其他键位，也不使用选中边框，每层提供独立的悬停与键盘焦点效果。方向键在当前层移动键位，Alt + 上 / 下切换同一键位的层。开启计数时，底部侧面的右 Fn 映射替换为次数，键帽按相对计数显示灰阶，次数越高越亮；普通层和左 Fn 仍可编辑，键盘导航跳过被隐藏的层。若当前正在编辑右 Fn，开启计数后回到同一键的普通层并保留草稿；关闭计数后可再次点击底部右 Fn 编辑。缺失计数显示“—”，全部为零时保持统一暗色。键帽示意位于“显示计数”同一行左侧，与布局中普通 1u 键帽同步尺寸，移除文字描述。布局和图例默认隐藏编号，勾选“显示编码”后在右侧面顶部竖排；映射编辑区仅在键帽下方的映射摘要中显示当前编号。“已修改”圆点统一放在键帽左侧边的底部；任一层发生修改即显示一个圆点，计数视图也保留该标记。
-
-右侧“映射编辑”展示当前键帽预览及简化映射（`#编号 - 层 -> 目标`），随选中键位、层和已暂存映射同步更新。常用功能的“无功能”排在第一位；右上角“还原”按钮恢复当前编辑目标的载入值。
-
-选择后，在右侧“映射类型”下拉框中选择“按键 / 快捷键 / 系统功能 / 宏与高级”，显示对应编辑内容。普通按键支持中英文搜索和分类，点击即暂存，无需额外保存；快捷键支持修饰键选择、主键预览及显式开启的页面内录入。系统保留的快捷键仍可用鼠标选择，录入区失焦即停止。宏、连发和复杂组合保留原有文本编辑及全部参数。
-
-未应用的输入按层和键位保留，切换键位不会丢失或强制保存；错误显示在编辑区。导出和硬件写入前必须完成或放弃这些输入。工作台底部固定栏集中显示设备状态、断开、导入、导出、本地备份、操作记录、撤销、重做、写入及待写入数量，页面按底栏实际高度预留空间。迁移工具后保持底栏原有高度，窄屏可横向滚动设备和配置工具区域，撤销、重做及写入按钮保持可见。离线演示入口位于连接引导页。改动侧栏可定位修改及未完成编辑，并可查看完整差异，包括宏的执行方式、间隔、次数、逐步延迟和 RGB 颜色。
-
-撤销 / 重做以一笔已应用操作为单位，最多保留 50 笔，包含批量改键、Fn 联动和灯光修改。分配或移除 Fn 会同步所有可编辑层；不允许移除最后一个 Fn，也不会覆盖其他层尚未应用的输入。“还原”恢复该键位的基准配置，不是恢复出厂。重新载入配置或成功写入后清空历史。草稿和历史仅存在当前页面内存中，离开前请导出；这不会改变本地备份机制。
-
-### 配置与设备能力
-
-- 66 键布局；普通层、右 Fn 层、左 Fn 层。
-- 单键、同时组合键、连发、固定次数 / 按住 / 再次按下停止三种宏；统一间隔或逐步延迟。
-- 可分配原厂多媒体、鼠标、灯效、模式切换等功能码。Fn 赋值会同步三个可编辑层，写入前检查 Fn 一致性且至少保留一个 Fn。
-- RGB 型号逐键颜色与全部按键颜色；读取 66 个按键计数。
-- 导入原生版 JSON 和 Windows `.pro`；导出兼容原生版的完整 JSON；IndexedDB 本地备份、备份下载与导入。
-- 支持完整三组或九组配置。V1.4.4 九组共 594 条，界面仅编辑前三组；其余六组原始报文保留，读写校验逐字节比较扩展组。三组文件导入已读取的九组键盘时补入设备原有扩展组，不将其清空。
-- 读取诊断本地下载；异常不会上传。诊断不是可恢复配置，不能直接导入写入。
-- 支持页面工具的浏览器可选注册三个 WebMCP 工具：状态、已载入按键读取、批量暂存改键。工具没有 USB 授权或硬件写入能力，写入只能在页面点击确认。
-
-离线导入 / 演示不等于当前设备状态。连接并确认读取当前键盘后，再导入希望写入的文件。不同固件版本的 JSON 不直接跨版本写入。
-
-## 重要边界
-
-这是基于原版 DLL 协议、已有原生移植与真实读取样本的移植测试版，**网页端 USB 授权、读写和 RGB 尚未完成实机验收**。请先只连接、读取、下载备份；确认读取内容正常后再考虑改键。
-
-固件升级、传感器校准、全局宏录制、Windows 驱动安装，以及尚未验证的全局设备参数不在本版中。鼠标、媒体等功能码在不同固件上是否生效仍由键盘决定。
-
-写入不是设备级原子事务。拔线、休眠或设备错误可能导致部分写入；程序不会自动重试或自动回滚，应重新连接、读取并核对，再根据需要导入写入前备份恢复。任何软件校验都不能取代设备实测。
-
-备份属于**当前浏览器、当前来源**。更换网址、浏览器、清除站点数据或浏览器回收存储可能使备份不可用，因此建议额外下载 JSON。网页加载后不上传键盘配置或按键计数，CSP 禁止网络连接；下载的配置 / 诊断可能含设备信息，请自行保管。
-
-## 界面语言
-
-支持简体中文和英文，可在页面右上角切换。优先使用当前来源中保存的语言选择；没有保存记录时按浏览器语言偏好匹配，不支持的语言回退为简体中文。浏览器禁止本地存储时，语言切换仍在当前页面生效。
-
-界面、设备提示、校验错误、确认弹窗、操作记录、备份标签和日期格式随语言更新。中英文按键名称都可输入；切换语言不会清空未保存的输入、改变按键配置或重新连接设备。JSON / `.pro` 格式与已有 IndexedDB 备份保持兼容。
-
-翻译资源全部随单文件网页打包，离线也可切换，不调用外部翻译服务。资源位于 `src/i18n/zh-CN.ts`、`src/i18n/en.ts`，按键名称位于 `src/i18n/key-names.ts`。类型检查约束文案键与插值参数，Vitest 验证中英文键和占位符一致。状态与日志保存消息标识，因此已生成的记录也能切换语言。
-
-## 开发与静态部署
-
-需要 Node.js 22.13+（22.x）或 24+，建议使用 Node.js 24。在项目根目录执行：
+Use Node.js 24 and npm. Run these commands in a terminal:
 
 ```sh
+git clone https://github.com/cbingb666/niz-web.git
+cd niz-web
 npm ci
 npm run dev
 ```
 
-开发服务器默认在 `http://127.0.0.1:5173`；浏览器要求首次 USB 授权必须由按钮点击触发。开发服务器仅提供网页和热更新，没有设备代理或后台数据处理。
+Open <http://127.0.0.1:5173>.
 
-```sh
-npm run typecheck   # TypeScript strict，包含应用、工具与 TypeScript 测试
-npm run lint        # ESLint、TypeScript、React Hooks、未处理 Promise 检查
-npm test            # Vitest 单次测试
-npm run test:watch  # Vitest 监听模式
-npm run build       # 类型检查 + Vite 生产构建
-npm run preview     # 预览生产产物
-npm run check       # 完整检查
-```
+Run `npm run build` to create `dist/index.html`, a standalone page for offline editing or static hosting.
 
-`npm run build` 输出独立的 `dist/index.html`，React、shadcn、样式和应用代码全部内联。`scripts/standalone.ts` 在 Vite 构建后计算脚本 SHA-256 CSP，将经典脚本放在页面挂载节点之后，并生成 `dist/_headers`。生产 CSP 保留 `connect-src 'none'`；开发环境需要 Vite 热更新连接，使用独立的开发配置。
+USB and backup permissions have not been validated on real hardware when opening the HTML file directly. Use an HTTPS page or the local development server to connect a keyboard.
 
-`dist/_headers` 为支持此约定的静态托管提供 `Permissions-Policy: hid=(self)` 等响应头；GitHub Pages 不读取该文件。网页内的 CSP 由 HTML 中的 `<meta>` 提供。部署只使用 `dist/`，不要把源码、测试或 `drivers/` 放进站点产物。`.openai/hosting.json` 仅作历史记录，当前不再同步或发布到 ChatGPT Apps / Sites。
+## Feedback and contributions
 
-shadcn/ui 组件保存在 `src/components/ui/`，采用 Radix 基础组件，主题令牌在 `src/styles.css`。`components.json` 配置了 `@/` 别名，后续可用 shadcn CLI 添加组件。当前采用深色映射工作台；键帽参考正视阶梯结构，使用中性炭灰的窄外缘和内嵌键面；高度随每行单键宽度计算，保留接近方形的键面，普通层左对齐、Fn 层右对齐：正面上方显示较大的普通层，正面下方显示较小的左 Fn，底部侧面显示较小的右 Fn，右侧面显示编号；三层均可独立编辑。键帽、预览和图例固定使用英文短名称、缩写和键盘符号，例如 `Caps/Ctrl`、`Win/Mac`、`BSeq+`、`Wire/WL`，不再因长度回退为 `#编码`。映射编辑选项保留完整名称，并以较小的灰色文字附上对应缩写；缩写与完整名称相同时不重复显示。支持按完整名称或缩写搜索，宏编辑的候选项也提供缩写提示。布局区与右侧预览共用 [Pretext](https://github.com/chenglou/pretext) 测量实际字体，根据可用宽高优先缩小字号以保持单行，最低为 5px；仍放不下时才换行，并缓存测量结果。悬停和编辑器保留完整功能名称。保留真实错列与长键比例，窄屏时横向查看完整键盘，编辑区移到下方。
+Use the [bug report](https://github.com/cbingb666/niz-web/issues/new?template=bug-report.yml) form to report a problem, or the [feature request](https://github.com/cbingb666/niz-web/issues/new?template=feature-request.yml) form to suggest an improvement.
 
-`HIDSession` 由应用入口管理生命周期，React StrictMode 不会重新创建连接；Zustand 通过设备事件同步视图。编辑模型、配置报文和备份格式独立于 React，切换组件不会触发硬件写入。测试中的 FakeHID 只能验证协议和调用顺序，不能替代真实键盘验收。
+Contributions to code, documentation, and translations are welcome. See the [contributing guide](CONTRIBUTING.md) for setup, checks, and pull requests.
 
-已有私人读取样本可在**项目外**本地回放，不要放入源码、发布目录或 Git：
+## License
 
-```sh
-npm run replay -- /absolute/path/to/read-capture.json
-```
-
-验证范围与当前环境限制见 [VALIDATION.md](VALIDATION.md)。
-
-## GitHub Pages 部署
-
-仓库提供 [Deploy to GitHub Pages](.github/workflows/deploy-pages.yml) 工作流。推送到 `main` 时自动部署，也可在 Actions 中选择该工作流，点击 **Run workflow** 并选择 `main`；手动运行其他分支只检查和构建，不部署。
-
-首次启用：
-
-1. 在仓库的 **Settings → Pages → Build and deployment → Source** 中选择 **GitHub Actions**，参见 [GitHub 官方说明](https://docs.github.com/en/pages/getting-started-with-github-pages/configuring-a-publishing-source-for-your-github-pages-site)。
-2. 将工作流及代码提交并推送到 `main`，或在工作流已存在时手动运行。
-3. 等待 Actions 中的 `build` 和 `deploy` 均成功，通过部署任务给出的链接访问。此仓库使用默认域名时，地址为 <https://cbingb666.github.io/niz-web/>；fork 后以自己仓库的 Pages 设置和部署输出为准。
-
-工作流使用 Node.js 24 和 `npm ci`，执行 `npm run check`（类型检查、lint、全部测试、生产构建），通过后只上传 `dist/`。部署使用 GitHub 自动提供的 `GITHUB_TOKEN`，无需额外配置个人访问令牌或提交构建产物，也无需创建 `gh-pages` 分支。
-
-保留 `vite.config.ts` 中的 `base: './'`：单文件构建会内联全部运行时资源，因此同时适用于 `/niz-web/` 这类仓库子路径、站点根路径与下载后的离线 HTML，无需硬编码仓库名。应用切换页面不修改 URL，不需要额外的 SPA 路由回退。
-
-连接键盘时，请在桌面版 Chrome / Edge 中直接打开 Pages 的 **HTTPS** 地址并点击连接按钮授权；WebHID 的 `hid` 权限策略默认允许当前来源，无需依赖 `_headers` 文件，参见 [WebHID 规范](https://hid.spec.whatwg.org/#permissions-policy)。切换到新的站点来源后，需要重新授权设备，原来源下的浏览器本地备份不会自动迁移。
-
-## 许可证
-
-本项目原创源码采用 [MIT License](LICENSE)，版权署名为 cbingb666。
-
-第三方文件保留各自的版权与许可；shadcn/ui 组件的许可见 [src/components/ui/LICENSE](src/components/ui/LICENSE)。`drivers/` 中的官方 EXE / DLL 不适用本项目的 MIT 许可，其权利归原权利人所有。
-
-
-顶栏固定显示品牌、面包屑导航、语言、帮助和 GitHub 链接。工作台底栏显示设备状态和配置工具；点击型号查看设备详情，也可直接断开。操作记录保留时间、错误标记及读取诊断导出。底栏同时保留修改状态、撤销／重做和核对写入。左侧布局区随页面全局滚动，右侧编辑栏固定在顶栏和底栏之间，键位摘要常驻、编辑内容独立滚动；切换键位时编辑内容回到顶部。900px 及以下点选键位打开编辑抽屉，关闭后焦点回到当前键位，已应用改动和未应用草稿均保留。待写入改动在独立左侧栏完整列出，点击可跳回对应键位，未应用草稿单独标记。侧栏收起后完全释放空间，键盘工具栏保留“待写入改动”按钮和实时数量。1600px 以下默认收起，点击后以抽屉显示，不压缩键盘；1600px 及以上默认展示三栏。键盘按可用宽度自适应，1280×800 起无需横向滚动；900px 以下保留键盘横向滚动以保证按键可操作。
+Original source code is licensed under the [MIT License](LICENSE). Third-party components, device images, and vendor software retain their own copyrights and licenses. See the [shadcn/ui license](src/components/ui/LICENSE), [image credits (Chinese)](src/assets/README.md), and [vendor software notes (Chinese)](drivers/README.md).
