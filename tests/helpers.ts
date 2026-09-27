@@ -41,6 +41,7 @@ export class FakeDevice extends EventTarget implements ConfigDevice {
   opened: boolean;
   sent: Uint8Array[];
   openCount: number;
+  forgotten = false;
   collections: HIDCollection[];
   keyBuffer: Uint8Array[] | null;
   lightBuffer: number[] | null;
@@ -77,6 +78,10 @@ export class FakeDevice extends EventTarget implements ConfigDevice {
     this.openCount++;
   }
   async close() {
+    this.opened = false;
+  }
+  async forget() {
+    this.forgotten = true;
     this.opened = false;
   }
   emit(bytes: Uint8Array) {
@@ -154,11 +159,15 @@ export class FakeHID extends EventTarget implements HIDAccess {
   }
   async getDevices() {
     this.getCount++;
-    return this.devices;
+    return this.devices.filter(device => !(device instanceof FakeDevice && device.forgotten));
   }
   async requestDevice(options: Parameters<HIDAccess['requestDevice']>[0]) {
     this.requestCount++;
     this.filters = options.filters;
+    for (const device of this.selection) {
+      if (device instanceof FakeDevice) device.forgotten = false;
+      if (!this.devices.includes(device)) this.devices.push(device);
+    }
     return this.selection;
   }
   connect(device: ConfigDevice) {

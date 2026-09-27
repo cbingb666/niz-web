@@ -4,6 +4,78 @@ import { acceptRead, application, ready } from './store-helpers';
 import type { ConfigDevice } from '../src/types/hid';
 import type { ModelTool } from '../src/model-tools';
 
+test('manually disconnected devices stay disconnected after the page session is recreated', async () => {
+  const device = new FakeDevice(), hid = new FakeHID([device]);
+  const first = application(hid);
+  await first.actions.start();
+  await first.actions.disconnect();
+  expect(device.opened).toBe(false);
+  await first.session.restore();
+  expect(first.store.getState().connectedDevices).toHaveLength(0);
+  await first.actions.stop();
+  const reloaded = application(hid);
+  await reloaded.actions.start();
+  expect(reloaded.store.getState().connectedDevices).toHaveLength(0);
+  await reloaded.actions.connect();
+  expect(reloaded.store.getState().connectedDevices).toHaveLength(1);
+  await reloaded.actions.stop();
+  const afterReconnect = application(hid);
+  await afterReconnect.actions.start();
+  expect(afterReconnect.store.getState().connectedDevices).toHaveLength(1);
+});
+
+test.each([0, 1])('disconnecting device %i revokes only its own permission across page sessions', async index => {
+  const devices = [new FakeDevice(), new FakeDevice()];
+  const hid = new FakeHID(devices);
+  const first = application(hid);
+  await first.actions.start();
+  await first.actions.disconnect(first.session.connectedDevices[index].id);
+  expect(devices[index].forgotten).toBe(true);
+  expect(devices[1 - index].forgotten).toBe(false);
+  await first.actions.stop();
+  const reloaded = application(hid);
+  await reloaded.actions.start();
+  expect(reloaded.session.connectedDevices).toHaveLength(1);
+  expect(reloaded.session.device).toBe(devices[1 - index]);
+});
+
+test.each(['unavailable', 'rejected'] as const)('a device is closed and the user is notified when forgetting is %s', async failure => {
+  const device = new FakeDevice();
+  if (failure === 'unavailable') Object.defineProperty(device, 'forget', { value: undefined });
+  else vi.spyOn(device, 'forget').mockRejectedValueOnce(new Error('permission store unavailable'));
+  const { store, actions } = application(new FakeHID([device]));
+  await actions.start();
+  await actions.disconnect();
+  expect(device.opened).toBe(false);
+  expect(store.getState().connectedDevices).toHaveLength(0);
+  expect(store.getState().session.pending).toBe(0);
+  expect(store.getState().dialog).toMatchObject({
+    kind: 'message', body: { key: failure === 'unavailable' ? 'error.forgetUnsupported' : 'error.forgetDevice' },
+  });
+});
+
+test('device actions stay locked until revoking permission finishes', async () => {
+  const device = new FakeDevice(), hid = new FakeHID([device]);
+  let release!: () => void;
+  const gate = new Promise<void>(resolve => { release = resolve; });
+  const forget = device.forget.bind(device);
+  const revoke = vi.spyOn(device, 'forget').mockImplementation(async () => { await gate; await forget(); });
+  const { store, actions } = application(hid);
+  await actions.start();
+  const disconnecting = actions.disconnect();
+  try {
+    await vi.waitFor(() => expect(revoke).toHaveBeenCalledOnce());
+    expect(store.getState().session.pending).toBe(1);
+    expect(await actions.connect()).toBeNull();
+    expect(hid.requestCount).toBe(0);
+  } finally {
+    release();
+    await disconnecting;
+  }
+  expect(store.getState().session.pending).toBe(0);
+  expect(device.forgotten).toBe(true);
+});
+
 test('requesting a device while connected opens the picker in the same user gesture', async () => {
   const device = new FakeDevice(), hid = new FakeHID([device]);
   const { actions, session } = application(hid);

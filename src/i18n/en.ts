@@ -447,6 +447,8 @@ export const en = {
   'error.deviceOverflow': 'The device sent more data than allowed.',
   'error.overlap': 'Overlapping USB operations were stopped.',
   'error.disconnected': 'The keyboard was disconnected.',
+  'error.forgetUnsupported': 'The device is disconnected, but this browser cannot revoke device access. Remove its permission in the browser’s site settings, or it may reconnect after a refresh.',
+  'error.forgetDevice': 'The device is disconnected, but revoking access failed: {error}. Remove its permission in the browser’s site settings, or it may reconnect after a refresh.',
   'error.output': 'The device is disconnected or the output report is invalid.',
   'error.sendTimeout':
     'Sending a report timed out. The device may have completed only part of the operation. Disconnect and reconnect it.',

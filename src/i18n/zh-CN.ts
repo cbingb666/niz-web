@@ -422,6 +422,8 @@ export const zhCN = {
   'error.deviceOverflow': '设备发送的数据超过允许长度。',
   'error.overlap': 'USB 操作重叠，已停止。',
   'error.disconnected': '键盘连接已断开。',
+  'error.forgetUnsupported': '设备已断开，但浏览器不支持清除设备授权。请在浏览器的网站设置中移除此设备的授权，否则刷新后可能重新连接。',
+  'error.forgetDevice': '设备已断开，但清除设备授权失败：{error}。请在浏览器的网站设置中移除此设备的授权，否则刷新后可能重新连接。',
   'error.output': '设备未连接或输出报文格式错误。',
   'error.sendTimeout': '发送报文超时，设备可能只完成部分操作。请断开后重新连接。',
   'error.parallelRead': '不能并行读取同一 USB 接口。',

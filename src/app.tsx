@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState, type RefObject } from 'react';
-import { ArrowLeft, ArrowRight, ChevronRight, CircleHelp, Undo2, Redo2 } from 'lucide-react';
+import { ArrowRight, ChevronRight, CircleHelp, Undo2, Redo2 } from 'lucide-react';
 import { ConnectionPanel } from './components/connection-panel';
 import { DeviceManager } from './components/device-manager';
 import { ConnectionGuide } from './components/connection-guide';
@@ -150,8 +150,6 @@ interface AppContentProps {
 }
 function AppContent({ notices = [], usbAvailable = false }: AppContentProps) {
   const { t, text, locale } = useI18n();
-  const locked = useAppStore(isLocked);
-  const navigate = useAppStore(state => state.actions.navigate);
   const [narrow, setNarrow] = useState(() => window.matchMedia?.('(max-width: 900px)').matches ?? false);
   const [compactChanges, setCompactChanges] = useState(() => window.matchMedia?.('(max-width: 1599px)').matches ?? false);
   const [editorOpen, setEditorOpen] = useState(false);
@@ -197,8 +195,6 @@ function AppContent({ notices = [], usbAvailable = false }: AppContentProps) {
       <div className="app-shell" data-page={page} data-changes-collapsed={changesCollapsed || compactChanges} inert={operating} aria-busy={operating}>
         <Header />
         <main ref={main} tabIndex={-1}>
-          {page === 'editor' && <Button className="page-back workspace-back" variant="ghost" disabled={locked}
-            onClick={() => navigate('devices')}><ArrowLeft />{t('devices.back')}</Button>}
           {page === 'editor' && !compactChanges && <PendingChanges collapsed={changesCollapsed} onToggle={() => setChangesPreference(true)} />}
           {page === 'editor' && <ConnectionPanel />}
           {notices.length > 0 && (

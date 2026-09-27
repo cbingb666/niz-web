@@ -1,7 +1,7 @@
 import { useI18n } from '@/i18n/use-i18n';
 import { localizedSummary, keycapSummary } from '@/i18n/profile';
 import { useRef, type CSSProperties, type KeyboardEvent } from 'react';
-import { PanelLeftOpen, RotateCw } from 'lucide-react';
+import { ArrowLeft, PanelLeftOpen, RotateCw } from 'lucide-react';
 import { isLocked } from '@/store/app-store';
 import { useAppStore } from '@/store/context';
 import { Button } from './ui/button';
@@ -168,13 +168,17 @@ export function KeyboardPanel({ onEdit, onShowChanges, changesExpanded = false }
   return (
     <div className="keyboard-panel" role="region" aria-label={t('keyboard.layout')} tabIndex={0}>
       <div className="panel-toolbar">
-        <div>
-          <h2>{model.name} · {t('keyboard.layout')}</h2>
-          <p>
-            {profile
-              ? `${t(source === 'demo' ? 'keyboard.demo' : source === 'read' ? 'keyboard.deviceProfile' : 'keyboard.imported')} · ${count(profile.records.length, 'keyboard.records.one', 'keyboard.records.other')}${stale ? ' · ' + t('keyboard.stale') : ''}`
-              : t('keyboard.notLoaded')}
-          </p>
+        <div className="keyboard-panel-heading">
+          <Button className="workspace-back" variant="ghost" size="icon" disabled={locked}
+            title={t('devices.back')} aria-label={t('devices.back')} onClick={() => actions.navigate('devices')}><ArrowLeft /></Button>
+          <div>
+            <h2>{model.name} · {t('keyboard.layout')}</h2>
+            <p>
+              {profile
+                ? `${t(source === 'demo' ? 'keyboard.demo' : source === 'read' ? 'keyboard.deviceProfile' : 'keyboard.imported')} · ${count(profile.records.length, 'keyboard.records.one', 'keyboard.records.other')}${stale ? ' · ' + t('keyboard.stale') : ''}`
+                : t('keyboard.notLoaded')}
+            </p>
+          </div>
         </div>
         <div className="workspace-actions">
           {onShowChanges && <Button id="changes-trigger" variant="outline" aria-label={t('mapping.expandChanges')}

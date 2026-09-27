@@ -911,6 +911,9 @@ main {
 .app-shell > main > .connection-bar, .app-shell > main > .notice { flex: none; }
 .app-shell .workspace { display: block; flex: 1 0 auto; overflow: clip; }
 .workspace > .keyboard-panel { padding: 22px 22px 6px; }
+.keyboard-panel-heading { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.keyboard-panel-heading > div { min-width: 0; }
+.workspace-back { color: var(--muted-foreground); }
 .workspace-actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 8px; }
 .pending-draft-indicator { width: 6px; height: 6px; border-radius: 50%; background: var(--warning); }
 .workspace > .keyboard-panel:focus-visible, .inspector:focus-visible, .inspector-content:focus-visible { outline: 2px solid var(--ring); outline-offset: -2px; }
@@ -1161,7 +1164,6 @@ main {
 .resume-profile p, .guide-demo p { color: var(--muted-foreground); font-size: .875rem; line-height: 1.7; margin-top: 5px; }
 .resume-profile > button, .guide-demo > button { flex: none; min-height: 42px; }
 .page-back { padding-left: 0; margin: -10px 0 16px; color: var(--muted-foreground); }
-.workspace-back { align-self: flex-start; flex: none; }
 .connection-guide-page .device-page-heading { margin-top: 0; margin-bottom: 26px; }
 .guide-layout { display: grid; grid-template-columns: 1fr 1fr; border: 1px solid var(--border); border-radius: 20px; background: var(--panel); overflow: hidden; }
 .guide-visual { position: relative; display: flex; flex-direction: column; justify-content: center; min-width: 0; padding: 32px; background: #111416; overflow: hidden; }

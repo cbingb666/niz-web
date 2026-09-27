@@ -563,20 +563,34 @@ export class HIDSession extends EventTarget {
   }
   async disconnect(manual = true) {
     const device = this.device;
-    if (manual && device) this.ignoredDevices.add(device);
-    this.drop(manual ? msg('hid.disconnected') : msg('hid.switching'));
-    if (manual) this.paused = this.connections.size === 0;
-    if (device?.opened) await device.close().catch(() => {});
+    await this.exclusive(async () => {
+      if (manual && device) this.ignoredDevices.add(device);
+      this.drop(manual ? msg('hid.disconnected') : msg('hid.switching'));
+      if (manual) this.paused = this.connections.size === 0;
+      if (device?.opened) await device.close().catch(() => {});
+      // Closing the channel alone leaves a browser grant that survives reloads.
+      if (manual && device) await this.forgetDevice(device);
+    });
   }
   async disconnectDevice(id: string) {
     if (id === this.activeDeviceId) return this.disconnect();
     const record = this.connections.get(id);
     if (!record) return;
-    this.ignoredDevices.add(record.device);
-    this.connections.delete(id);
-    record.channel.close();
-    if (record.device.opened) await record.device.close().catch(() => {});
-    this.notify();
+    await this.exclusive(async () => {
+      this.ignoredDevices.add(record.device);
+      this.connections.delete(id);
+      record.channel.close();
+      if (record.device.opened) await record.device.close().catch(() => {});
+      await this.forgetDevice(record.device);
+    });
+  }
+  private async forgetDevice(device: ConfigDevice) {
+    assert(device.forget, msg('error.forgetUnsupported'));
+    try {
+      await device.forget();
+    } catch (error) {
+      throw new ProtocolError(msg('error.forgetDevice', { error: protocolError(error).description }));
+    }
   }
   assertReady(epoch = this.epoch): asserts this is this & {
     channel: PacketChannel; device: ConfigDevice; model: KeyboardModel;

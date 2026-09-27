@@ -18,6 +18,7 @@ export interface ConfigDevice extends EventTarget {
   collections: HIDCollection[];
   open(): Promise<void>;
   close(): Promise<void>;
+  forget?(): Promise<void>;
   sendReport(reportId: number, data: Uint8Array): Promise<void>;
 }
 export interface HIDAccess extends EventTarget {
