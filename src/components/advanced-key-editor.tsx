@@ -1,5 +1,6 @@
 import { useI18n } from '@/i18n/use-i18n';
 import { KEY_NAMES, localizedKeyName } from '@/i18n/key-names';
+import { keyAbbreviation } from '@/i18n/key-labels';
 import { Plus } from 'lucide-react';
 import { useAppStore } from '@/store/context';
 import { isLocked } from '@/store/app-store';
@@ -62,9 +63,11 @@ export function AdvancedKeyEditor() {
               onChange={(event) => actions.updateForm({ picker: event.target.value })}
             />
             <datalist id="key-options">
-              {KEY_NAMES.map((_, code) =>
-                code === 200 ? null : <option key={code} value={`${localizedKeyName(code, locale)} · #${code}`} />,
-              )}
+              {KEY_NAMES.map((_, code) => {
+                const abbreviation = keyAbbreviation(code, locale);
+                return code === 200 ? null : <option key={code} value={`${localizedKeyName(code, locale)} · #${code}`}
+                  label={abbreviation ? t('mapping.abbreviation', { name: abbreviation }) : undefined} />;
+              })}
             </datalist>
             <Button
               type="button"

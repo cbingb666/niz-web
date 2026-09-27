@@ -7,6 +7,7 @@ import { chooseMappingType, openDeviceEditor } from './page-helpers';
 import { application, acceptRead, profileFile } from './store-helpers';
 import { FakeDevice, FakeHID, fixture } from './helpers';
 import { renderMessage, translate } from '../src/i18n/core';
+import { localizedKeyName } from '../src/i18n/key-names';
 import type { ModelTool } from '../src/model-tools';
 
 // Radix measures the checkbox's hidden form input; jsdom does not implement layout observers.
@@ -17,6 +18,59 @@ beforeAll(() => vi.stubGlobal('ResizeObserver', class {
 }));
 afterAll(() => vi.unstubAllGlobals());
 afterEach(cleanup);
+
+test('long function labels use matching abbreviations in the keyboard and selected-key preview', async () => {
+  const { store, actions } = application();
+  const profile = fixture();
+  profile.setDefinition(66, { type: 0, keys: [167] });
+  profile.setDefinition(132, { type: 0, keys: [152] });
+  profile.counters[0] = 1_200_000;
+  const view = render(<App store={store} />);
+  await act(() => actions.importFile(profileFile(profile)));
+  const key = screen.getByRole('group', { name: '键位 #1' });
+  expect(key.querySelector('.key-front .assignment')).toHaveTextContent('Wire/WL');
+  expect(key.querySelector('.key-layer[data-layer="2"] .assignment')).toHaveTextContent('Caps/Ctrl');
+  fireEvent.click(within(key).getByRole('button', { name: '左 Fn，第 1 键，Caps / Ctrl 切换' }));
+  const preview = view.container.querySelector('.mapping-preview .keycap-sample')!;
+  expect(preview.querySelector('.key-front .assignment')).toHaveTextContent('Wire/WL');
+  expect(preview.querySelector('.key-layer[data-layer="2"] .assignment')).toHaveTextContent('Caps/Ctrl');
+  expect(key).not.toHaveTextContent('#152');
+  expect(preview).not.toHaveTextContent('#167');
+  for (const legend of view.container.querySelectorAll('.key-legend')) expect(legend.textContent).not.toMatch(/\p{Script=Han}/u);
+  fireEvent.click(screen.getByRole('checkbox', { name: '显示计数' }));
+  expect(within(key).getByText('1.2M')).toBeVisible();
+  expect(screen.getByRole('figure', { name: '键帽区域说明' })).toHaveTextContent('Count');
+  const legends = Array.from(view.container.querySelectorAll('.key-legend'), element => element.textContent);
+  await act(() => actions.setLocale('en'));
+  expect(Array.from(view.container.querySelectorAll('.key-legend'), element => element.textContent)).toEqual(legends);
+});
+
+test.each(['zh-CN', 'en'] as const)('%s mapping choices show muted abbreviations and search them without changing key codes', async locale => {
+  const { store, actions } = application(null, undefined, { locale });
+  const view = render(<App store={store} />);
+  await act(() => actions.demo());
+  expect(screen.getByRole('button', { name: 'C' }).querySelector('.key-abbreviation')).toBeNull();
+  const search = screen.getByRole('searchbox');
+  const fullName = localizedKeyName(155, locale);
+  for (const query of [fullName, 'Win/Mac']) {
+    fireEvent.change(search, { target: { value: query } });
+    const option = screen.getByRole('button', { name: name => name.startsWith(fullName) });
+    const hint = within(option).getByText('Win/Mac');
+    expect(hint).toHaveClass('key-abbreviation');
+    expect(hint).toHaveAttribute('aria-hidden', 'true');
+    expect(hint).toBeVisible();
+  }
+  fireEvent.keyDown(search, { key: 'Enter' });
+  expect(store.getState().profile!.definition(0).keys).toEqual([155]);
+  expect(view.container.querySelector('.mapping-preview .keycap-sample')).toHaveTextContent('Win/Mac');
+  fireEvent.change(search, { target: { value: 'BSeq-' } });
+  expect(screen.getByRole('button', { name: name => name.startsWith(localizedKeyName(142, locale)) })).toBeVisible();
+
+  await chooseMappingType(translate(locale, 'mapping.advanced'));
+  const option = view.container.querySelector('option[value$=" · #155"]');
+  expect(option).toHaveAttribute('value', `${fullName} · #155`);
+  expect(option).toHaveAttribute('label', translate(locale, 'mapping.abbreviation', { name: 'Win/Mac' }));
+});
 
 test.each(['zh-CN', 'en'] as const)('%s editors share sided names while preserving legacy search and key codes', async locale => {
   const { store, actions } = application(null, undefined, { locale });
@@ -186,10 +240,10 @@ test('count view replaces front-edge mappings with counts and orders key brightn
   expect(brightness[0]).toBeLessThan(brightness[1]);
   expect(brightness[1]).toBeLessThan(brightness[2]);
   expect(brightness[2]).toBeLessThan(brightness[3]);
-  expect(guide).toHaveTextContent('按键次数');
+  expect(guide).toHaveTextContent('Count');
   fireEvent.click(screen.getByRole('checkbox', { name: '显示计数' }));
   expect(screen.getAllByRole('button', { name: /^右 Fn，第/ })).toHaveLength(66);
-  expect(guide).toHaveTextContent('右 Fn');
+  expect(guide).toHaveTextContent('R Fn');
   expect(store.getState().profile!.toJSON()).toEqual(profile);
   expect(device.sent).toEqual(sent);
 });

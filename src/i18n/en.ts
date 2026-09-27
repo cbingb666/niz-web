@@ -174,6 +174,7 @@ export const en = {
   'mapping.system': 'System',
   'mapping.advanced': 'Macro / Advanced',
   'mapping.choose': 'Choose a target action',
+  'mapping.abbreviation': 'Keycap abbreviation: {name}',
   'mapping.search': 'Search a name or #code, e.g. Esc, Space',
   'mapping.group': 'Action category',
   'mapping.common': 'Common',

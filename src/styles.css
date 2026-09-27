@@ -689,7 +689,8 @@ main {
 .action-option { min-width: 0; height: auto; min-height: 42px; padding: 9px 10px; white-space: normal; overflow-wrap: anywhere; text-align: left; align-items: flex-start; justify-content: flex-start; flex-direction: column; gap: 2px; }
 .action-option[aria-pressed='true'] { border-color: var(--primary); background: var(--accent); color: var(--primary); }
 .action-option.search-highlight { border-color: var(--primary); }
-.action-category { color: var(--muted-foreground); font-size: 0.75rem; font-weight: 400; }
+.action-option-meta { display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 8px; }
+.action-category, .key-abbreviation { color: var(--muted-foreground); font-size: 0.75rem; font-weight: 400; }
 .fn-scope { margin: 12px 0; padding: 9px 12px; border-left: 2px solid var(--primary); background: var(--accent); font-size: 0.875rem; }
 .editor-state { color: var(--muted-foreground); font-size: 0.875rem; margin-top: 17px; }
 .editor-error { color: #ffb3bb; background: #391f29; border-radius: 7px; padding: 10px; font-size: 0.875rem; margin-top: 14px; }
@@ -765,11 +766,11 @@ main {
   display: flex;
   gap: var(--key-gap);
   margin: 0;
-  height: max(68px, calc((100cqi - var(--row-gaps) * var(--key-gap)) / var(--row-units) + 4px));
+  height: max(76px, calc((100cqi - var(--row-gaps) * var(--key-gap)) / var(--row-units) + 4px));
 }
 .key, .keycap-sample {
   --side-width: 9px;
-  --front-depth: 13px;
+  --front-depth: 18px;
   position: relative;
   isolation: isolate;
   width: 0;
@@ -822,12 +823,13 @@ main {
   transition: color 120ms, background-color 120ms;
 }
 .key-face .key-layer[data-layer='0'] { flex: 1; min-height: 24px; align-items: flex-start; padding-top: 2px; color: #e4e4e4; }
-.key-face .key-layer:not([data-layer='0']) { text-align: right; }
-:is(.key, .keycap-sample) .key-layer .assignment { display: block; width: 100%; min-width: 0; margin: 0; font-size: 0.75rem; font-weight: 400; line-height: 1.25; color: inherit; }
-:is(.key, .keycap-sample) .key-face .key-layer[data-layer='0'] .assignment { font-size: 1.0625rem; font-weight: 500; }
-:is(.key, .keycap-sample) .key-face .key-layer[data-layer='0'][data-long-label='true'] .assignment { font-size: 0.875rem; letter-spacing: -.02em; }
+.key-face .key-layer:not([data-layer='0']) { flex: 0 0 18px; text-align: right; }
+.key-legend { display: flex; flex-direction: column; justify-content: center; width: 100%; height: 100%; min-width: 0; overflow: hidden; font-family: Arial, 'PingFang SC', 'Microsoft YaHei', sans-serif; font-size: .75rem; font-weight: 400; line-height: 1.1; }
+:is(.key, .keycap-sample) .key-layer .assignment { display: block; width: 100%; min-width: 0; margin: 0; font: inherit; color: inherit; white-space: pre-line; overflow-wrap: break-word; overflow: visible; text-overflow: clip; letter-spacing: 0; }
+:is(.key, .keycap-sample) .key-face .key-layer[data-layer='0'] .key-legend { justify-content: flex-start; font-size: 1.0625rem; font-weight: 500; }
+:is(.key, .keycap-sample) .key-face .key-layer[data-layer='0'][data-long-label='true'] .key-legend { font-size: 0.875rem; }
 .key-front .key-layer { width: 100%; height: 100%; min-height: 0; margin: 0; padding: 0 4px; border-radius: 3px; color: #585858; text-align: right; }
-:is(.key, .keycap-sample) .key-front .key-layer .assignment { font-size: 0.6875rem; line-height: 1; }
+:is(.key, .keycap-sample) .key-front .key-layer .key-legend { font-size: 0.6875rem; }
 .key-layer[data-empty='true'] { color: #606060; }
 .key-front .key-layer[data-empty='true'] { color: #505050; }
 .key .key-layer[aria-pressed='true'] { color: #ffffff; background: #505050; box-shadow: none; }
@@ -850,12 +852,11 @@ main {
 /* The diagram follows a real 1u key's dimensions, including responsive layout changes. */
 .keycap-guide { flex: none; margin: 0; padding: 0; }
 .keycap-guide .keycap-sample { min-width: 68px; }
-.keycap-sample { flex: none; width: var(--sample-width, 68px); max-width: 100%; height: var(--sample-height, 72px); pointer-events: none; }
-.keycap-sample .assignment { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.keycap-sample { flex: none; width: var(--sample-width, 68px); max-width: 100%; height: var(--sample-height, 76px); pointer-events: none; }
 .keycap-sample[data-preview-selected='true'] { background: #373737; }
 .keycap-sample[data-preview-selected='true'] .key-face { background: #3e3e3e; }
 .keycap-sample .key-layer[data-preview-active='true'] { color: #ffffff; background: #505050; }
-.keycap-guide .key-face .key-layer[data-layer='0'] .assignment { font-size: .875rem; letter-spacing: -.02em; }
+.keycap-guide .key-face .key-layer[data-layer='0'] .key-legend { font-size: .875rem; }
 @media (min-width: 1400px) { .key { height: 100%; min-height: 0; padding: 0; } }
 @media (max-width: 1559px) {
   .workspace { grid-template-columns: 1fr; }
@@ -865,8 +866,8 @@ main {
 @media (max-width: 700px) { .keyboard { padding: 10px; } }
 @media (pointer: coarse) {
   .key-row { height: 148px; }
-  .key, .keycap-sample { --front-depth: 44px; }
-  .key-layer, .key-face .key-layer[data-layer='0'] { min-height: 44px; }
+  .key { --front-depth: 44px; }
+  .key .key-layer, .key .key-face .key-layer[data-layer='0'] { min-height: 44px; }
 }
 @media (prefers-reduced-motion: reduce) { .key-layer { transition: none; } }
 
@@ -938,7 +939,7 @@ main {
 .inspector-header { flex: none; padding: 16px 18px; border-bottom: 1px solid var(--border); }
 .inspector-header .mapping-preview { flex-direction: row; align-items: center; gap: 16px; margin: 12px 0 0; }
 .inspector-header .mapping-preview figcaption { min-width: 0; text-align: left; font-size: .875rem; color: var(--foreground); display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
-.inspector-header .keycap-sample { width: 64px; height: 70px; }
+.inspector-header .keycap-sample { width: 64px; height: 76px; }
 .inspector-content { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior-y: contain; scrollbar-gutter: stable; padding: 0 18px 20px; }
 .inspector .action-options { grid-template-columns: repeat(2, minmax(0, 1fr)); max-height: none; overflow: visible; }
 .changes-pane {
@@ -998,8 +999,8 @@ main {
   .layout-controls { margin-top: 16px; }
   .keyboard { --key-gap: 3px; padding: 12px; }
   .key { --side-width: 6px; }
-  :is(.key, .keycap-sample) .key-face .key-layer[data-layer='0'] .assignment { font-size: .875rem; }
-  :is(.key, .keycap-sample) .key-face .key-layer[data-layer='0'][data-long-label='true'] .assignment { font-size: .75rem; }
+  :is(.key, .keycap-sample) .key-face .key-layer[data-layer='0'] .key-legend { font-size: .875rem; }
+  :is(.key, .keycap-sample) .key-face .key-layer[data-layer='0'][data-long-label='true'] .key-legend { font-size: .75rem; }
 }
 @media (max-width: 900px) {
   .keyboard { min-width: 760px; }

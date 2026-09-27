@@ -10,7 +10,8 @@ import {
 } from '../src/i18n/core';
 import { detectLocale, preferredLocale, persistLocale, localeStorageKey } from '../src/i18n/preferences';
 import { KEY_NAMES, ENGLISH_KEY_NAMES, localizedKeyName } from '../src/i18n/key-names';
-import { localizedSummary } from '../src/i18n/profile';
+import { keyAbbreviation, keycapName } from '../src/i18n/key-labels';
+import { keycapSummary, localizedSummary } from '../src/i18n/profile';
 import {
   encodeDefinition,
   decodeDefinition,
@@ -24,6 +25,23 @@ import { fixture } from './helpers';
 function placeholders(value: string) {
   return [...value.matchAll(/\{(\w+)\}/g)].map((match) => match[1]).sort();
 }
+
+test.each(['zh-CN', 'en'] as const)('long functions share keycap abbreviations and keep their full %s descriptions', locale => {
+  const profile = fixture();
+  const cases = [
+    [142, 'BSeq−'], [143, 'BSeq+'], [151, 'Sft/↑'],
+    [152, 'Caps/Ctrl'], [155, 'Win/Mac'], [167, 'Wire/WL'], [178, 'Rsv178'],
+  ] as const;
+  for (const [code, abbreviation] of cases) {
+    profile.setDefinition(0, { type: 0, keys: [code] });
+    expect(keycapSummary(profile, 0)).toBe(abbreviation);
+    expect(keyAbbreviation(code, locale)).toBe(abbreviation);
+    expect(localizedSummary(profile, 0, locale)).toBe(localizedKeyName(code, locale));
+  }
+  expect(keyAbbreviation(58, locale)).toBeUndefined();
+  expect(keyAbbreviation(67, locale)).toBeUndefined();
+  for (let code = 0; code < KEY_NAMES.length; code++) expect(keycapName(code)).not.toMatch(/\p{Script=Han}/u);
+});
 
 test('both catalogs contain the same messages and interpolation parameters', () => {
   expect(Object.keys(dictionaries.en).sort()).toEqual(Object.keys(dictionaries['zh-CN']).sort());

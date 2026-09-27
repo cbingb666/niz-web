@@ -1,5 +1,6 @@
 import { useI18n } from '@/i18n/use-i18n';
 import { localizedSummary, keycapSummary } from '@/i18n/profile';
+import { renderMessage } from '@/i18n/core';
 import { useRef, type CSSProperties, type KeyboardEvent } from 'react';
 import { ArrowLeft, PanelLeftOpen, RotateCw } from 'lucide-react';
 import { isLocked } from '@/store/app-store';
@@ -8,6 +9,7 @@ import { Button } from './ui/button';
 import { Checkbox } from './ui/checkbox';
 import { Label } from './ui/label';
 import { KeycapSample } from './keycap-sample';
+import { KeyLegend } from './key-legend';
 
 function Keyboard({ onEdit }: { onEdit?: () => void }) {
   const { t, text, locale } = useI18n();
@@ -71,14 +73,14 @@ function Keyboard({ onEdit }: { onEdit?: () => void }) {
             {row.map(({ key, weight }) => {
               const keyCount = profile?.counters[key];
               const heat = maxCount > 0 && keyCount !== undefined ? Math.sqrt(keyCount / maxCount) : 0;
-              const fullCount = keyCount?.toLocaleString(locale) ?? '—';
+              const fullCount = keyCount?.toLocaleString('en') ?? '—';
               const countLabel = keyCount === undefined ? '—' : keyCount < 1_000_000 ? fullCount
-                : new Intl.NumberFormat(locale, { notation: 'compact', maximumFractionDigits: 1 }).format(keyCount);
+                : new Intl.NumberFormat('en', { notation: 'compact', maximumFractionDigits: 1 }).format(keyCount);
               const layerButtons = model.layers.map((label, keyLayer) => {
                 if (counts && keyLayer === 1) return null;
                 const index = keyLayer * model.keyCount + key;
                 const summary = profile ? localizedSummary(profile, index, locale) : '—';
-                const legend = profile ? keycapSummary(profile, index, locale) : '—';
+                const legend = profile ? keycapSummary(profile, index) : '—';
                 const changed = changes.includes(index);
                 const pending = drafts.includes(index);
                 return <button
@@ -102,7 +104,7 @@ function Keyboard({ onEdit }: { onEdit?: () => void }) {
                   onClick={() => { if (actions.selectKey(key, keyLayer)) onEdit?.(); }}
                   onKeyDown={event => navigate(event, key, keyLayer)}
                 >
-                  <span className="assignment">{legend}</span>
+                  <KeyLegend text={legend} />
                   {pending && <span className="key-layer-state" aria-hidden="true">…</span>}
                 </button>;
               });
@@ -141,9 +143,10 @@ function Keyboard({ onEdit }: { onEdit?: () => void }) {
 }
 
 function KeycapGuide({ counts, showNumbers }: { counts: boolean; showNumbers: boolean }) {
-  const { t, text } = useI18n();
+  const { t } = useI18n();
   const model = useAppStore(state => state.model);
-  const legends = model.layers.map((label, index) => counts && index === 1 ? t('mapping.guideCountLabel') : text(label));
+  const legends = model.layers.map((label, index) => counts && index === 1 ? 'Count'
+    : renderMessage(label, 'en').replace(/^Left /, 'L ').replace(/^Right /, 'R '));
   return <figure className="keycap-guide" aria-label={t('mapping.keycapGuide')}>
     <KeycapSample legends={legends} changed showNumber={showNumbers} />
   </figure>;

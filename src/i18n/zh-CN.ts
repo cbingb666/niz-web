@@ -171,6 +171,7 @@ export const zhCN = {
   'mapping.system': '系统功能',
   'mapping.advanced': '宏 / 高级',
   'mapping.choose': '选择目标功能',
+  'mapping.abbreviation': '键帽缩写：{name}',
   'mapping.search': '搜索名称或 #代码，如 Esc、空格',
   'mapping.group': '功能分类',
   'mapping.common': '常用',

@@ -19,6 +19,7 @@
     "node": "^22.13.0 || >=24.0.0"
   },
   "dependencies": {
+    "@chenglou/pretext": "0.0.9",
     "class-variance-authority": "0.7.1",
     "clsx": "2.1.1",
     "lucide-react": "1.23.0",

@@ -107,7 +107,7 @@ export function KeyEditor() {
       <Button variant="outline" size="sm" disabled={disabled || (!dirty && !changes.some(index => hasFn ? index % model.keyCount === key : index === layer * model.keyCount + key))} onClick={actions.resetKey}><RotateCcw />{t('editor.reset')}</Button>
     </div>
     <figure className="mapping-preview" aria-label={t('mapping.previewTitle')}>
-      <KeycapSample legends={model.layers.map((_, index) => profile ? keycapSummary(profile, index * model.keyCount + key, locale) : '—')}
+      <KeycapSample legends={model.layers.map((_, index) => profile ? keycapSummary(profile, index * model.keyCount + key) : '—')}
         position={key} measureKey={key} activeLayer={layer} changed={changes.some(index => index % model.keyCount === key)} showNumber={false} />
       <figcaption aria-live="polite" title={mapping}>{mapping}</figcaption>
     </figure>

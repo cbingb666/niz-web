@@ -1,5 +1,6 @@
 import { useLayoutEffect, useRef } from 'react';
 import { useAppStore } from '@/store/context';
+import { KeyLegend } from './key-legend';
 
 /** A non-interactive keycap, sized from the physical layout. */
 export function KeycapSample({ legends, position = 0, activeLayer, changed = false, measureKey, showNumber = false }: {
@@ -33,7 +34,7 @@ export function KeycapSample({ legends, position = 0, activeLayer, changed = fal
   }, [model, measureKey]);
   const layers = legends.map((legend, layer) => <span key={layer} className="key-layer" data-layer={layer}
     data-preview-active={layer === activeLayer} data-long-label={legend.length > 3}>
-    <span className="assignment">{legend}</span>
+    <KeyLegend text={legend} />
   </span>);
   return <div ref={sample} className="keycap-sample" data-preview-selected={activeLayer !== undefined} aria-hidden="true">
     {showNumber && <div className="key-side key-number"><span>#{String(position + 1).padStart(2, '0')}</span></div>}

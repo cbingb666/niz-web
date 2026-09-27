@@ -1,5 +1,6 @@
 import { useId, useRef, useState, type KeyboardEvent } from 'react';
 import { KEY_NAMES, ENGLISH_KEY_NAMES, localizedKeyName } from '@/i18n/key-names';
+import { keyAbbreviation, keycapName } from '@/i18n/key-labels';
 import { useI18n } from '@/i18n/use-i18n';
 import { useAppStore } from '@/store/context';
 import { Button } from './ui/button';
@@ -10,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 const common = [0, 1, 67, 42, 27, 54, 70, 84, 28, 58, 59];
 const groups = ['common', 'all', 'letters', 'navigation', 'function', 'media', 'mouse', 'lighting', 'device', 'reserved'] as const;
 type Group = (typeof groups)[number];
+const normalizeSearch = (value: string) => value.toLowerCase().replaceAll('−', '-');
 function groupFor(code: number): Group {
   if (code >= 178 && code !== 199 && code !== 204) return 'reserved';
   if (code >= 2 && code <= 13) return 'function';
@@ -30,16 +32,16 @@ export function ActionPicker({ kind = 'key', value, disabled, onChoose }: {
   const [group, setGroup] = useState<Group>(kind === 'system' ? 'media' : 'common');
   const [highlight, setHighlight] = useState(0);
   const options = useRef<HTMLDivElement>(null);
-  const search = query.trim().toLowerCase();
+  const search = normalizeSearch(query.trim());
   const matches = KEY_NAMES.map((_, code) => code).filter((code) => {
     if (code === 200) return false;
     if (/^#\d+$/.test(search)) return code === Number(search.slice(1));
-    if (search) return `${localizedKeyName(code, locale)} ${KEY_NAMES[code]} ${ENGLISH_KEY_NAMES[code]} ${code === 70 ? '空格' : ''} ${code === 67 || code === 74 ? 'ctrl' : ''}`.toLowerCase().includes(search);
+    if (search) return normalizeSearch(`${localizedKeyName(code, locale)} ${keycapName(code)} ${KEY_NAMES[code]} ${ENGLISH_KEY_NAMES[code]} ${code === 70 ? '空格' : ''} ${code === 67 || code === 74 ? 'ctrl' : ''}`).includes(search);
     return group === 'common' ? common.includes(code) : group === 'all' || groupFor(code) === group;
   });
   if (!search && group === 'common') matches.sort((a, b) => common.indexOf(a) - common.indexOf(b));
   if (search) {
-    const exact = (code: number) => [localizedKeyName(code, locale), KEY_NAMES[code], ENGLISH_KEY_NAMES[code]].some(name => name.toLowerCase() === search);
+    const exact = (code: number) => [localizedKeyName(code, locale), keycapName(code), KEY_NAMES[code], ENGLISH_KEY_NAMES[code]].some(name => normalizeSearch(name) === search);
     matches.sort((a, b) => Number(exact(b)) - Number(exact(a)));
   }
   function navigate(event: KeyboardEvent<HTMLInputElement>) {
@@ -65,10 +67,17 @@ export function ActionPicker({ kind = 'key', value, disabled, onChoose }: {
     <div id={`${id}-result`} className="sr-only" aria-live="polite">{search && matches[highlight] !== undefined ? localizedKeyName(matches[highlight], locale) : ''}</div>
     {matches.some(code => model.fn.codes.includes(code)) && <p className="fn-scope">{t('mapping.fnScope', { count: model.layers.length })}</p>}
     <div className="action-options" ref={options}>
-      {matches.map((code, index) => <Button key={code} type="button" variant="outline" className={`action-option ${search && index === highlight ? 'search-highlight' : ''}`}
-        disabled={disabled} aria-pressed={code === value} onClick={() => onChoose(code)}>
-        {localizedKeyName(code, locale)}{search && <span className="action-category">{t(`mapping.${groupFor(code)}`)}</span>}
-      </Button>)}
+      {matches.map((code, index) => {
+        const abbreviation = keyAbbreviation(code, locale);
+        return <Button key={code} type="button" variant="outline" className={`action-option ${search && index === highlight ? 'search-highlight' : ''}`}
+          disabled={disabled} aria-pressed={code === value} onClick={() => onChoose(code)}>
+          <span>{localizedKeyName(code, locale)}</span>
+          {(abbreviation || search) && <span className="action-option-meta">
+            {abbreviation && <span className="key-abbreviation" aria-hidden="true" title={t('mapping.abbreviation', { name: abbreviation })}>{abbreviation}</span>}
+            {search && <span className="action-category">{t(`mapping.${groupFor(code)}`)}</span>}
+          </span>}
+        </Button>;
+      })}
       {!matches.length && <p className="field-hint">{t('mapping.noResults')}</p>}
     </div>
   </div>;
