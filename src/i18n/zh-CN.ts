@@ -18,7 +18,6 @@ export const zhCN = {
   'devices.editor': '配置工作台',
   'devices.emptyTitle': '连接键盘',
   'devices.emptyDescription': '准备好键盘和 USB 数据线。',
-  'devices.emptyNext': '下一步：确认键盘型号',
   'devices.supported': '目前支持 {models}',
   'devices.back': '返回设备管理',
   'devices.localProfile': '当前编辑内容',

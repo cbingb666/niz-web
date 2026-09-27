@@ -20,7 +20,6 @@ export const en = {
   'devices.editor': 'Configurator',
   'devices.emptyTitle': 'Connect your keyboard',
   'devices.emptyDescription': 'Have your keyboard and USB cable ready.',
-  'devices.emptyNext': 'Next: check your keyboard model',
   'devices.supported': 'Currently supports {models}',
   'devices.back': 'Back to devices',
   'devices.localProfile': 'Current editing session',

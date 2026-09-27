@@ -59,10 +59,9 @@ export function DeviceManager() {
         <div className="devices-empty-copy">
           <h2 id="page-title" tabIndex={-1}>{t('devices.emptyTitle')}</h2>
           <p>{t('devices.emptyDescription')}</p>
-          <Button aria-describedby="connection-next-step" disabled={locked} onClick={() => actions.navigate('connect')}>
+          <Button disabled={locked} onClick={() => actions.navigate('connect')}>
             {t('devices.add')}<ArrowRight />
           </Button>
-          <p id="connection-next-step" className="devices-empty-next">{t('devices.emptyNext')}</p>
         </div>
       </div>}
     </section>

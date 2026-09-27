@@ -19,7 +19,7 @@ function confirmCable() {
   fireEvent.click(screen.getByRole('button', { name: '已连接数据线，下一步' }));
 }
 
-test.each(['zh-CN', 'en'] as const)('%s empty devices page explains its single connection entry and next step', async locale => {
+test.each(['zh-CN', 'en'] as const)('%s empty devices page has a single connection entry that opens the model check', async locale => {
   const hid = new FakeHID();
   const { store, actions } = application(hid, undefined, { locale });
   const view = render(<App store={store} usbAvailable />);
@@ -31,7 +31,6 @@ test.each(['zh-CN', 'en'] as const)('%s empty devices page explains its single c
   expect(screen.getAllByRole('heading', { level: 2 })).toHaveLength(1);
   expect(screen.getByRole('heading', { name: translate(locale, 'devices.emptyTitle') })).toBeVisible();
   expect(screen.queryByRole('heading', { name: translate(locale, 'devices.connected') })).not.toBeInTheDocument();
-  expect(buttons[0]).toHaveAccessibleDescription(translate(locale, 'devices.emptyNext'));
   expect(view.container.querySelector('.device-page-heading button')).toBeNull();
   expect(empty.querySelector('img')).toBeNull();
   expect(within(empty as HTMLElement).getByRole('figure', { name: translate(locale, 'guide.cableIllustration') })).toBeVisible();
