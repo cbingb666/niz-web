@@ -198,7 +198,6 @@ export function KeyboardPanel({ onEdit, onShowChanges, changesExpanded = false }
       <div className="layout-controls">
         <KeycapGuide counts={counts} showNumbers={showNumbers} />
         <div className="count-controls">
-          {counts && <span className="count-scale"><span>{t('keyboard.fewerCounts')}</span><i aria-hidden="true" /><span>{t('keyboard.moreCounts')}</span></span>}
           <Label className="check-label">
             <Checkbox checked={showNumbers} disabled={locked}
               onCheckedChange={value => actions.setShowKeyNumbers(value === true)} />
@@ -213,6 +212,7 @@ export function KeyboardPanel({ onEdit, onShowChanges, changesExpanded = false }
       </div>
       <Keyboard onEdit={onEdit} />
       <div className="keyboard-caption">
+        {counts && <span className="count-scale"><span>{t('keyboard.fewerCounts')}</span><i aria-hidden="true" /><span>{t('keyboard.moreCounts')}</span></span>}
         <span>
           {profile && profile.groupCount > model.layers.length
             ? t('keyboard.extendedGroups', { groups: profile.groupCount, layers: model.layers.length })

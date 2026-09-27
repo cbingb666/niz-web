@@ -316,12 +316,14 @@ main {
 .keyboard-caption {
   display: flex;
   justify-content: flex-end;
+  align-items: center;
   gap: 12px;
   padding: 12px 1px 15px;
   color: var(--muted-foreground);
   font-size: 0.875rem;
   flex-wrap: wrap;
 }
+.keyboard-caption .count-scale { margin-right: auto; }
 .activity {
   list-style: none;
   padding: 0;
