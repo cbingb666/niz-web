@@ -5,6 +5,7 @@ import { isLocked } from '@/store/app-store';
 import { useAppStore } from '@/store/context';
 import { Button } from './ui/button';
 import { DeviceIllustration } from './device-illustration';
+import { ConnectionIllustration } from './connection-illustration';
 
 export function DeviceManager() {
   const { t, text } = useI18n();
@@ -23,7 +24,7 @@ export function DeviceManager() {
       <div>
         <h2 id="page-title" tabIndex={-1}>{t('devices.title')}</h2>
       </div>
-      <Button disabled={locked} onClick={() => actions.navigate('connect')}><Plus />{t('devices.add')}</Button>
+      {devices.length > 0 && <Button disabled={locked} onClick={() => actions.navigate('connect')}><Plus />{t('devices.add')}</Button>}
     </div>
 
     <section className="device-list" aria-label={t('devices.connected')}>
@@ -52,13 +53,12 @@ export function DeviceManager() {
         </div>
       </article>;
       })}</div> : <div className="devices-empty">
-        <div className="device-card-art"><DeviceIllustration /></div>
+        <div className="devices-empty-art"><ConnectionIllustration step="cable" connected={false} /></div>
         <div className="devices-empty-copy">
-          <span className="device-status offline"><span className="status-dot" />{t('connection.waiting')}</span>
           <h3>{t('devices.emptyTitle')}</h3>
           <p>{t('devices.emptyDescription')}</p>
-          <Button variant="outline" disabled={locked} onClick={() => actions.navigate('connect')}>
-            {t('devices.openGuide')}<ArrowRight />
+          <Button disabled={locked} onClick={() => actions.navigate('connect')}>
+            {t('devices.add')}<ArrowRight />
           </Button>
         </div>
       </div>}

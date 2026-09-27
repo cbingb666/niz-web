@@ -1135,7 +1135,7 @@ main {
 .device-list-heading { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
 .device-list-heading h3 { display: flex; align-items: center; gap: 10px; font-size: .875rem; font-weight: 500; }
 .device-count { display: inline-flex; justify-content: center; align-items: center; min-width: 24px; height: 24px; border-radius: 7px; background: var(--muted); font-variant-numeric: tabular-nums; }
-.device-card, .devices-empty { display: grid; grid-template-columns: 1.2fr 1fr; min-height: 340px; border: 1px solid var(--border); border-radius: 20px; background: var(--panel); overflow: hidden; }
+.device-card { display: grid; grid-template-columns: 1.2fr 1fr; min-height: 340px; border: 1px solid var(--border); border-radius: 20px; background: var(--panel); overflow: hidden; }
 .device-card-grid { display: grid; gap: 20px; }
 .device-card-grid[data-multiple='true'] { grid-template-columns: repeat(auto-fit, minmax(min(100%, 380px), 1fr)); }
 .device-card-grid[data-multiple='true'] .device-card { grid-template-columns: 1fr; }
@@ -1149,7 +1149,7 @@ main {
 .device-card-art { display: flex; justify-content: center; align-items: center; min-width: 0; padding: 22px; background: #111416; }
 .device-illustration { display: block; width: 100%; height: auto; object-fit: contain; user-select: none; }
 .device-card-art .device-illustration { max-height: 330px; }
-.device-card-content, .devices-empty-copy { display: flex; flex-direction: column; justify-content: center; align-items: flex-start; padding: 36px 40px; min-width: 0; }
+.device-card-content { display: flex; flex-direction: column; justify-content: center; align-items: flex-start; padding: 36px 40px; min-width: 0; }
 .device-status { display: inline-flex; align-items: center; gap: 9px; font-size: .875rem; color: var(--primary); }
 .device-status .status-dot { width: 7px; height: 7px; }
 .device-status.offline { color: var(--muted-foreground); }
@@ -1161,9 +1161,13 @@ main {
 .device-card-details dd { text-align: right; overflow-wrap: anywhere; }
 .configure-device { min-height: 44px; width: 100%; justify-content: flex-start; }
 .configure-device > svg:last-child { margin-left: auto; }
-.devices-empty-copy > h3 { font-size: 1.625rem; margin-top: 18px; font-weight: 600; }
-.devices-empty-copy > p { color: var(--muted-foreground); font-size: 1rem; line-height: 1.8; margin: 12px 0 24px; }
-.devices-empty-copy > button { min-height: 44px; }
+.devices-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 24px; min-height: 420px; padding: 32px 24px 40px; border: 1px dashed var(--border); border-radius: 20px; }
+.devices-empty-art { width: min(100%, 280px); }
+.devices-empty .cable-demo figcaption { margin-top: 8px; color: var(--primary); font-size: .8125rem; }
+.devices-empty-copy { display: flex; flex-direction: column; align-items: center; min-width: 0; max-width: 480px; text-align: center; }
+.devices-empty-copy > h3 { font-size: 1.5rem; font-weight: 600; letter-spacing: -.02em; }
+.devices-empty-copy > p { color: var(--muted-foreground); font-size: 1rem; line-height: 1.7; margin: 12px 0 24px; }
+.devices-empty-copy > button { min-height: 44px; padding-inline: 24px; }
 .resume-profile, .guide-demo { display: flex; align-items: center; gap: 18px; padding: 22px 24px; border: 1px solid var(--border); border-radius: 14px; margin-top: 24px; }
 .resume-profile-icon, .demo-icon { display: flex; align-items: center; justify-content: center; flex: none; width: 44px; height: 44px; border-radius: 12px; color: var(--primary); background: #6de3bc0c; border: 1px solid #6de3bc24; }
 .resume-profile-icon svg, .demo-icon svg { width: 20px; height: 20px; }
@@ -1261,10 +1265,10 @@ main {
   .app-shell:not([data-page='editor']) > main { padding-top: 24px; }
   .device-page-heading { gap: 16px; margin-bottom: 24px; }
   .device-page-heading > button { padding-inline: 12px; }
-  .device-card, .devices-empty, .guide-layout { grid-template-columns: 1fr; }
+  .device-card, .guide-layout { grid-template-columns: 1fr; }
   .device-card-art { padding: 12px 24px; }
   .device-card-art .device-illustration { max-height: 260px; }
-  .device-card-content, .devices-empty-copy { padding: 26px; }
+  .device-card-content { padding: 26px; }
   .device-card-content > h3 { margin-top: 14px; }
   .guide-visual { padding: 24px; }
   .guide-visual .device-illustration { width: min(100%, 370px); max-height: 240px; margin-block: 12px; }
@@ -1278,8 +1282,10 @@ main {
   .device-page-heading { align-items: flex-start; flex-direction: column; }
   .device-page-heading > button { width: 100%; }
   .page-description { margin-top: 10px; }
-  .device-card-content, .devices-empty-copy { padding: 24px 20px; }
-  .devices-empty-copy > h3 { font-size: 1.5rem; }
+  .device-card-content { padding: 24px 20px; }
+  .devices-empty { padding: 24px 20px 32px; gap: 20px; }
+  .devices-empty-art { width: min(100%, 240px); }
+  .devices-empty-copy > h3 { font-size: 1.375rem; }
   .guide-instructions { padding: 16px; }
   .connection-steps { align-items: flex-start; gap: 10px; }
   .connection-steps > li { flex-direction: column; align-items: flex-start; gap: 8px; }

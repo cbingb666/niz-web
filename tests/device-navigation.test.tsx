@@ -6,6 +6,7 @@ import { App } from '../src/app';
 import { FakeDevice, FakeHID } from './helpers';
 import { acceptRead, application, ready } from './store-helpers';
 import { confirmSupportedModel, openDeviceEditor } from './page-helpers';
+import { translate } from '../src/i18n/core';
 import type { ConfigDevice } from '../src/types/hid';
 
 afterEach(cleanup);
@@ -18,11 +19,30 @@ function confirmCable() {
   fireEvent.click(screen.getByRole('button', { name: '已连接数据线，下一步' }));
 }
 
+test.each(['zh-CN', 'en'] as const)('%s empty devices page has one connection entry and a USB diagram', async locale => {
+  const hid = new FakeHID();
+  const { store, actions } = application(hid, undefined, { locale });
+  const view = render(<App store={store} usbAvailable />);
+  await act(() => actions.start());
+  const buttons = screen.getAllByRole('button', { name: translate(locale, 'devices.add') });
+  expect(buttons).toHaveLength(1);
+  const empty = view.container.querySelector('.devices-empty')!;
+  expect(empty).toContainElement(buttons[0]);
+  expect(view.container.querySelector('.device-page-heading button')).toBeNull();
+  expect(empty.querySelector('img')).toBeNull();
+  expect(within(empty as HTMLElement).getByRole('figure', { name: translate(locale, 'guide.cableIllustration') })).toBeVisible();
+  fireEvent.click(buttons[0]);
+  expect(screen.getByRole('heading', { name: translate(locale, 'guide.supportTitle') })).toBeVisible();
+  expect(hid.requestCount).toBe(0);
+});
+
 test('the authorization step can open the picker when a keyboard is already connected', async () => {
   const device = new FakeDevice(), hid = new FakeHID([device]);
   const { store, actions } = application(hid);
-  render(<App store={store} usbAvailable />);
+  const view = render(<App store={store} usbAvailable />);
   await act(() => actions.start());
+  expect(view.container.querySelector('.device-page-heading')).toContainElement(screen.getByRole('button', { name: '连接设备' }));
+  expect(view.container.querySelector('.devices-empty')).toBeNull();
   openGuide();
   confirmCable();
   await act(async () => { fireEvent.click(screen.getByRole('button', { name: /连接(另一台)?键盘/ })); });

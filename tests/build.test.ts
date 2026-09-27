@@ -37,10 +37,12 @@ test('production is one offline HTML with hash CSP and HID permissions', async (
       ).toContain('Configure supported NIZ');
       const document = dom.window.document;
       expect(document.getElementById('root')?.textContent).toContain('Connected devices');
-      expect(document.querySelector<HTMLImageElement>('.device-illustration')?.src).toMatch(/^data:image\/webp;base64,/);
+      expect(document.querySelector('.devices-empty .cable-demo svg')).not.toBeNull();
+      expect(document.querySelector('.devices-empty img')).toBeNull();
       Array.from(document.querySelectorAll('button')).find(button => button.textContent === 'Connect a device')!.click();
       await vi.waitFor(() => expect(document.querySelector('.connection-guide-page')).not.toBeNull());
       expect(document.getElementById('guide-step-title')?.textContent).toBe('Check that your device is supported');
+      expect(document.querySelector<HTMLImageElement>('.device-illustration')?.src).toMatch(/^data:image\/webp;base64,/);
       const supportNext = Array.from(document.querySelectorAll('button')).find(button => button.textContent === 'Model confirmed — next')!;
       expect(supportNext.disabled).toBe(true);
       document.querySelector<HTMLButtonElement>('button[role="checkbox"]')!.click();

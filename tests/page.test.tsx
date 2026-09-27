@@ -73,7 +73,7 @@ test('the header shows the device breadcrumb and disconnecting from the footer r
   expect(view.container.querySelector('.commit-bar')).toBeNull();
   expect(screen.getByRole('heading', { name: '设备管理' })).toBeVisible();
   expect(view.container.querySelector('.app-header')!.textContent).toBe(initialHeader);
-  expect(screen.getByRole('button', { name: '查看连接指南' })).toBeEnabled();
+  expect(screen.getByRole('button', { name: '连接设备' })).toBeEnabled();
 });
 
 test('keyboard and mapping panes can receive keyboard focus after selecting another key', async () => {
