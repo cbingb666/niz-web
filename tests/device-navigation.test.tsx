@@ -5,13 +5,14 @@ import { afterEach, expect, test, vi } from 'vitest';
 import { App } from '../src/app';
 import { FakeDevice, FakeHID } from './helpers';
 import { acceptRead, application, ready } from './store-helpers';
-import { openDeviceEditor } from './page-helpers';
+import { confirmSupportedModel, openDeviceEditor } from './page-helpers';
 import type { ConfigDevice } from '../src/types/hid';
 
 afterEach(cleanup);
 
 function openGuide() {
   fireEvent.click(screen.getByRole('button', { name: '连接设备' }));
+  confirmSupportedModel();
 }
 function confirmCable() {
   fireEvent.click(screen.getByRole('button', { name: '已连接数据线，下一步' }));
@@ -90,9 +91,31 @@ test('different device names identify cards, the selected guide device, and the 
   fireEvent.click(within(secondCard).getByRole('button', { name: '配置设备' }));
   await act(() => acceptRead(store));
   expect(screen.getByRole('button', { name: '已连接 · 66EC-S' })).toBeVisible();
+  expect(within(screen.getByRole('navigation', { name: '页面导航' })).getByText('66EC-S')).toHaveAttribute('aria-current', 'page');
 });
 
-test('the guide presents one step at a time and only its second step can request device access', async () => {
+test('the guide requires model confirmation before showing the cable and authorization steps', async () => {
+  const hid = new FakeHID();
+  const { store, actions } = application(hid);
+  render(<App store={store} usbAvailable />);
+  await act(() => actions.start());
+  fireEvent.click(screen.getByRole('button', { name: '连接设备' }));
+  expect(screen.getByRole('heading', { name: '确认你的设备受支持' })).toBeVisible();
+  expect(within(screen.getByRole('list', { name: '连接步骤' })).getAllByRole('listitem')).toHaveLength(4);
+  expect(screen.getByRole('list', { name: '支持的型号' })).toHaveTextContent('ATOM66');
+  expect(screen.getByRole('button', { name: '确认型号，下一步' })).toBeDisabled();
+  expect(screen.queryByRole('button', { name: '连接键盘' })).not.toBeInTheDocument();
+  expect(screen.queryByRole('button', { name: '已连接数据线，下一步' })).not.toBeInTheDocument();
+  confirmSupportedModel();
+  expect(screen.getByRole('heading', { name: '连接 USB 数据线' })).toHaveFocus();
+  expect(hid.requestCount).toBe(0);
+  fireEvent.click(screen.getByRole('button', { name: '上一步' }));
+  expect(screen.getByRole('checkbox', { name: '我已确认设备型号在支持列表中' })).toBeChecked();
+  fireEvent.click(screen.getByRole('checkbox', { name: '我已确认设备型号在支持列表中' }));
+  expect(screen.getByRole('button', { name: '确认型号，下一步' })).toBeDisabled();
+});
+
+test('the guide presents one step at a time and only its third step can request device access', async () => {
   const hid = new FakeHID();
   const { store, actions } = application(hid);
   render(<App store={store} usbAvailable />);
@@ -211,6 +234,7 @@ test('configuring a connected device cannot silently replace a demo with drafts'
   render(<App store={store} usbAvailable />);
   await act(() => actions.start());
   fireEvent.click(screen.getByRole('button', { name: '设备管理' }));
+  await act(async () => { fireEvent.click(screen.getByRole('button', { name: '保留编辑并返回' })); });
   fireEvent.click(screen.getByRole('button', { name: '配置设备' }));
   const confirmation = screen.getByRole('alertdialog', { name: '确认读取键盘配置' });
   expect(confirmation).toHaveTextContent('当前有未写入的修改');
@@ -221,4 +245,42 @@ test('configuring a connected device cannot silently replace a demo with drafts'
   fireEvent.click(screen.getByRole('button', { name: '继续编辑' }));
   expect(screen.getByLabelText(/按键序列/)).toHaveValue('unfinished macro');
   expect(store.getState().canUndo).toBe(true);
+});
+
+test.each([
+  { entry: '设备管理', edit: 'mapping' },
+  { entry: '返回设备管理', edit: 'draft' },
+  { entry: '返回设备管理', edit: 'lighting' },
+])('$entry confirms leaving with $edit changes and preserves them for resuming', async ({ entry, edit }) => {
+  const { store, actions } = application();
+  await actions.demo();
+  if (edit === 'mapping') actions.assignKey(58);
+  else if (edit === 'draft') actions.updateForm({ view: 'advanced', sequence: 'unfinished macro' });
+  else { actions.updateForm({ color: '#ff0000' }); actions.applyColor(); }
+  const before = store.getState();
+  render(<App store={store} />);
+  fireEvent.click(screen.getByRole('button', { name: entry }));
+  expect(screen.getByRole('alertdialog', { name: '返回设备管理？' })).toHaveTextContent('编辑内容会保留');
+  expect(store.getState().page).toBe('editor');
+  await act(async () => { fireEvent.click(screen.getByRole('button', { name: '取消' })); });
+  expect(store.getState().page).toBe('editor');
+  fireEvent.click(screen.getByRole('button', { name: entry }));
+  await act(async () => { fireEvent.click(screen.getByRole('button', { name: '保留编辑并返回' })); });
+  expect(screen.getByRole('heading', { name: '设备管理' })).toBeVisible();
+  expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: '继续编辑' }));
+  expect(store.getState().page).toBe('editor');
+  expect(store.getState().profile!.toJSON()).toEqual(before.profile!.toJSON());
+  expect(store.getState().drafts).toEqual(before.drafts);
+  expect(store.getState().form).toEqual(before.form);
+  expect(store.getState().canUndo).toBe(before.canUndo);
+});
+
+test('returning from an unchanged editor needs no confirmation', async () => {
+  const { store, actions } = application();
+  await actions.demo();
+  render(<App store={store} />);
+  fireEvent.click(screen.getByRole('button', { name: '返回设备管理' }));
+  expect(screen.getByRole('heading', { name: '设备管理' })).toBeVisible();
+  expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
 });

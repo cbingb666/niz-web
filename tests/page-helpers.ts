@@ -1,5 +1,10 @@
 import { act, fireEvent, screen } from '@testing-library/react';
 
+export function confirmSupportedModel() {
+  fireEvent.click(screen.getByRole('checkbox', { name: /^(我已确认设备型号在支持列表中|I have confirmed that my device model is listed)$/ }));
+  fireEvent.click(screen.getByRole('button', { name: /^(确认型号，下一步|Model confirmed — next)$/ }));
+}
+
 export async function openDeviceEditor() {
   await act(async () => { fireEvent.click(screen.getByRole('button', { name: /^(配置设备|Configure device)$/ })); });
 }

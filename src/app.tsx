@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState, type RefObject } from 'react';
-import { ArrowRight, CircleHelp, LayoutGrid, Undo2, Redo2 } from 'lucide-react';
+import { ArrowLeft, ArrowRight, ChevronRight, CircleHelp, Undo2, Redo2 } from 'lucide-react';
 import { ConnectionPanel } from './components/connection-panel';
 import { DeviceManager } from './components/device-manager';
 import { ConnectionGuide } from './components/connection-guide';
@@ -15,6 +15,7 @@ import { Dialog, DialogContent, DialogTitle } from './components/ui/dialog';
 import { StoreContext, useAppStore } from './store/context';
 import { isLocked, type AppStore } from './store/app-store';
 import { useI18n } from './i18n/use-i18n';
+import { deviceName } from './i18n/device';
 import { applyDocumentLocale } from './i18n/preferences';
 import type { Message } from './i18n/core';
 
@@ -96,28 +97,34 @@ function CommitBar() {
   );
 }
 function Header() {
-  const { t } = useI18n();
+  const { t, text } = useI18n();
   const locked = useAppStore(isLocked);
   const showHelp = useAppStore((state) => state.actions.showHelp);
   const page = useAppStore(state => state.page);
   const navigate = useAppStore(state => state.actions.navigate);
+  const session = useAppStore(state => state.session);
+  const devices = useAppStore(state => state.connectedDevices);
+  const model = useAppStore(state => state.model);
+  const source = useAppStore(state => state.source);
+  const currentDevice = devices.find(device => device.id === session.id);
+  const currentPage = page === 'connect' ? t('guide.title')
+    : source === 'demo' ? `${model.name} · ${t('keyboard.demo')}`
+    : currentDevice ? text(deviceName(currentDevice, devices)) : session.product || model.name;
   const header = useRef<HTMLElement>(null);
   useChromeHeight(header, '--app-header-height');
   return (
     <header ref={header} className="app-header">
       <div className="brand">
-        <span className="brand-mark" aria-hidden="true">
-          N
-        </span>
-        <div>
-          <h1>
-            NIZ <span>Web</span>
-          </h1>
-        </div>
+        <h1>NIZ Web</h1>
       </div>
       <nav className="page-navigation" aria-label={t('devices.navigation')}>
-        <Button variant="ghost" size="sm" disabled={locked} aria-current={page === 'devices' ? 'page' : undefined}
-          onClick={() => navigate('devices')}><LayoutGrid />{t('devices.title')}</Button>
+        <ol>
+          <li>{page === 'devices' ? <span aria-current="page">{t('devices.title')}</span>
+            : <Button variant="ghost" size="sm" disabled={locked} onClick={() => navigate('devices')}>{t('devices.title')}</Button>}</li>
+          {page !== 'devices' && <li className="breadcrumb-current">
+            <ChevronRight aria-hidden="true" /><span aria-current="page" title={currentPage}>{currentPage}</span>
+          </li>}
+        </ol>
       </nav>
       <div className="header-detail">
         <LanguageSwitcher />
@@ -143,6 +150,8 @@ interface AppContentProps {
 }
 function AppContent({ notices = [], usbAvailable = false }: AppContentProps) {
   const { t, text, locale } = useI18n();
+  const locked = useAppStore(isLocked);
+  const navigate = useAppStore(state => state.actions.navigate);
   const [narrow, setNarrow] = useState(() => window.matchMedia?.('(max-width: 900px)').matches ?? false);
   const [compactChanges, setCompactChanges] = useState(() => window.matchMedia?.('(max-width: 1599px)').matches ?? false);
   const [editorOpen, setEditorOpen] = useState(false);
@@ -188,6 +197,8 @@ function AppContent({ notices = [], usbAvailable = false }: AppContentProps) {
       <div className="app-shell" data-page={page} data-changes-collapsed={changesCollapsed || compactChanges} inert={operating} aria-busy={operating}>
         <Header />
         <main ref={main} tabIndex={-1}>
+          {page === 'editor' && <Button className="page-back workspace-back" variant="ghost" disabled={locked}
+            onClick={() => navigate('devices')}><ArrowLeft />{t('devices.back')}</Button>}
           {page === 'editor' && !compactChanges && <PendingChanges collapsed={changesCollapsed} onToggle={() => setChangesPreference(true)} />}
           {page === 'editor' && <ConnectionPanel />}
           {notices.length > 0 && (

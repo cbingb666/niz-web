@@ -62,7 +62,7 @@ test('Configure device requests consent; confirmation alone opens a global non-d
   actions.setLocale('en');
   actions.setShowCounts(true);
   actions.setShowKeyNumbers(true);
-  actions.navigate('connect');
+  await actions.navigate('connect');
   expect(store.getState().page).toBe('devices');
   expect(store.getState()).toMatchObject({ hardwareOperation: 'read', locale: 'zh-CN', showCounts: false, showKeyNumbers: false });
   await act(async () => {

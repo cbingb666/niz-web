@@ -119,27 +119,17 @@
 }
 .brand {
   display: flex;
-  gap: 13px;
   align-items: center;
+  flex-shrink: 0;
 }
-.brand-mark {
-  font-family: ui-monospace, monospace;
-  font-weight: 750;
-  font-size: 1.4rem;
-  letter-spacing: -2px;
+.brand h1 {
+  font-family: ui-monospace, 'SFMono-Regular', Menlo, Consolas, 'Liberation Mono', monospace;
+  font-weight: 700;
+  font-size: 1.125rem;
+  letter-spacing: -.04em;
   color: var(--primary);
-  border: 1px solid #3b5d53;
-  border-radius: 10px;
-  padding: 7px 11px;
-  background: #16221e;
+  white-space: nowrap;
 }
-.brand h1 span {
-  font-weight: 450;
-  color: var(--muted-foreground);
-  font-size: 0.95rem;
-  margin-left: 0.5rem;
-}
-.brand p,
 .header-detail {
   font-size: 0.875rem;
   color: var(--muted-foreground);
@@ -905,10 +895,6 @@ main {
   background: var(--background);
   border-bottom: 1px solid var(--border);
 }
-.app-header .brand { gap: 9px; }
-.app-header .brand-mark { padding: 2px 8px; font-size: 1.15rem; border-radius: 7px; }
-.app-header h1 { font-size: 1.1rem; }
-.app-header .brand h1 span { margin-left: .25rem; }
 .disconnected-device { display: flex; align-items: center; gap: 9px; height: 38px; padding: 0 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--panel); color: var(--muted-foreground); font-size: .875rem; white-space: nowrap; }
 .header-detail { gap: 12px; }
 .profile-actions { display: flex; align-items: center; gap: 4px; padding-left: 16px; border-left: 1px solid var(--border); }
@@ -1051,8 +1037,12 @@ main {
 .commit-write { min-width: 144px; }
 .connected-device { display: flex; align-items: center; margin: 0; border: 1px solid var(--border); border-radius: 8px; background: var(--panel); }
 .connected-device .device-summary { height: 36px; padding-inline: 10px; border-radius: 7px 0 0 7px; }
-.connected-device .device-disconnect { width: 36px; height: 36px; padding: 8px; border-left: 1px solid var(--border); border-radius: 0 7px 7px 0; color: var(--muted-foreground); }
-.device-disconnect:hover:not(:disabled) { color: var(--warning); }
+.device-disconnect { color: var(--muted-foreground); }
+.connected-device .device-disconnect { width: 36px; height: 36px; padding: 8px; border-left: 1px solid var(--border); border-radius: 0 7px 7px 0; }
+.device-disconnect:hover:not(:disabled), .device-disconnect:focus-visible {
+  color: var(--destructive);
+  background: color-mix(in srgb, var(--destructive) 12%, transparent);
+}
 @media (max-width: 1120px) {
   .app-shell { --page-gutter: 16px; }
   .workspace > .keyboard-panel { padding: 18px 16px 6px; }
@@ -1082,8 +1072,8 @@ main {
 }
 @media (max-width: 520px) {
   .app-shell { --page-gutter: 12px; }
-  .app-header .brand-mark, .app-header .brand h1 span { display: none; }
   .app-header .header-detail { gap: 4px; }
+  .app-header .language-select { width: 116px; padding-inline: 8px; gap: 6px; }
   .profile-actions { gap: 0; padding-left: 8px; }
   .profile-actions > button { width: 32px; padding: 6px; }
   .commit-bar { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: 'tools tools' 'details actions'; gap: 8px 12px; }
@@ -1108,8 +1098,14 @@ main {
 .activity-dialog .activity li > span { min-width: 0; overflow-wrap: anywhere; }
 
 /* Device pages share the workspace chrome, with room for the connection story. */
-.page-navigation { display: flex; align-items: center; gap: 4px; }
-.page-navigation [aria-current='page'] { background: var(--accent); color: var(--primary); }
+.page-navigation { flex: 1; min-width: 0; font-size: .875rem; color: var(--muted-foreground); }
+.page-navigation ol { display: flex; align-items: center; gap: 4px; list-style: none; margin: 0; padding: 0; }
+.page-navigation li { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.page-navigation li:first-child { flex: none; }
+.page-navigation li:first-child > span { padding: 8px 12px; }
+.page-navigation [aria-current='page'] { color: var(--foreground); }
+.breadcrumb-current > svg { width: 16px; height: 16px; flex: none; }
+.breadcrumb-current > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .app-shell:not([data-page='editor']) { padding-bottom: 0; }
 .app-shell:not([data-page='editor']) > main {
   min-height: calc(100dvh - var(--app-header-height));
@@ -1164,10 +1160,8 @@ main {
 .resume-profile h3, .guide-demo h3 { font-size: 1rem; font-weight: 550; }
 .resume-profile p, .guide-demo p { color: var(--muted-foreground); font-size: .875rem; line-height: 1.7; margin-top: 5px; }
 .resume-profile > button, .guide-demo > button { flex: none; min-height: 42px; }
-.device-page-footer { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px 24px; margin-top: 24px; color: var(--muted-foreground); font-size: .875rem; }
-.device-page-footer > span { display: flex; align-items: center; gap: 8px; }
-.device-page-footer svg { width: 16px; height: 16px; }
 .page-back { padding-left: 0; margin: -10px 0 16px; color: var(--muted-foreground); }
+.workspace-back { align-self: flex-start; flex: none; }
 .connection-guide-page .device-page-heading { margin-top: 0; margin-bottom: 26px; }
 .guide-layout { display: grid; grid-template-columns: 1fr 1fr; border: 1px solid var(--border); border-radius: 20px; background: var(--panel); overflow: hidden; }
 .guide-visual { position: relative; display: flex; flex-direction: column; justify-content: center; min-width: 0; padding: 32px; background: #111416; overflow: hidden; }
@@ -1186,6 +1180,16 @@ main {
 .guide-step-copy { flex: 1; animation: guide-caption-in 300ms ease-out; }
 .guide-step-copy h3 { font-size: 1.5rem; font-weight: 600; letter-spacing: -.02em; }
 .guide-step-copy h3:focus { outline: none; }
+.guide-support { margin-top: 20px; }
+.supported-models { display: grid; gap: 8px; list-style: none; padding: 0; margin: 0; }
+.supported-models li { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 14px 16px; border: 1px solid var(--border); border-radius: 10px; background: var(--background); }
+.supported-models strong { font-family: ui-monospace, monospace; font-size: 1rem; }
+.supported-models span, .support-hint { color: var(--muted-foreground); font-size: .875rem; }
+.support-hint { margin-top: 12px; line-height: 1.7; }
+.support-confirmation { display: flex; align-items: flex-start; gap: 10px; margin-block: 20px; font-size: .875rem; cursor: pointer; }
+.support-confirmation > button { margin-top: 3px; }
+.support-preview { width: 100%; }
+.support-preview figcaption { text-align: center; font-family: ui-monospace, monospace; font-size: 1.125rem; letter-spacing: .08em; color: var(--foreground); }
 .connection-steps { display: flex; align-items: center; gap: 20px; list-style: none; padding: 0; margin: 0 0 24px; }
 .connection-steps > li { display: flex; align-items: center; flex: 1; gap: 10px; font-size: .875rem; color: var(--muted-foreground); }
 .connection-steps > li:not(:last-child)::after { content: ''; flex: 1; height: 1px; margin-left: 10px; background: var(--border); }
@@ -1212,6 +1216,7 @@ main {
 .cable-demo > svg { display: block; width: min(100%, 440px); margin: auto; color: var(--muted-foreground); }
 .diagram-computer, .diagram-keyboard { color: #c2ccd1; }
 .diagram-wire { stroke: var(--primary); stroke-width: 3; stroke-linecap: round; }
+.diagram-usb-port { stroke: var(--muted-foreground); stroke-width: 2; }
 .diagram-plug { color: var(--primary); animation: insert-usb 4s ease-in-out infinite; }
 .diagram-contact { stroke: var(--primary); stroke-width: 2; fill: none; opacity: 0; animation: usb-contact 4s ease-in-out infinite; }
 .cable-demo figcaption, .permission-demo figcaption { text-align: center; margin-top: 18px; font-size: .875rem; color: var(--muted-foreground); }
@@ -1259,8 +1264,7 @@ main {
   .resume-profile > button, .guide-demo > button { margin-left: 58px; }
 }
 @media (max-width: 580px) {
-  .app-header .page-navigation { order: 4; width: 100%; border-top: 1px solid var(--border); padding-top: 8px; }
-  .page-navigation > button { flex: 1; }
+  .app-header .page-navigation { order: 4; flex-basis: 100%; border-top: 1px solid var(--border); padding-top: 8px; }
   .device-page-heading { align-items: flex-start; flex-direction: column; }
   .device-page-heading > button { width: 100%; }
   .page-description { margin-top: 10px; }

@@ -4,7 +4,7 @@ import { StrictMode } from 'react';
 import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { afterEach, expect, test, vi } from 'vitest';
 import { App } from '../src/app';
-import { chooseMappingType } from './page-helpers';
+import { chooseMappingType, confirmSupportedModel } from './page-helpers';
 import { application, acceptRead, profileFile } from './store-helpers';
 import { FakeDevice, FakeHID, fixture } from './helpers';
 
@@ -39,7 +39,7 @@ test('activity opens from the workbench footer, handles an empty session and kee
   await vi.waitFor(() => expect(trigger).toHaveFocus());
 });
 
-test('connected device summary and disconnect live in the workbench footer while the header stays unchanged', async () => {
+test('the header shows the device breadcrumb and disconnecting from the footer returns to Devices', async () => {
   const device = new FakeDevice();
   const { store, actions } = application(new FakeHID([device]));
   const view = render(<App store={store} usbAvailable />);
@@ -47,7 +47,8 @@ test('connected device summary and disconnect live in the workbench footer while
   await act(async () => { await actions.start(); await acceptRead(store); await actions.configureDevice(); });
   const header = within(view.container.querySelector<HTMLElement>('.app-header')!);
   const footer = within(view.container.querySelector<HTMLElement>('.commit-bar')!);
-  expect(view.container.querySelector('.app-header')!.textContent).toBe(initialHeader);
+  expect(header.getByRole('navigation', { name: '页面导航' })).toHaveTextContent('设备管理ATOM66 fixture');
+  expect(header.getByText('ATOM66 fixture')).toHaveAttribute('aria-current', 'page');
   expect(header.queryByRole('button', { name: '已连接 · ATOM66 fixture' })).not.toBeInTheDocument();
   expect(header.queryByRole('button', { name: '断开' })).not.toBeInTheDocument();
   expect(header.queryByRole('button', { name: '配置工作台' })).not.toBeInTheDocument();
@@ -69,9 +70,10 @@ test('connected device summary and disconnect live in the workbench footer while
   await act(async () => { fireEvent.click(footer.getByRole('button', { name: '断开' })); });
   expect(store.getState().session.connected).toBe(false);
   expect(footer.queryByRole('button', { name: '断开' })).not.toBeInTheDocument();
-  expect(footer.getByText('未连接键盘')).toBeInTheDocument();
+  expect(view.container.querySelector('.commit-bar')).toBeNull();
+  expect(screen.getByRole('heading', { name: '设备管理' })).toBeVisible();
   expect(view.container.querySelector('.app-header')!.textContent).toBe(initialHeader);
-  expect(screen.getByRole('button', { name: '设备连接引导' })).toBeEnabled();
+  expect(screen.getByRole('button', { name: '查看连接指南' })).toBeEnabled();
 });
 
 test('keyboard and mapping panes can receive keyboard focus after selecting another key', async () => {
@@ -234,6 +236,7 @@ test('React boots on Devices without WebHID and the guide opens a usable offline
   expect(screen.getByRole('heading', { name: '设备管理' })).toBeInTheDocument();
   expect(screen.queryByRole('region', { name: '按键布局' })).not.toBeInTheDocument();
   fireEvent.click(screen.getByRole('button', { name: '连接设备' }));
+  confirmSupportedModel();
   fireEvent.click(screen.getByRole('button', { name: '已连接数据线，下一步' }));
   expect(screen.getByRole('button', { name: '连接键盘' })).toBeDisabled();
   expect(screen.getByText('当前环境无法连接 USB')).toBeInTheDocument();

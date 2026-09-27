@@ -59,12 +59,12 @@ test('connecting from the guide does not open a read confirmation before an expl
   hid.selection = [device];
   const { store, session, actions } = application(hid);
   await actions.start();
-  actions.navigate('connect');
+  await actions.navigate('connect');
   await actions.connect();
   expect(store.getState().session.connected).toBe(true);
   expect(store.getState().dialog).toBeNull();
   expect(device.sent.map(packet => packet[1])).toEqual([0xf9]);
-  actions.navigate('devices');
+  await actions.navigate('devices');
   session.notify();
   await ready(store);
   expect(store.getState().dialog).toBeNull();

@@ -96,6 +96,8 @@ test('connecting a different model preserves pending edits and requires loading 
   expect(store.getState().dialog).toBeNull();
   expect(store.getState().model).toBe(defaultModel);
   expect(store.getState().canWrite).toBe(false);
+  expect(screen.getByRole('heading', { name: '设备管理' })).toBeVisible();
+  fireEvent.click(screen.getByRole('button', { name: '继续编辑' }));
   expect(screen.getByLabelText(/按键序列/)).toHaveValue('Command\nC');
   let read: Promise<void>;
   act(() => { read = actions.configureDevice(session.connectedDevices[0].id); });

@@ -120,7 +120,7 @@ export interface AppState {
   actions: AppActions;
 }
 export interface AppActions {
-  navigate(page: AppPage): void;
+  navigate(page: AppPage): Promise<void>;
   configureDevice(id?: string): Promise<void>;
   resumeEditor(id: string): void;
   setLocale(locale: Locale): void;
@@ -423,6 +423,7 @@ export function createAppStore(dependencies: AppDependencies) {
       }, 'read');
     }
     function onSessionChange() {
+      const disconnected = get().session.connected && !session.connected && get().session.id === session.activeDeviceId;
       activateEditor();
       const state = `${session.activeDeviceId}:${session.state}:${session.version}:${session.message}`;
       if (state !== lastConnection) {
@@ -435,6 +436,13 @@ export function createAppStore(dependencies: AppDependencies) {
         );
       }
       syncEditor();
+      if (disconnected && get().page === 'editor') {
+        set({ page: 'devices' });
+        const dialog = get().dialog;
+        if (dialog?.kind === 'device') set({ dialog: null });
+        if (dialog?.kind === 'confirm' && typeof dialog.title !== 'string' && 'key' in dialog.title && dialog.title.key === 'confirm.leaveEditorTitle')
+          actions.confirm(false);
+      }
     }
     function saveForm(announce = false): boolean {
       if (!editor.profile || !get().formDirty) return true;
@@ -516,9 +524,13 @@ export function createAppStore(dependencies: AppDependencies) {
         if (disposed || isLocked(get()) || get().dialog || !editingSessions.get(id)?.editor.profile) return;
         if (session.selectDevice(id, true)) set({ page: 'editor' });
       },
-      navigate(page) {
-        if (disposed || isLocked(get()) || get().dialog) return;
+      async navigate(page) {
+        if (disposed || isLocked(get()) || get().dialog || page === get().page) return;
         if (page === 'editor' && !get().profile && !get().session.connected) return;
+        if (get().page === 'editor' && page === 'devices' && (editor.dirty || get().draftIndices.length)) {
+          if (!(await confirm(msg('confirm.leaveEditorTitle'), msg('confirm.leaveEditorBody'), msg('confirm.leaveEditorAction')))) return;
+          if (disposed || isLocked(get()) || get().dialog || get().page !== 'editor') return;
+        }
         set({ page });
       },
       async configureDevice(id = session.activeDeviceId ?? undefined) {

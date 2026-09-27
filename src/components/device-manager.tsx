@@ -1,7 +1,6 @@
-import { ArrowRight, Keyboard, Plus, SlidersHorizontal, Unplug } from 'lucide-react';
+import { ArrowRight, Plus, SlidersHorizontal, Unplug } from 'lucide-react';
 import { deviceName } from '@/i18n/device';
 import { useI18n } from '@/i18n/use-i18n';
-import { supportedModels } from '@/devices';
 import { isLocked } from '@/store/app-store';
 import { useAppStore } from '@/store/context';
 import { Button } from './ui/button';
@@ -22,9 +21,7 @@ export function DeviceManager() {
   return <div className="device-page">
     <div className="device-page-heading">
       <div>
-        <p className="page-eyebrow"><Keyboard aria-hidden="true" />{t('app.subtitle')}</p>
         <h2 id="page-title" tabIndex={-1}>{t('devices.title')}</h2>
-        <p className="page-description">{t('devices.description')}</p>
       </div>
       <Button disabled={locked} onClick={() => actions.navigate('connect')}><Plus />{t('devices.add')}</Button>
     </div>
@@ -50,7 +47,7 @@ export function DeviceManager() {
             <Button className="configure-device" disabled={locked} onClick={() => actions.configureDevice(device.id)}>
               <SlidersHorizontal />{t('devices.configure')}<ArrowRight />
             </Button>
-            <Button variant="ghost" disabled={locked} onClick={() => actions.disconnect(device.id)}><Unplug />{t('connection.disconnect')}</Button>
+            <Button className="device-disconnect" variant="ghost" disabled={locked} onClick={() => actions.disconnect(device.id)}><Unplug />{t('connection.disconnect')}</Button>
           </div>
         </div>
       </article>;
@@ -78,8 +75,5 @@ export function DeviceManager() {
       <Button variant="outline" disabled={locked} onClick={() => actions.resumeEditor(saved.id)}>{t('devices.resume')}<ArrowRight /></Button>
     </section>)}
 
-    <footer className="device-page-footer">
-      <span>{t('devices.supported', { models: supportedModels.map(model => model.name).join(' / ') })}</span>
-    </footer>
   </div>;
 }

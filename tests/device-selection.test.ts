@@ -130,6 +130,7 @@ test('unplugging or disconnecting another device does not invalidate the active 
   const { store, actions, session } = application(hid);
   await actions.start();
   await acceptRead(store);
+  await actions.configureDevice();
   const epoch = session.epoch, baseline = session.lastRead;
   hid.disconnect(second);
   await ready(store);
@@ -137,6 +138,7 @@ test('unplugging or disconnecting another device does not invalidate the active 
   expect(session.epoch).toBe(epoch);
   expect(session.lastRead).toBe(baseline);
   expect(store.getState().connectedDevices).toHaveLength(1);
+  expect(store.getState().page).toBe('editor');
   hid.connect(second);
   await ready(store);
   expect(store.getState().connectedDevices).toHaveLength(2);
@@ -148,6 +150,63 @@ test('unplugging or disconnecting another device does not invalidate the active 
   expect(session.hasLiveBaseline).toBe(true);
   expect(session.lastRead).toBe(baseline);
   expect(store.getState().connectedDevices).toHaveLength(1);
+  expect(store.getState().page).toBe('editor');
+});
+
+test.each(['manual', 'unplug'] as const)('%s disconnect returns to Devices and keeps the active edits and drafts', async kind => {
+  const device = new FakeDevice(), hid = new FakeHID([device]);
+  const { store, actions } = application(hid);
+  await actions.start();
+  await acceptRead(store);
+  await actions.configureDevice();
+  actions.assignKey(43);
+  actions.updateForm({ view: 'advanced', sequence: 'unfinished macro' });
+  const before = store.getState();
+  if (kind === 'manual') await actions.disconnect();
+  else hid.disconnect(device);
+  expect(store.getState().page).toBe('devices');
+  expect(store.getState().session.connected).toBe(false);
+  expect(store.getState().profile!.toJSON()).toEqual(before.profile!.toJSON());
+  expect(store.getState().drafts).toEqual(before.drafts);
+  expect(store.getState().canUndo).toBe(true);
+  expect(store.getState().hasUnsavedChanges).toBe(true);
+  await actions.navigate('editor');
+  expect(store.getState().page).toBe('editor');
+  expect(store.getState().form.sequence).toBe('unfinished macro');
+  expect(store.getState().canWrite).toBe(false);
+});
+
+test('unplugging during a leave confirmation closes it and returns to Devices', async () => {
+  const device = new FakeDevice(), hid = new FakeHID([device]);
+  const { store, actions } = application(hid);
+  await actions.start();
+  await acceptRead(store);
+  await actions.configureDevice();
+  actions.assignKey(43);
+  const leaving = actions.navigate('devices');
+  expect(store.getState().dialog?.kind).toBe('confirm');
+  hid.disconnect(device);
+  await leaving;
+  expect(store.getState().page).toBe('devices');
+  expect(store.getState().dialog).toBeNull();
+  expect(store.getState().profile!.summary(0)).toBe('A');
+});
+
+test('edits on another device do not prompt when leaving an unchanged active editor', async () => {
+  const first = new FakeDevice(), second = new FakeDevice(), hid = new FakeHID([first, second]);
+  const { store, actions, session } = application(hid);
+  await actions.start();
+  await acceptRead(store);
+  await actions.configureDevice();
+  actions.assignKey(43);
+  const secondId = session.connectedDevices.find(device => device.id !== session.activeDeviceId)!.id;
+  const configuring = actions.configureDevice(secondId);
+  await acceptRead(store);
+  await configuring;
+  expect(store.getState().hasUnsavedChanges).toBe(true);
+  await actions.navigate('devices');
+  expect(store.getState().page).toBe('devices');
+  expect(store.getState().dialog).toBeNull();
 });
 
 test('edits for an unplugged inactive keyboard remain accessible without using another device connection', async () => {

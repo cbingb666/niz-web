@@ -3,7 +3,7 @@ import '@testing-library/jest-dom/vitest';
 import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { afterEach, beforeAll, expect, test, vi } from 'vitest';
 import { App } from '../src/app';
-import { chooseMappingType } from './page-helpers';
+import { chooseMappingType, confirmSupportedModel } from './page-helpers';
 import { application, profileFile, acceptRead } from './store-helpers';
 import { FakeDevice, FakeHID, fixture } from './helpers';
 import { msg } from '../src/i18n/core';
@@ -35,6 +35,8 @@ test('the language control changes the UI and remembers the choice on reload', a
   await chooseEnglish();
   expect(screen.getByRole('heading', { name: 'Devices' })).toBeInTheDocument();
   fireEvent.click(screen.getByRole('button', { name: 'Connect a device' }));
+  expect(screen.getByRole('heading', { name: 'Check that your device is supported' })).toBeVisible();
+  confirmSupportedModel();
   fireEvent.click(screen.getByRole('button', { name: 'Cable connected — next' }));
   expect(screen.getByRole('button', { name: 'Connect keyboard' })).toBeDisabled();
   expect(screen.getByRole('button', { name: 'Offline demo' })).toBeEnabled();
