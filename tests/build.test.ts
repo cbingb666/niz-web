@@ -42,7 +42,8 @@ test('production is one offline HTML with hash CSP and HID permissions', async (
       Array.from(document.querySelectorAll('button')).find(button => button.textContent === 'Connect a device')!.click();
       await vi.waitFor(() => expect(document.querySelector('.connection-guide-page')).not.toBeNull());
       expect(document.getElementById('guide-step-title')?.textContent).toBe('Check that your device is supported');
-      expect(document.querySelector<HTMLImageElement>('.device-illustration')?.src).toMatch(/^data:image\/webp;base64,/);
+      expect(document.querySelector('.support-preview svg')).not.toBeNull();
+      expect(document.querySelector('.support-preview img')).toBeNull();
       const supportNext = Array.from(document.querySelectorAll('button')).find(button => button.textContent === 'Model confirmed — next')!;
       expect(supportNext.disabled).toBe(true);
       document.querySelector<HTMLButtonElement>('button[role="checkbox"]')!.click();
@@ -56,6 +57,7 @@ test('production is one offline HTML with hash CSP and HID permissions', async (
       dom.window.close();
     }
     const script = scripts[0][1];
+    expect(script).toMatch(/data:image\/webp;base64,/);
     expect(() => new Script(script)).not.toThrow();
     const digest = createHash('sha256').update(script).digest('base64');
     expect(html).toContain(`script-src 'sha256-${digest}'`);

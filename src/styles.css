@@ -1141,9 +1141,19 @@ main {
 .device-card-actions .configure-device { flex: 1; width: auto; }
 .device-pending-edits { font-size: .875rem; color: var(--warning); margin-bottom: 16px; }
 .guide-pick-again { align-self: flex-start; margin-top: 14px; }
-.device-card-art { display: flex; justify-content: center; align-items: center; min-width: 0; padding: 22px; background: #111416; }
+.device-card-art {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-width: 0;
+  padding: 48px 40px;
+  overflow: hidden;
+  background: #202426;
+}
 .device-illustration { display: block; width: 100%; height: auto; object-fit: contain; user-select: none; }
-.device-card-art .device-illustration { max-height: 330px; }
+.device-card-art .device-illustration {
+  max-height: 330px;
+}
 .device-card-content { display: flex; flex-direction: column; justify-content: center; align-items: flex-start; padding: 36px 40px; min-width: 0; }
 .device-status { display: inline-flex; align-items: center; gap: 9px; font-size: .875rem; color: var(--primary); }
 .device-status .status-dot { width: 7px; height: 7px; }
@@ -1197,8 +1207,19 @@ main {
 .support-hint { margin-top: 12px; line-height: 1.7; }
 .support-confirmation { display: flex; align-items: flex-start; gap: 10px; margin-block: 20px; font-size: .875rem; cursor: pointer; }
 .support-confirmation > button { margin-top: 3px; }
-.support-preview { width: 100%; }
-.support-preview figcaption { text-align: center; font-family: ui-monospace, monospace; font-size: 1.125rem; letter-spacing: .08em; color: var(--foreground); }
+.support-preview { width: 100%; margin: 0; }
+.support-preview > svg { display: block; width: min(100%, 440px); margin: auto; }
+.support-preview figcaption { margin-top: 18px; text-align: center; font-size: .875rem; line-height: 1.7; color: var(--muted-foreground); }
+.nameplate-body { fill: var(--panel); stroke: var(--muted-foreground); stroke-width: 2; }
+.nameplate-feet { fill: var(--muted); stroke: var(--border); stroke-width: 1.5; }
+.nameplate-label { fill: var(--background); stroke: var(--primary); stroke-width: 1.5; }
+.nameplate-leaders { stroke: var(--primary); stroke-width: 1.5; stroke-dasharray: 4 5; }
+.nameplate-turn { color: var(--primary); }
+.nameplate-caption { fill: var(--muted-foreground); font-size: 16px; }
+.nameplate-field { fill: var(--muted-foreground); font-size: 10px; letter-spacing: .08em; }
+.nameplate-small-model, .nameplate-model { fill: var(--foreground); font-family: ui-monospace, monospace; font-weight: 500; }
+.nameplate-small-model { font-size: 14px; }
+.nameplate-model { fill: var(--primary); font-size: 28px; letter-spacing: .04em; }
 .connection-steps { display: flex; align-items: center; gap: 20px; list-style: none; padding: 0; margin: 0 0 24px; }
 .connection-steps > li { display: flex; align-items: center; flex: 1; gap: 10px; font-size: .875rem; color: var(--muted-foreground); }
 .connection-steps > li:not(:last-child)::after { content: ''; flex: 1; height: 1px; margin-left: 10px; background: var(--border); }
@@ -1261,7 +1282,7 @@ main {
   .device-page-heading { gap: 16px; margin-bottom: 24px; }
   .device-page-heading > button { padding-inline: 12px; }
   .device-card, .guide-layout { grid-template-columns: 1fr; }
-  .device-card-art { padding: 12px 24px; }
+  .device-card-art { padding: 28px 24px; }
   .device-card-art .device-illustration { max-height: 260px; }
   .device-card-content { padding: 26px; }
   .device-card-content > h3 { margin-top: 14px; }

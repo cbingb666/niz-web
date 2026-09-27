@@ -1,4 +1,4 @@
-import { CheckCircle2, Globe2, Keyboard, Laptop, MousePointer2, Unplug } from 'lucide-react';
+import { CheckCircle2, Globe2, Keyboard, Laptop, MousePointer2, RotateCcw, Unplug } from 'lucide-react';
 import { defaultModel } from '@/devices';
 import { useI18n } from '@/i18n/use-i18n';
 import { DeviceIllustration } from './device-illustration';
@@ -6,9 +6,26 @@ import { DeviceIllustration } from './device-illustration';
 /** Instructional diagrams: the animation explains an action, never device status. */
 export function ConnectionIllustration({ step, connected }: { step: 'support' | 'cable' | 'permission' | 'complete'; connected: boolean }) {
   const { t } = useI18n();
-  if (step === 'support') return <figure className="support-preview">
-    <DeviceIllustration />
-    <figcaption>{defaultModel.name}</figcaption>
+  if (step === 'support') return <figure className="support-preview" aria-label={t('guide.nameplateIllustration')}>
+    <svg viewBox="0 0 440 320" fill="none" aria-hidden="true">
+      <text x={220} y={30} textAnchor="middle" className="nameplate-caption">{t('guide.keyboardBack')}</text>
+      <RotateCcw x={358} y={10} width={28} height={28} strokeWidth={1.5} className="nameplate-turn" />
+      <rect x={40} y={54} width={360} height={142} rx={15} className="nameplate-body" />
+      <g className="nameplate-feet">
+        <rect x={62} y={73} width={40} height={9} rx={4.5} />
+        <rect x={338} y={73} width={40} height={9} rx={4.5} />
+        <rect x={62} y={168} width={40} height={9} rx={4.5} />
+        <rect x={338} y={168} width={40} height={9} rx={4.5} />
+      </g>
+      <rect x={165} y={104} width={110} height={45} rx={4} className="nameplate-label" />
+      <text x={220} y={121} textAnchor="middle" className="nameplate-field">MODEL</text>
+      <text x={220} y={139} textAnchor="middle" className="nameplate-small-model">{defaultModel.name}</text>
+      <path d="M176 150 140 224m124-74 36 74" className="nameplate-leaders" />
+      <rect x={120} y={224} width={200} height={75} rx={10} className="nameplate-label" />
+      <text x={220} y={246} textAnchor="middle" className="nameplate-caption">{t('connection.model')}</text>
+      <text x={220} y={279} textAnchor="middle" className="nameplate-model">{defaultModel.name}</text>
+    </svg>
+    <figcaption>{t('guide.nameplateCaption')}</figcaption>
   </figure>;
   if (step === 'cable') return <figure className="cable-demo" aria-label={t('guide.cableIllustration')}>
     <svg viewBox="0 0 440 320" fill="none" aria-hidden="true">

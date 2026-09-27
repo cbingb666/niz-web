@@ -33,6 +33,10 @@ test.each(['zh-CN', 'en'] as const)('%s empty devices page has one connection en
   expect(within(empty as HTMLElement).getByRole('figure', { name: translate(locale, 'guide.cableIllustration') })).toBeVisible();
   fireEvent.click(buttons[0]);
   expect(screen.getByRole('heading', { name: translate(locale, 'guide.supportTitle') })).toBeVisible();
+  const nameplate = screen.getByRole('figure', { name: translate(locale, 'guide.nameplateIllustration') });
+  expect(nameplate).toHaveTextContent('ATOM66');
+  expect(nameplate).toHaveTextContent(translate(locale, 'guide.nameplateCaption'));
+  expect(nameplate.querySelector('img')).toBeNull();
   expect(hid.requestCount).toBe(0);
 });
 

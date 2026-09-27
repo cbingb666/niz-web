@@ -73,7 +73,7 @@ export function ConnectionGuide({ usbAvailable }: { usbAvailable: boolean }) {
     </ol>
     <section className="guide-layout" aria-labelledby="guide-step-title">
       <div className="guide-visual" data-step={activeStep} data-connected={complete}>
-        <div className="guide-visual-label">{t(step.id === 'support' ? 'guide.supportedModels' : step.id === 'complete' ? 'guide.connectionLabel' : 'guide.illustrationLabel')}</div>
+        <div className="guide-visual-label">{t(step.id === 'complete' ? 'guide.connectionLabel' : 'guide.illustrationLabel')}</div>
         <div className="guide-illustration-stage" key={activeStep}>
           <ConnectionIllustration step={step.id} connected={!!selected} />
         </div>
