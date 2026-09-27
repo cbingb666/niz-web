@@ -1,5 +1,5 @@
 import { ArrowRight, Plus, SlidersHorizontal, Unplug } from 'lucide-react';
-import { deviceName } from '@/i18n/device';
+import { deviceName, formatUsbId } from '@/i18n/device';
 import { useI18n } from '@/i18n/use-i18n';
 import { isLocked } from '@/store/app-store';
 import { useAppStore } from '@/store/context';
@@ -40,6 +40,8 @@ export function DeviceManager() {
           <h3>{name}</h3>
           <p className="device-specification">{t('keyboard.dimensions', { keys: device.model.keyCount, layers: device.model.layers.length })}</p>
           <dl className="device-card-details">
+            <div><dt>{t('connection.vendorId')}</dt><dd><code>{formatUsbId(device.vendorId)}</code></dd></div>
+            <div><dt>{t('connection.productId')}</dt><dd><code>{formatUsbId(device.productId)}</code></dd></div>
             <div><dt>{t('connection.firmware')}</dt><dd>{device.version || '—'}</dd></div>
             <div><dt>{t('connection.configuration')}</dt><dd>{t(device.hasLiveBaseline ? 'connection.loaded' : 'connection.notRead')}</dd></div>
           </dl>

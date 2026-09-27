@@ -1,6 +1,6 @@
 import { ChevronRight, Unplug } from 'lucide-react';
 import { useI18n } from '@/i18n/use-i18n';
-import { deviceName } from '@/i18n/device';
+import { deviceName, formatUsbId } from '@/i18n/device';
 import { isLocked } from '@/store/app-store';
 import { useAppStore } from '@/store/context';
 import { Button } from './ui/button';
@@ -27,11 +27,14 @@ export function ConnectedDevice() {
 export function DeviceDetails() {
   const { t, text } = useI18n();
   const session = useAppStore(state => state.session);
+  const device = useAppStore(state => state.connectedDevices.find(device => device.id === state.session.id));
   const reading = useAppStore(state => state.reading);
   const details = [
     ['connection.deviceStatus', session.connected ? t('connection.connectedShort') : text(session.message) || t('connection.waiting')],
     ['connection.model', session.model?.name || '—'],
     ['connection.product', session.product || '—'],
+    ['connection.vendorId', <code>{formatUsbId(device?.vendorId)}</code>],
+    ['connection.productId', <code>{formatUsbId(device?.productId)}</code>],
     ['connection.firmware', session.version || '—'],
     ['connection.configuration', t(reading ? 'connection.reading' : session.hasLiveBaseline ? 'connection.loaded' : 'connection.notRead')],
   ] as const;

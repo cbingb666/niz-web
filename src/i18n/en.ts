@@ -103,6 +103,8 @@ export const en = {
   'connection.deviceStatus': 'Connection status',
   'connection.model': 'Model',
   'connection.product': 'Device name',
+  'connection.vendorId': 'Vendor ID',
+  'connection.productId': 'Product ID',
   'connection.firmware': 'Firmware version',
   'connection.configuration': 'Configuration status',
   'keyboard.layout': 'Key layout',

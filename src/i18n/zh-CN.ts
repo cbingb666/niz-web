@@ -100,6 +100,8 @@ export const zhCN = {
   'connection.deviceStatus': '连接状态',
   'connection.model': '型号',
   'connection.product': '设备名称',
+  'connection.vendorId': '厂商 ID',
+  'connection.productId': '产品 ID',
   'connection.firmware': '固件版本',
   'connection.configuration': '配置状态',
   'keyboard.layout': '按键布局',

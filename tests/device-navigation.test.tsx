@@ -90,10 +90,12 @@ test('the guide adds another ATOM66 and both cards configure and disconnect thei
   expect(session.activeDeviceId).toBe(firstId);
 });
 
-test('different device names identify cards, the selected guide device, and the workbench', async () => {
+test('different device names and USB IDs identify their own cards and workbench details', async () => {
   const first = new FakeDevice(), second = new FakeDevice(), hid = new FakeHID([first]);
   first.productName = '66EC-XRGB';
+  first.productId = 0x502a;
   second.productName = '66EC-S';
+  second.productId = 0x512a;
   const { store, actions } = application(hid);
   render(<App store={store} usbAvailable />);
   await act(() => actions.start());
@@ -105,13 +107,28 @@ test('different device names identify cards, the selected guide device, and the 
   expect(screen.getByRole('status')).not.toHaveTextContent('设备 2');
   fireEvent.click(screen.getByRole('button', { name: '下一步' }));
   fireEvent.click(screen.getByRole('button', { name: '完成，查看设备' }));
-  expect(screen.getByRole('article', { name: '66EC-XRGB' })).toBeVisible();
+  const firstCard = screen.getByRole('article', { name: '66EC-XRGB' });
+  expect(firstCard).toHaveTextContent('0x0483');
+  expect(firstCard).toHaveTextContent('0x502A');
+  expect(firstCard).not.toHaveTextContent('0x512A');
   const secondCard = screen.getByRole('article', { name: '66EC-S' });
-  expect(secondCard).toBeVisible();
+  expect(secondCard).toHaveTextContent('0x0483');
+  expect(secondCard).toHaveTextContent('0x512A');
+  expect(secondCard).not.toHaveTextContent('0x502A');
   fireEvent.click(within(secondCard).getByRole('button', { name: '配置设备' }));
   await act(() => acceptRead(store));
   expect(screen.getByRole('button', { name: '已连接 · 66EC-S' })).toBeVisible();
   expect(within(screen.getByRole('navigation', { name: '页面导航' })).getByText('66EC-S')).toHaveAttribute('aria-current', 'page');
+  const sent = second.sent.slice();
+  fireEvent.click(screen.getByRole('button', { name: '已连接 · 66EC-S' }));
+  const details = screen.getByRole('dialog', { name: '设备详情' });
+  expect(within(details).getByText('厂商 ID').nextElementSibling).toHaveTextContent('0x0483');
+  expect(within(details).getByText('产品 ID').nextElementSibling).toHaveTextContent('0x512A');
+  expect(details).not.toHaveTextContent('0x502A');
+  act(() => actions.setLocale('en'));
+  expect(within(details).getByText('Vendor ID').nextElementSibling).toHaveTextContent('0x0483');
+  expect(within(details).getByText('Product ID').nextElementSibling).toHaveTextContent('0x512A');
+  expect(second.sent).toEqual(sent);
 });
 
 test('the guide requires model confirmation before showing the cable and authorization steps', async () => {

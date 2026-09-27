@@ -268,6 +268,8 @@ interface DeviceConnection {
 export interface ConnectedHIDDevice {
   id: string;
   number: number;
+  vendorId: number;
+  productId: number;
   model: KeyboardModel;
   product: string;
   version: string;
@@ -357,6 +359,8 @@ export class HIDSession extends EventTarget {
     return [...this.connections].filter(([, record]) => record.device.opened).map(([id, record]) => ({
       id,
       number: Number(id.slice('device-'.length)),
+      vendorId: record.device.vendorId,
+      productId: record.device.productId,
       model: record.model,
       product: String(record.identity.Product ?? record.model.name),
       version: record.version,
