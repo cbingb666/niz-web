@@ -116,8 +116,15 @@ const englishOverrides: Record<number, string> = {
 export const ENGLISH_KEY_NAMES = KEY_NAMES.map(
   (name, code) => englishOverrides[code] ?? (name.startsWith('保留代码 ') ? `Reserved code ${code}` : name),
 );
+// Shared by keycaps and editors; canonical names above stay valid for legacy input.
+export const SIDED_KEY_NAMES: Readonly<Record<number, string>> = {
+  55: 'L Shift', 66: 'R Shift', 67: 'L Ctrl', 74: 'R Ctrl',
+  68: 'L Cmd', 72: 'R Cmd', 69: 'L Alt', 71: 'R Alt',
+  156: 'R Fn', 166: 'L Fn',
+};
 export function localizedKeyName(code: number, locale: Locale): string {
   return (
+    SIDED_KEY_NAMES[code] ??
     (locale === 'en' ? ENGLISH_KEY_NAMES : KEY_NAMES)[code] ?? translate(locale, 'keyboard.unknown', { code })
   );
 }

@@ -59,8 +59,8 @@ test('English editing uses translated names and preserves unsaved input when ret
   profile.setDefinition(0, { type: 0, keys: [68, 58] });
   await act(() => actions.importFile(profileFile(profile)));
   await chooseMappingType('Macro / Advanced');
-  expect(screen.getByLabelText(/Key sequence/)).toHaveValue('Left Command\nC');
-  expect(screen.getByRole('button', { name: /Normal, key 1, Left Command \+ C/ })).toBeInTheDocument();
+  expect(screen.getByLabelText(/Key sequence/)).toHaveValue('L Cmd\nC');
+  expect(screen.getByRole('button', { name: /Normal, key 1, L Cmd \+ C/ })).toBeInTheDocument();
   fireEvent.change(screen.getByLabelText(/Key sequence/), { target: { value: 'Left Shift\nA' } });
   await act(async () => {
     actions.setLocale('zh-CN');
@@ -68,7 +68,8 @@ test('English editing uses translated names and preserves unsaved input when ret
   expect(screen.getByLabelText(/按键序列/)).toHaveValue('Left Shift\nA');
   fireEvent.click(screen.getByRole('button', { name: '应用这次编辑' }));
   expect(store.getState().profile?.definition(0).keys).toEqual([55, 43]);
-  expect(screen.getByRole('button', { name: /普通层，第 1 键，左 Shift \+ A，已修改/ })).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: /普通层，第 1 键，L Shift \+ A，已修改/ })).toBeInTheDocument();
+  expect(screen.getByLabelText(/按键序列/)).toHaveValue('L Shift\nA');
   expect(screen.getByRole('button', { name: '核对并写入' })).toBeDisabled();
 });
 test('help, validation errors and close controls are translated', async () => {

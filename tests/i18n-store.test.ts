@@ -7,12 +7,12 @@ import type { ModelTool } from '../src/model-tools';
 test('switching language preserves configuration and translates only a clean form', async () => {
   const { store, actions, download } = application();
   const profile = fixture(9);
-  profile.setDefinition(0, { type: 0, keys: [68, 58] });
+  profile.setDefinition(0, { type: 0, keys: [68, 58, 130] });
   await actions.importFile(profileFile(profile));
   const before = store.getState().profile?.toJSON();
   actions.updateForm({ picker: '音量 +', color: '#123456' });
   actions.setLocale('en');
-  expect(store.getState().form.sequence).toBe('Left Command\nC');
+  expect(store.getState().form.sequence).toBe('L Cmd\nC\nMouse left button');
   expect(store.getState().form.picker).toBe('音量 +');
   expect(store.getState().form.color).toBe('#123456');
   expect(store.getState().profile?.toJSON()).toEqual(before);
@@ -21,7 +21,7 @@ test('switching language preserves configuration and translates only a clean for
   actions.exportProfile();
   expect(download).toHaveBeenCalledWith('Configuration', before);
   actions.setLocale('zh-CN');
-  expect(store.getState().form.sequence).toBe('左 Command\nC');
+  expect(store.getState().form.sequence).toBe('L Cmd\nC\n鼠标左键');
 });
 test('switching language preserves unsaved and invalid input, selection and dirty state', async () => {
   const { store, actions } = application();

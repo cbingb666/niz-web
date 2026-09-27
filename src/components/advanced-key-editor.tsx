@@ -1,5 +1,5 @@
 import { useI18n } from '@/i18n/use-i18n';
-import { KEY_NAMES, ENGLISH_KEY_NAMES } from '@/i18n/key-names';
+import { KEY_NAMES, localizedKeyName } from '@/i18n/key-names';
 import { Plus } from 'lucide-react';
 import { useAppStore } from '@/store/context';
 import { isLocked } from '@/store/app-store';
@@ -19,7 +19,6 @@ const modes = [
 ] as const;
 export function AdvancedKeyEditor() {
   const { t, locale } = useI18n();
-  const keyNames = locale === 'en' ? ENGLISH_KEY_NAMES : KEY_NAMES;
   const profile = useAppStore((state) => state.profile);
   const form = useAppStore((state) => state.form);
   const locked = useAppStore(isLocked);
@@ -63,8 +62,8 @@ export function AdvancedKeyEditor() {
               onChange={(event) => actions.updateForm({ picker: event.target.value })}
             />
             <datalist id="key-options">
-              {keyNames.map((name, code) =>
-                code === 200 ? null : <option key={code} value={`${name} · #${code}`} />,
+              {KEY_NAMES.map((_, code) =>
+                code === 200 ? null : <option key={code} value={`${localizedKeyName(code, locale)} · #${code}`} />,
               )}
             </datalist>
             <Button
@@ -84,7 +83,7 @@ export function AdvancedKeyEditor() {
             id="key-sequence"
             rows={5}
             spellCheck={false}
-            placeholder={'Command\nC'}
+            placeholder={'L Cmd\nC'}
             value={form.sequence}
             onChange={(event) => actions.updateForm({ sequence: event.target.value })}
             aria-describedby="sequence-hint"

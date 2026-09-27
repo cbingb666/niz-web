@@ -1,4 +1,4 @@
-import { KEY_NAMES, ENGLISH_KEY_NAMES } from './i18n/key-names.ts';
+import { KEY_NAMES, ENGLISH_KEY_NAMES, SIDED_KEY_NAMES } from './i18n/key-names.ts';
 import { msg, renderMessage, joinMessages, type Message } from './i18n/core.ts';
 import { defaultModel, supportedModels, type KeyboardModel } from './devices/index.ts';
 export interface KeyDefinition {
@@ -84,6 +84,8 @@ export function parseKey(text: string) {
   if (match >= 0) return match;
   const english = ENGLISH_KEY_NAMES.findIndex((name) => name.toLowerCase() === value.toLowerCase());
   if (english >= 0) return english;
+  const sided = Object.entries(SIDED_KEY_NAMES).find(([, name]) => name.toLowerCase() === value.toLowerCase());
+  if (sided) return Number(sided[0]);
   const aliases: Record<string, number> = {
     cmd: 68,
     command: 68,

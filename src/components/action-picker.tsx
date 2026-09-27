@@ -34,12 +34,12 @@ export function ActionPicker({ kind = 'key', value, disabled, onChoose }: {
   const matches = KEY_NAMES.map((_, code) => code).filter((code) => {
     if (code === 200) return false;
     if (/^#\d+$/.test(search)) return code === Number(search.slice(1));
-    if (search) return `${KEY_NAMES[code]} ${ENGLISH_KEY_NAMES[code]} ${code === 70 ? '空格' : ''} ${code === 67 || code === 74 ? 'ctrl' : ''}`.toLowerCase().includes(search);
+    if (search) return `${localizedKeyName(code, locale)} ${KEY_NAMES[code]} ${ENGLISH_KEY_NAMES[code]} ${code === 70 ? '空格' : ''} ${code === 67 || code === 74 ? 'ctrl' : ''}`.toLowerCase().includes(search);
     return group === 'common' ? common.includes(code) : group === 'all' || groupFor(code) === group;
   });
   if (!search && group === 'common') matches.sort((a, b) => common.indexOf(a) - common.indexOf(b));
   if (search) {
-    const exact = (code: number) => [KEY_NAMES[code], ENGLISH_KEY_NAMES[code]].some(name => name.toLowerCase() === search);
+    const exact = (code: number) => [localizedKeyName(code, locale), KEY_NAMES[code], ENGLISH_KEY_NAMES[code]].some(name => name.toLowerCase() === search);
     matches.sort((a, b) => Number(exact(b)) - Number(exact(a)));
   }
   function navigate(event: KeyboardEvent<HTMLInputElement>) {

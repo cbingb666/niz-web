@@ -1,15 +1,15 @@
 import { sequenceText, type Profile } from '../protocol';
 import { countMessage, renderMessage, translate, type Locale } from './core';
-import { localizedKeyName } from './key-names';
+import { localizedKeyName, SIDED_KEY_NAMES } from './key-names';
 
 const keycapNames: Record<number, string> = {
-  0: '∅', 27: '⌫', 28: 'Tab', 42: 'Caps', 54: 'Enter', 55: 'L Shift', 66: 'R Shift',
-  67: 'LCtrl', 68: 'L⌘', 69: 'LAlt', 70: 'Space', 71: 'RAlt', 72: 'R⌘', 73: 'Menu', 74: 'RCtrl',
+  ...SIDED_KEY_NAMES,
+  0: '∅', 27: '⌫', 28: 'Tab', 42: 'Caps', 54: 'Enter', 70: 'Space', 73: 'Menu',
   75: 'Wake', 76: 'Sleep', 77: 'Power', 78: 'PrtSc', 79: 'ScrLk', 80: 'Pause',
   81: 'Ins', 82: 'Home', 83: 'PgUp', 84: 'Del', 85: 'End', 86: 'PgDn', 91: 'Num',
   108: '⏭', 109: '⏮', 110: 'Stop', 111: '⏯', 112: 'Mute', 113: 'Vol+', 114: 'Vol−',
   126: 'Ms←', 127: 'Ms→', 128: 'Ms↑', 129: 'Ms↓', 130: 'Ms1', 131: 'Ms2', 132: 'Ms3',
-  133: 'Wh↑', 134: 'Wh↓', 144: 'Brt−', 145: 'Brt+', 156: 'R Fn', 166: 'L Fn',
+  133: 'Wh↑', 134: 'Wh↓', 144: 'Brt−', 145: 'Brt+',
   168: 'BT1', 169: 'BT2', 170: 'BT3', 171: 'Game', 172: 'ECO', 199: 'Ms×2', 204: 'ISO\\',
 };
 

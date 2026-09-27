@@ -91,6 +91,8 @@ test('every English and Chinese key name maps back to the same wire code', () =>
   for (let code = 0; code < 256; code++) {
     expect(parseKey(KEY_NAMES[code])).toBe(code);
     expect(parseKey(ENGLISH_KEY_NAMES[code])).toBe(code);
+    expect(parseKey(localizedKeyName(code, 'zh-CN'))).toBe(code);
+    expect(parseKey(localizedKeyName(code, 'en'))).toBe(code);
     expect(ENGLISH_KEY_NAMES[code]).not.toMatch(/\p{Script=Han}/u);
   }
   expect(parseKey('Left Command')).toBe(68);
@@ -109,18 +111,19 @@ test('localized macro text and mixed-language input preserve the encoded reports
   };
   const expected = encodeDefinition(definition, 0);
   const english = sequenceText(decodeDefinition(expected), (code) => localizedKeyName(code, 'en'));
-  expect(english).toBe('Left Command @30\nC @70\nLeft Fn');
+  expect(english).toBe('L Cmd @30\nC @70\nL Fn');
   expect(
     encodeDefinition(parseSequence(english, { type: 2, interval: 0, cycles: 2, customDelay: true }), 0),
   ).toEqual(expected);
   expect(parseSequence('左 Command\nC\nRight Fn', { type: 0 }).keys).toEqual([68, 58, 156]);
+  expect(parseSequence('L Ctrl\nR Cmd\nR Alt\nL Shift', { type: 0 }).keys).toEqual([67, 72, 71, 55]);
 });
 test('localized summaries and historic backup labels do not mutate stored data', () => {
   const profile = fixture(9);
   profile.setDefinition(0, { type: 0, keys: [68, 58] });
   const before = profile.toJSON();
-  expect(localizedSummary(profile, 0, 'en')).toBe('Left Command + C');
-  expect(localizedSummary(profile, 0, 'zh-CN')).toBe('左 Command + C');
+  expect(localizedSummary(profile, 0, 'en')).toBe('L Cmd + C');
+  expect(localizedSummary(profile, 0, 'zh-CN')).toBe('L Cmd + C');
   expect(profile.toJSON()).toEqual(before);
   expect(renderMessage(backupReason('写入前'), 'en')).toBe('Before writing');
   expect(renderMessage(backupReason('自动读取备份'), 'en')).toBe('Automatic read backup');

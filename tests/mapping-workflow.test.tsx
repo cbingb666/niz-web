@@ -6,7 +6,7 @@ import { App } from '../src/app';
 import { chooseMappingType, openDeviceEditor } from './page-helpers';
 import { application, acceptRead, profileFile } from './store-helpers';
 import { FakeDevice, FakeHID, fixture } from './helpers';
-import { renderMessage } from '../src/i18n/core';
+import { renderMessage, translate } from '../src/i18n/core';
 import type { ModelTool } from '../src/model-tools';
 
 // Radix measures the checkbox's hidden form input; jsdom does not implement layout observers.
@@ -17,6 +17,39 @@ beforeAll(() => vi.stubGlobal('ResizeObserver', class {
 }));
 afterAll(() => vi.unstubAllGlobals());
 afterEach(cleanup);
+
+test.each(['zh-CN', 'en'] as const)('%s editors share sided names while preserving legacy search and key codes', async locale => {
+  const { store, actions } = application(null, undefined, { locale });
+  const view = render(<App store={store} />);
+  await act(() => actions.demo());
+  expect(screen.getByRole('button', { name: 'L Ctrl' })).toBeVisible();
+  const search = screen.getByRole('searchbox');
+  for (const name of ['R Ctrl', '右 Control', 'Right Control']) {
+    fireEvent.change(search, { target: { value: name } });
+    expect(screen.getByRole('button', { name: /^R Ctrl/ })).toBeVisible();
+  }
+  fireEvent.click(screen.getByRole('button', { name: /^R Ctrl/ }));
+  expect(store.getState().profile!.definition(0).keys).toEqual([74]);
+  expect(view.container.querySelector('.mapping-preview .keycap-sample')).toHaveTextContent('R Ctrl');
+
+  await chooseMappingType(translate(locale, 'mapping.chord'));
+  for (const name of ['L Ctrl', 'R Ctrl', 'L Cmd', 'R Cmd', 'L Alt', 'R Alt', 'L Shift', 'R Shift'])
+    expect(screen.getByRole('checkbox', { name })).toBeVisible();
+  fireEvent.click(screen.getByRole('checkbox', { name: 'L Cmd' }));
+  fireEvent.click(screen.getByRole('button', { name: 'C' }));
+  fireEvent.click(screen.getByRole('button', { name: translate(locale, 'mapping.useChord') }));
+  expect(store.getState().profile!.definition(0).keys).toEqual([74, 68, 58]);
+
+  await chooseMappingType(translate(locale, 'mapping.advanced'));
+  const choices = view.container.querySelector('#key-options');
+  expect(choices?.querySelector('option[value="L Fn · #166"]')).not.toBeNull();
+  expect(choices?.querySelector('option[value="R Fn · #156"]')).not.toBeNull();
+  fireEvent.change(screen.getByLabelText(translate(locale, 'editor.addKey')), { target: { value: 'R Shift · #66' } });
+  fireEvent.click(screen.getByRole('button', { name: translate(locale, 'editor.appendKey') }));
+  fireEvent.click(screen.getByRole('button', { name: translate(locale, 'editor.save') }));
+  expect(store.getState().profile!.definition(0).keys).toEqual([74, 68, 58, 66]);
+  expect(store.getState().form.sequence).toBe('R Ctrl\nL Cmd\nC\nR Shift');
+});
 
 test('mapping type select switches all editors while preserving unapplied input', async () => {
   const { store, actions } = application();
