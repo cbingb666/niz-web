@@ -800,7 +800,7 @@ main {
 }
 .key-side { position: absolute; inset: 3px 0 var(--front-depth) auto; width: var(--side-width); background: transparent; clip-path: none; }
 .key-number > span { position: absolute; left: 50%; top: 4px; transform: translateX(-50%); writing-mode: vertical-rl; text-orientation: upright; color: #686868; font-size: 0.5rem; line-height: 1; font-variant-numeric: tabular-nums; white-space: nowrap; }
-.key-change-dot { position: absolute; left: calc(var(--side-width) / 2); bottom: 4px; transform: translateX(-50%); width: 5px; height: 5px; border-radius: 50%; background: var(--warning); z-index: 3; }
+.key-change-dot { position: absolute; left: -7px; top: 0; width: 5px; height: 5px; border: 1px solid var(--primary-foreground); border-radius: 50%; background: var(--warning); pointer-events: none; }
 .key-front { position: absolute; inset: auto var(--side-width) 1px 3px; height: calc(var(--front-depth) - 1px); background: transparent; clip-path: none; box-shadow: none; z-index: 1; }
 .key[data-selected='true'] { border-color: var(--primary); background: #373737; box-shadow: none; }
 .key[data-selected='true'] .key-face { border-color: transparent; background: #3e3e3e; }
@@ -825,7 +825,9 @@ main {
 .key-face .key-layer[data-layer='0'] { flex: 1; min-height: 24px; align-items: flex-start; padding-top: 2px; color: #e4e4e4; }
 .key-face .key-layer:not([data-layer='0']) { flex: 0 0 18px; text-align: right; }
 .key-legend { display: flex; flex-direction: column; justify-content: center; width: 100%; height: 100%; min-width: 0; overflow: hidden; font-family: Arial, 'PingFang SC', 'Microsoft YaHei', sans-serif; font-size: .75rem; font-weight: 400; line-height: 1.1; }
-:is(.key, .keycap-sample) .key-layer .assignment { display: block; width: 100%; min-width: 0; margin: 0; font: inherit; color: inherit; white-space: pre-line; overflow-wrap: break-word; overflow: visible; text-overflow: clip; letter-spacing: 0; }
+.key-legend[data-changed='true'] { padding-left: 7px; }
+:is(.key, .keycap-sample) .key-layer .assignment { position: relative; display: block; align-self: flex-end; width: fit-content; max-width: 100%; min-width: 0; margin: 0; font: inherit; color: inherit; white-space: pre-line; overflow-wrap: break-word; overflow: visible; text-overflow: clip; letter-spacing: 0; }
+:is(.key, .keycap-sample) .key-face .key-layer[data-layer='0'] .assignment { align-self: flex-start; }
 :is(.key, .keycap-sample) .key-face .key-layer[data-layer='0'] .key-legend { justify-content: flex-start; font-size: 1.0625rem; font-weight: 500; }
 :is(.key, .keycap-sample) .key-face .key-layer[data-layer='0'][data-long-label='true'] .key-legend { font-size: 0.875rem; }
 /* Inset the front highlight without shrinking its pointer target. */

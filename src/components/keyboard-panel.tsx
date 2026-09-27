@@ -104,7 +104,7 @@ function Keyboard({ onEdit }: { onEdit?: () => void }) {
                   onClick={() => { if (actions.selectKey(key, keyLayer)) onEdit?.(); }}
                   onKeyDown={event => navigate(event, key, keyLayer)}
                 >
-                  <KeyLegend text={legend} />
+                  <KeyLegend text={legend} changed={changed} changeLabel={t('keyboard.changedKeys')} />
                   {pending && <span className="key-layer-state" aria-hidden="true">…</span>}
                 </button>;
               });
@@ -123,8 +123,6 @@ function Keyboard({ onEdit }: { onEdit?: () => void }) {
                 {showNumbers && <div className="key-side key-number">
                   <span>#{String(key + 1).padStart(2, '0')}</span>
                 </div>}
-                {changes.some(index => index % model.keyCount === key) && <span className="key-change-dot" role="img"
-                  aria-label={t('keyboard.changedKeys')} title={t('keyboard.changedKeys')} />}
                 <div className="key-face">
                   {layerButtons[0]}
                   {layerButtons.slice(2)}
@@ -148,7 +146,7 @@ function KeycapGuide({ counts, showNumbers }: { counts: boolean; showNumbers: bo
   const legends = model.layers.map((label, index) => counts && index === 1 ? 'Count'
     : renderMessage(label, 'en').replace(/^Left /, 'L ').replace(/^Right /, 'R '));
   return <figure className="keycap-guide" aria-label={t('mapping.keycapGuide')}>
-    <KeycapSample legends={legends} changed showNumber={showNumbers} />
+    <KeycapSample legends={legends} showNumber={showNumbers} />
   </figure>;
 }
 

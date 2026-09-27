@@ -233,6 +233,32 @@ test('mapping preview follows selected position, active layer, language and undo
   expect(screen.getByRole('button', { name: 'Restore' })).toBeDisabled();
 });
 
+test('modified dots follow each layer in the keyboard and preview through restore and undo', async () => {
+  const { store, actions } = application();
+  const view = render(<App store={store} />);
+  await act(() => actions.demo());
+  const key = screen.getByRole('group', { name: '键位 #30' });
+  const dotLayers = (element: Element) => Array.from(element.querySelectorAll('.key-change-dot'), dot => {
+    expect(dot.parentElement).toHaveClass('assignment');
+    return Number(dot.closest('.key-layer')?.getAttribute('data-layer'));
+  }).sort();
+  const expectLayers = (layers: number[]) => {
+    expect(dotLayers(key)).toEqual(layers);
+    expect(dotLayers(view.container.querySelector('.mapping-preview .keycap-sample')!)).toEqual(layers);
+    expect(key.querySelector(':scope > .key-change-dot')).toBeNull();
+  };
+  for (const [layer, expected] of [[0, [0]], [2, [0, 2]], [1, [0, 1, 2]]] as const) {
+    act(() => { actions.selectKey(29, layer); actions.assignKey(58); });
+    expectLayers([...expected]);
+  }
+  fireEvent.click(screen.getByRole('button', { name: '还原' }));
+  expectLayers([0, 2]);
+  fireEvent.click(screen.getByRole('button', { name: '撤销' }));
+  expectLayers([0, 1, 2]);
+  fireEvent.click(screen.getByRole('button', { name: '重做' }));
+  expectLayers([0, 2]);
+});
+
 test('count view replaces front-edge mappings with counts and orders key brightness without hardware writes', async () => {
   const device = new FakeDevice();
   device.profile.counters = Array.from({ length: 66 }, (_, index) => [0, 100, 10_000, 0xffffffff][index] ?? 0);
@@ -251,7 +277,8 @@ test('count view replaces front-edge mappings with counts and orders key brightn
   expect(screen.queryByRole('button', { name: /^右 Fn，第/ })).not.toBeInTheDocument();
   expect(screen.getAllByRole('button', { name: /第 \d+ 键，/ })).toHaveLength(132);
   const positions = [1, 2, 3, 4].map(position => screen.getByRole('group', { name: `键位 #${position}` }));
-  expect(within(positions[0]).getAllByRole('img', { name: '已修改' })).toHaveLength(1);
+  expect(within(positions[0]).queryByRole('img', { name: '已修改' })).not.toBeInTheDocument();
+  expect(guide.querySelector('.key-front .key-change-dot')).toBeNull();
   expect(positions[0].querySelector('.key-front')).toHaveTextContent('0');
   expect(positions[1].querySelector('.key-front')).toHaveTextContent('100');
   expect(positions[2].querySelector('.key-front')).toHaveTextContent('10,000');
@@ -263,6 +290,7 @@ test('count view replaces front-edge mappings with counts and orders key brightn
   expect(guide).toHaveTextContent('Count');
   fireEvent.click(screen.getByRole('checkbox', { name: '显示计数' }));
   expect(screen.getAllByRole('button', { name: /^右 Fn，第/ })).toHaveLength(66);
+  expect(within(positions[0]).getByRole('img', { name: '已修改' }).closest('.key-layer')).toHaveAttribute('data-layer', '1');
   expect(guide).toHaveTextContent('R Fn');
   expect(store.getState().profile!.toJSON()).toEqual(profile);
   expect(device.sent).toEqual(sent);
@@ -384,7 +412,9 @@ test('layer-specific drafts and changes remain visible alongside other layers', 
   fireEvent.click(screen.getByRole('button', { name: /^普通层，第 30 键，/ }));
   fireEvent.click(screen.getByRole('button', { name: 'Esc' }));
   expect(screen.getByRole('button', { name: /^普通层，第 30 键，/ })).toHaveClass('changed');
+  expect(screen.getByRole('button', { name: /^普通层，第 30 键，/ }).querySelector('.key-change-dot')).not.toBeNull();
   expect(screen.getByRole('button', { name: /^右 Fn，第 30 键，/ })).toHaveClass('has-draft');
+  expect(screen.getByRole('button', { name: /^右 Fn，第 30 键，/ }).querySelector('.key-change-dot')).toBeNull();
   expect(screen.getByRole('button', { name: /^左 Fn，第 30 键，/ })).not.toHaveClass('changed', 'has-draft');
   fireEvent.click(screen.getByRole('button', { name: /^右 Fn，第 30 键，/ }));
   expect(screen.getByLabelText(/按键序列/)).toHaveValue('unfinished');

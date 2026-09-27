@@ -109,7 +109,8 @@ export function KeyEditor() {
     </div>
     <figure className="mapping-preview" aria-label={t('mapping.previewTitle')}>
       <KeycapSample legends={model.layers.map((_, index) => profile ? keycapSummary(profile, index * model.keyCount + key) : '—')}
-        position={key} measureKey={key} activeLayer={layer} changed={changes.some(index => index % model.keyCount === key)} showNumber={false} />
+        position={key} measureKey={key} activeLayer={layer}
+        changedLayers={model.layers.map((_, index) => index).filter(index => changes.includes(index * model.keyCount + key))} showNumber={false} />
       <figcaption aria-live="polite" title={[mapping, description].filter(Boolean).join('\n')}>
         {mapping}{description && <span className="action-description block">{description}</span>}
       </figcaption>
