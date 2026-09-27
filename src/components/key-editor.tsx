@@ -105,7 +105,8 @@ export function KeyEditor() {
     <div className="inspector-header">
     <div className="key-editor-heading">
       <h2>{t('mapping.previewTitle')}</h2>
-      <Button variant="outline" size="sm" disabled={disabled || (!dirty && !changes.some(index => hasFn ? index % model.keyCount === key : index === layer * model.keyCount + key))} onClick={actions.resetKey}><RotateCcw />{t('editor.reset')}</Button>
+      <Button variant="ghost" size="icon" aria-label={t('editor.reset')} title={t('editor.reset')}
+        disabled={disabled || (!dirty && !changes.some(index => hasFn ? index % model.keyCount === key : index === layer * model.keyCount + key))} onClick={actions.resetKey}><RotateCcw /></Button>
     </div>
     <figure className="mapping-preview" aria-label={t('mapping.previewTitle')}>
       <KeycapSample legends={model.layers.map((_, index) => profile ? keycapSummary(profile, index * model.keyCount + key) : '—')}
