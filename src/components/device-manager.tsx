@@ -1,4 +1,4 @@
-import { ArrowRight, Plus, SlidersHorizontal, Unplug } from 'lucide-react';
+import { ArrowRight, Plus, SlidersHorizontal, Unplug, ScanLine, TriangleAlert } from 'lucide-react';
 import { deviceName, formatUsbId } from '@/i18n/device';
 import { useI18n } from '@/i18n/use-i18n';
 import { isLocked } from '@/store/app-store';
@@ -17,6 +17,7 @@ export function DeviceManager() {
   const stale = useAppStore(state => state.stale);
   const locked = useAppStore(isLocked);
   const actions = useAppStore(state => state.actions);
+  const calibrationResults = useAppStore(state => state.calibrationResults);
   const localProfile = profile && (!session.connected || source !== 'read' || stale);
 
   return <div className="device-page">
@@ -52,6 +53,10 @@ export function DeviceManager() {
             </Button>
             <Button className="device-disconnect" variant="ghost" disabled={locked} onClick={() => actions.disconnect(device.id)}><Unplug />{t('connection.disconnect')}</Button>
           </div>
+          {device.calibration === 'available' &&
+            <Button id={`calibration-${device.id}`} variant="ghost" className="device-calibration" disabled={locked}
+              onClick={() => actions.openCalibration(device.id)}><ScanLine />{t('calibration.entry')}</Button>}
+          {device.calibration === 'unsupported' && <p className="text-sm text-muted-foreground mt-3">{t('calibration.unsupported')}</p>}
         </div>
       </article>;
       })}</div> : <div className="devices-empty">
@@ -65,6 +70,14 @@ export function DeviceManager() {
         </div>
       </div>}
     </section>
+
+    {Object.values(calibrationResults).filter(result => result.state.error).map(result =>
+      <section key={result.target.id} className="resume-profile calibration-recovery">
+        <TriangleAlert aria-hidden="true" />
+        <div><h3>{t('calibration.recoveryTitle', { name: result.name })}</h3><p>{text(result.state.error!)}</p></div>
+        <Button id={`calibration-result-${result.target.id}`} variant="outline" disabled={locked}
+          onClick={() => actions.reviewCalibration(result.target.id)}>{t('calibration.reviewResult')}</Button>
+      </section>)}
 
     {localProfile && <section className="resume-profile" aria-label={t('devices.localProfile')}>
       <span className="resume-profile-icon"><SlidersHorizontal aria-hidden="true" /></span>

@@ -19,12 +19,12 @@ function KeyboardWithLock() {
 }
 
 /** Static diagrams of locking and data exchange, not device telemetry. */
-export function KeyboardLockIllustration({ variant = 'lock' }: { variant?: 'lock' | 'transfer' }) {
+export function KeyboardLockIllustration({ variant = 'lock', label }: { variant?: 'lock' | 'transfer'; label?: string }) {
   const { t } = useI18n();
   const transferring = variant === 'transfer';
   return <svg className="keyboard-lock-illustration" data-variant={variant}
     viewBox={transferring ? '0 0 468 156' : '24 22 272 108'} fill="none"
-    role="img" aria-label={t(transferring ? 'operation.transferIllustration' : 'confirm.lockIllustration')} focusable="false">
+    role="img" aria-label={label ?? t(transferring ? 'operation.transferIllustration' : 'confirm.lockIllustration')} focusable="false">
     {transferring ? <>
       <Laptop x={4} y={6} width={152} height={152} strokeWidth={.3} aria-hidden="true" />
       <g className="keyboard-transfer-arrows" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">

@@ -8,6 +8,11 @@ import {
   type KeyboardModel,
 } from './devices/index';
 import type { DeviceIdentity } from './protocol';
+import {
+  createCalibrationRun, calibrationPacket, calibrationRecorder, initialCalibration,
+  type CalibrationAvailability, type CalibrationTarget, type CalibrationRun,
+  type CalibrationSnapshot, type CalibrationCapture,
+} from './calibration';
 import type {
   ConfigDevice,
   HIDAccess,
@@ -17,6 +22,7 @@ import type {
   ConnectionState,
   OperationProgress,
   TransferProgress,
+  PacketObservation,
 } from './types/hid';
 import {
   MAX_REPORTS,
@@ -54,27 +60,35 @@ export function validateDescriptor(device: ConfigDevice, models = supportedModel
     assert(matching, msg('error.descriptor'));
   }
 }
+const calibrationCleanupToken = Symbol('calibration cleanup');
 export class PacketChannel {
   device: ConfigDevice;
   timeout: number;
+  private sendTimeout: number;
+  private inFlight = 0;
+  private observers = new Set<(event: PacketObservation) => void>();
   queue: Uint8Array[];
   waiter: {
     resolve: (bytes: Uint8Array) => void;
     reject: (error: Error) => void;
     timer: ReturnType<typeof setTimeout>;
+    cleanup: () => void;
   } | null;
   failure: Error | null;
   listener: (event: Event) => void;
-  constructor(device: ConfigDevice, { timeout = 2500 } = {}) {
+  constructor(device: ConfigDevice, { timeout = 2500, sendTimeout = 5000 } = {}) {
     this.device = device;
     this.timeout = timeout;
+    this.sendTimeout = sendTimeout;
     this.queue = [];
     this.waiter = null;
     this.failure = null;
     this.listener = (rawEvent) => {
       const event = rawEvent as HIDInputReportEvent;
-      if (event.reportId !== 0 || event.device !== this.device) return;
+      if (event.device !== this.device) return;
       const bytes = new Uint8Array(event.data.buffer, event.data.byteOffset, event.data.byteLength).slice();
+      this.observe({ event: 'rx', reportId: event.reportId, bytes });
+      if (event.reportId !== 0) return;
       if (bytes.length !== 64) {
         this.fail(new ProtocolError(msg('error.inputLength', { length: bytes.length })));
         return;
@@ -83,6 +97,7 @@ export class PacketChannel {
         const waiter = this.waiter;
         this.waiter = null;
         clearTimeout(waiter.timer);
+        waiter.cleanup();
         waiter.resolve(bytes);
       } else if (this.queue.length < MAX_REPORTS + 8) this.queue.push(bytes);
       else this.fail(new ProtocolError(msg('error.deviceOverflow')));
@@ -99,6 +114,7 @@ export class PacketChannel {
     this.queue.length = 0;
     if (this.waiter) {
       clearTimeout(this.waiter.timer);
+      this.waiter.cleanup();
       this.waiter.reject(error);
       this.waiter = null;
     }
@@ -107,15 +123,51 @@ export class PacketChannel {
     this.device.removeEventListener('inputreport', this.listener);
     this.fail(new ProtocolError(msg('error.disconnected')));
   }
+  get sending() { return this.inFlight > 0; }
+  watch(observer: (event: PacketObservation) => void) {
+    this.observers.add(observer);
+    return () => { this.observers.delete(observer); };
+  }
+  private observe(event: PacketObservation) {
+    this.observers.forEach(observer => observer({ ...event, bytes: event.bytes.slice() }));
+  }
   async send(bytes: Uint8Array) {
     if (this.failure) throw this.failure;
+    await this.transmit(bytes);
+  }
+  // Only HIDSession's owned terminal cleanup can cross a failed channel.
+  async unlockCalibration(token: typeof calibrationCleanupToken) {
+    assert(token === calibrationCleanupToken && !this.sending, msg('calibration.unlockUncertain'));
+    await this.transmit(calibrationPacket('unlock'));
+  }
+  private async transmit(bytes: Uint8Array) {
     assert(this.device.opened && bytes instanceof Uint8Array && bytes.length === 64, msg('error.output'));
     let timer: ReturnType<typeof setTimeout> | undefined;
     try {
+      this.observe({ event: 'tx-start', reportId: 0, bytes });
+      this.inFlight++;
+      let raw: Promise<void>;
+      try { raw = this.device.sendReport(0, bytes); }
+      catch (error) {
+        this.inFlight--;
+        this.observe({ event: 'tx-rejected', reportId: 0, bytes });
+        throw error;
+      }
+      const sending = raw.then(() => {
+        this.inFlight--;
+        this.observe({ event: 'tx-sent', reportId: 0, bytes });
+      }, (error: unknown) => {
+        this.inFlight--;
+        this.observe({ event: 'tx-rejected', reportId: 0, bytes });
+        throw error;
+      });
       await Promise.race([
-        this.device.sendReport(0, bytes),
+        sending,
         new Promise((_, reject) => {
-          timer = setTimeout(() => reject(new ProtocolError(msg('error.sendTimeout'))), 5000);
+          timer = setTimeout(() => {
+            this.observe({ event: 'tx-timeout', reportId: 0, bytes });
+            reject(new ProtocolError(msg('error.sendTimeout')));
+          }, this.sendTimeout);
         }),
       ]);
     } catch (cause) {
@@ -126,23 +178,36 @@ export class PacketChannel {
       clearTimeout(timer);
     }
   }
-  receive(): Promise<Uint8Array> {
+  receive({ timeout = this.timeout, signal, timeoutMessage = msg('error.receiveTimeout') }: {
+    timeout?: number; signal?: AbortSignal; timeoutMessage?: Message;
+  } = {}): Promise<Uint8Array> {
     if (this.failure) return Promise.reject(this.failure);
+    if (signal?.aborted) return Promise.reject(new ProtocolError(msg('calibration.interrupted')));
     if (this.queue.length) return Promise.resolve(this.queue.shift()!);
     assert(!this.waiter, msg('error.parallelRead'));
     return new Promise((resolve, reject) => {
+      const cleanup = () => signal?.removeEventListener('abort', cancel);
+      const cancel = () => {
+        clearTimeout(timer);
+        cleanup();
+        this.waiter = null;
+        reject(new ProtocolError(msg('calibration.interrupted')));
+      };
       const timer = setTimeout(() => {
         this.waiter = null;
-        reject(new ProtocolError(msg('error.receiveTimeout')));
-      }, this.timeout);
-      this.waiter = { resolve, reject, timer };
+        cleanup();
+        reject(new ProtocolError(timeoutMessage));
+      }, timeout);
+      this.waiter = { resolve, reject, timer, cleanup };
+      signal?.addEventListener('abort', cancel, { once: true });
     });
   }
 }
-export async function readVersion(channel: PacketChannel) {
+export async function readVersion(channel: PacketChannel, signal?: AbortSignal) {
+  assert(!signal?.aborted, msg('calibration.interrupted'));
   channel.reset();
   await channel.send(command(0xf9));
-  const r = await channel.receive();
+  const r = await channel.receive({ signal });
   assert(r[0] === 0 && r[1] === 0xf9, msg('error.versionResponse'));
   const end = r.indexOf(0, 2),
     version = new TextDecoder().decode(r.slice(2, end === -1 ? 64 : end));
@@ -274,6 +339,7 @@ export interface ConnectedHIDDevice {
   product: string;
   version: string;
   hasLiveBaseline: boolean;
+  calibration: CalibrationAvailability;
 }
 export class HIDSession extends EventTarget {
   activeDeviceId: string | null = null;
@@ -284,6 +350,16 @@ export class HIDSession extends EventTarget {
   private deviceSequence = 0;
   private epochSequence = 0;
   private openingChannel: PacketChannel | null = null;
+  private calibrationTargets = new WeakMap<CalibrationTarget, DeviceConnection>();
+  private calibrationCaptures = new Map<string, CalibrationCapture>();
+  private calibrationOwner: {
+    target: CalibrationTarget;
+    record: DeviceConnection;
+    engine: ReturnType<typeof createCalibrationRun>;
+    run: CalibrationRun;
+  } | null = null;
+  private calibrationTimeout: number;
+  private sendTimeout: number;
   readonly models: readonly KeyboardModel[];
   model: KeyboardModel | null = null;
   connectionSource: 'automatic' | 'manual' | null = null;
@@ -311,12 +387,17 @@ export class HIDSession extends EventTarget {
   connectedListener: () => void;
   disconnectedListener: (event: Event) => void;
   private started = false;
-  constructor(hid: HIDAccess | null, { timeout = 2500, retryMs = 2500, models = supportedModels } = {}) {
+  constructor(hid: HIDAccess | null, {
+    timeout = 2500, retryMs = 2500, models = supportedModels,
+    calibrationTimeout = 10000, sendTimeout = 5000,
+  } = {}) {
     super();
     this.models = models;
     this.hid = hid;
     this.timeout = timeout;
     this.retryMs = retryMs;
+    this.calibrationTimeout = calibrationTimeout;
+    this.sendTimeout = sendTimeout;
     this.device = null;
     this.channel = null;
     this.state = 'waiting';
@@ -335,6 +416,7 @@ export class HIDSession extends EventTarget {
     };
     this.disconnectedListener = (event) => {
       const device = (event as HIDConnectionEvent).device;
+      if (this.calibrationOwner?.record.device === device) this.calibrationOwner.engine.interrupt();
       if (device === this.device) this.drop(msg('hid.unplugged'));
       else {
         const id = this.deviceIds.get(device);
@@ -365,7 +447,127 @@ export class HIDSession extends EventTarget {
       product: String(record.identity.Product ?? record.model.name),
       version: record.version,
       hasLiveBaseline: record.lastRead?.epoch === record.epoch && record.lastRead.device === record.device,
+      calibration: this.calibrationAvailability(record),
     }));
+  }
+  private calibrationAvailability(record: DeviceConnection): CalibrationAvailability {
+    const match = record.model.calibration?.find(candidate =>
+      candidate.vendorId === record.device.vendorId && candidate.productId === record.device.productId &&
+      candidate.version === record.version);
+    if (!match) return 'unsupported';
+    try { validateDescriptor(record.device, [record.model]); }
+    catch { return 'unsupported'; }
+    return 'available';
+  }
+  calibrationTarget(id: string): CalibrationTarget {
+    const record = this.connections.get(id);
+    assert(record?.device.opened && !this.stopped, msg('calibration.changed'));
+    const availability = this.calibrationAvailability(record);
+    assert(availability === 'available', msg('calibration.unsupported'));
+    const target = Object.freeze({ id, number: Number(id.slice('device-'.length)),
+      name: record.device.productName || record.model.name, model: record.model.id,
+      version: record.version, epoch: record.epoch });
+    this.calibrationTargets.set(target, record);
+    return target;
+  }
+  calibrationCapture(id: string): CalibrationCapture | null {
+    const capture = this.calibrationCaptures.get(id);
+    return capture ? structuredClone(capture) : null;
+  }
+  beginCalibration(
+    target: CalibrationTarget,
+    onUpdate: (state: CalibrationSnapshot) => void,
+    { recordTrace = false } = {},
+  ): CalibrationRun {
+    assert(!this.pending && !this.authorizing && !this.calibrationOwner && !this.stopped, msg('calibration.busy'));
+    const record = this.calibrationTargets.get(target);
+    assert(record && this.connections.get(target.id) === record, msg('calibration.changed'));
+    const checkTarget = () => {
+      assert(!this.stopped && this.connections.get(target.id) === record &&
+        record.epoch === target.epoch && record.device.opened && record.version === target.version,
+      msg('calibration.changed'));
+      const availability = this.calibrationAvailability(record);
+      assert(availability === 'available', msg('calibration.unsupported'));
+    };
+    checkTarget();
+    // A confirmation target is single-use, even if a later attempt fails.
+    this.calibrationTargets.delete(target);
+    const channel = record.channel;
+    let current = initialCalibration();
+    const recorder = recordTrace ? calibrationRecorder(target, record.device) : null;
+    this.calibrationCaptures.delete(target.id);
+    const unwatch = channel.watch(event => {
+      recorder?.record(event, current.phase);
+      if (event.event === 'rx' && event.reportId === 0 && current.phase === 'awaiting-held-keys')
+        engine.interrupt(msg('calibration.unexpectedReply'));
+    });
+    let unlockAttempted = false;
+    const engine = createCalibrationRun({
+      identify: async signal => {
+        checkTarget();
+        const version = await readVersion(channel, signal);
+        checkTarget();
+        assert(version === target.version && identifyModel(record.device, version, this.models)?.id === record.model.id,
+          msg('calibration.changed'));
+      },
+      send: async bytes => {
+        checkTarget();
+        assert(!channel.queue.length && !channel.waiter, msg('calibration.unexpectedReply'));
+        await channel.send(bytes);
+      },
+      receive: signal => channel.receive({ signal, timeout: this.calibrationTimeout, timeoutMessage: msg('calibration.timeout') }),
+      changingCalibration: () => {
+        checkTarget();
+        record.lastRead = null;
+        if (this.activeDeviceId === target.id && this.device === record.device) this.lastRead = null;
+        this.notify();
+      },
+      unlock: async () => {
+        if (unlockAttempted || this.connections.get(target.id) !== record || record.epoch !== target.epoch ||
+          !record.device.opened || channel.sending) return 'unknown';
+        unlockAttempted = true;
+        try {
+          await channel.unlockCalibration(calibrationCleanupToken);
+          return this.connections.get(target.id) === record && record.epoch === target.epoch && record.device.opened ? 'sent' : 'unknown';
+        } catch { return channel.sending ? 'unknown' : 'failed'; }
+      },
+    }, state => {
+      current = state;
+      if (state.phase === 'awaiting-held-keys' && (channel.failure || channel.queue.length))
+        engine.interrupt(msg('calibration.unexpectedReply'));
+      onUpdate(state);
+    });
+    // Install ownership before exclusive() notifies store subscribers.
+    const owner = { target, record, engine, run: engine.run };
+    this.calibrationOwner = owner;
+    const done = this.exclusive(async () => {
+      try {
+        const result = await engine.execute();
+        if (result.error) this.retireCalibrationConnection(target, record);
+        recorder?.finish(result);
+        if (recorder) this.calibrationCaptures.set(target.id, recorder.snapshot());
+        return result;
+      } finally {
+        unwatch();
+        if (this.calibrationOwner === owner) this.calibrationOwner = null;
+      }
+    });
+    const run: CalibrationRun = {
+      done,
+      calibrateHeldKeys: () => engine.run.calibrateHeldKeys(),
+      finish: async () => { await engine.run.finish(); return done; },
+    };
+    owner.run = run;
+    return run;
+  }
+  private retireCalibrationConnection(target: CalibrationTarget, record: DeviceConnection) {
+    this.ignoredDevices.add(record.device);
+    record.lastRead = null;
+    if (this.connections.get(target.id) === record) {
+      if (this.activeDeviceId === target.id && this.device === record.device) this.drop(msg('calibration.interrupted'));
+      else { this.connections.delete(target.id); record.channel.close(); this.notify(); }
+    }
+    if (record.device.opened) void record.device.close().catch(() => {});
   }
   selectDevice(id: string, allowDisconnected = false): boolean {
     if (this.pending || this.authorizing || this.stopped) return false;
@@ -429,6 +631,11 @@ export class HIDSession extends EventTarget {
   async stop() {
     this.stopped = true;
     clearInterval(this.timer);
+    const calibration = this.calibrationOwner;
+    if (calibration) {
+      calibration.engine.interrupt();
+      await calibration.run.done;
+    }
     this.hid?.removeEventListener('connect', this.connectedListener);
     this.hid?.removeEventListener('disconnect', this.disconnectedListener);
     this.openingChannel?.close();
@@ -504,6 +711,7 @@ export class HIDSession extends EventTarget {
     }
   }
   async open(device: ConfigDevice, source: 'automatic' | 'manual' = 'manual'): Promise<string> {
+    assert(!this.calibrationOwner, msg('calibration.busy'));
     validateDescriptor(device, this.models);
     let id = this.deviceIds.get(device);
     if (id && this.connections.has(id) && device.opened) return id;
@@ -519,7 +727,7 @@ export class HIDSession extends EventTarget {
     try {
       if (!device.opened) await device.open();
       assert(!this.stopped, msg('error.connectionInterrupted'));
-      channel = new PacketChannel(device, { timeout: this.timeout });
+      channel = new PacketChannel(device, { timeout: this.timeout, sendTimeout: this.sendTimeout });
       this.openingChannel = channel;
       const version = await readVersion(channel);
       assert(device.opened && !this.stopped, msg('error.connectionChanged'));
@@ -552,6 +760,7 @@ export class HIDSession extends EventTarget {
     }
   }
   drop(message: Message) {
+    if (this.calibrationOwner?.record.device === this.device) this.calibrationOwner.engine.interrupt();
     this.epochSequence = Math.max(this.epochSequence, this.epoch) + 1;
     this.epoch = this.epochSequence;
     if (this.activeDeviceId) this.connections.delete(this.activeDeviceId);
@@ -566,6 +775,7 @@ export class HIDSession extends EventTarget {
     this.setState('waiting', message);
   }
   async disconnect(manual = true) {
+    assert(!this.calibrationOwner, msg('calibration.busy'));
     const device = this.device;
     await this.exclusive(async () => {
       if (manual && device) this.ignoredDevices.add(device);
@@ -577,6 +787,7 @@ export class HIDSession extends EventTarget {
     });
   }
   async disconnectDevice(id: string) {
+    assert(!this.calibrationOwner, msg('calibration.busy'));
     if (id === this.activeDeviceId) return this.disconnect();
     const record = this.connections.get(id);
     if (!record) return;
@@ -602,6 +813,7 @@ export class HIDSession extends EventTarget {
     assert(this.connected && this.channel && this.model && this.epoch === epoch, msg('error.readRequired'));
   }
   async read(onProgress: (progress: OperationProgress) => void = () => {}) {
+    assert(!this.calibrationOwner, msg('calibration.busy'));
     const epoch = this.epoch;
     return this.exclusive(async () => {
       this.assertReady(epoch);
@@ -658,6 +870,7 @@ export class HIDSession extends EventTarget {
     saveBackup: (profile: Profile, reason: string) => Promise<string>,
     onProgress: (progress: OperationProgress) => void = () => {},
   ) {
+    assert(!this.calibrationOwner, msg('calibration.busy'));
     assert(this.hasLiveBaseline && this.lastRead, msg('error.readBeforeWrite'));
     assert(desired.model.id === this.model?.id, msg('error.modelMismatch'));
     const target = desired.clone(),

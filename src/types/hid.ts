@@ -35,6 +35,11 @@ export interface HIDInputReportEvent extends Event {
 export interface HIDConnectionEvent extends Event {
   device: ConfigDevice;
 }
+export interface PacketObservation {
+  event: 'rx' | 'tx-start' | 'tx-sent' | 'tx-rejected' | 'tx-timeout';
+  reportId: number;
+  bytes: Uint8Array;
+}
 export type ConnectionState =
   'waiting' | 'unsupported' | 'authorizing' | 'connecting' | 'connected' | 'error';
 export type TransferProgress = {

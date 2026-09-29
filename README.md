@@ -24,13 +24,14 @@ You need an ATOM66, a USB data cable, and desktop Chrome or Edge. Close other ke
 
 **The keyboard is temporarily locked during reads and writes. You cannot type during this time.** Keep the USB cable connected until the operation finishes.
 
-To try the interface without a keyboard, choose **Offline demo** on the **Connect a device** page. Editing and importing change the configuration in the page; the keyboard changes only after you confirm a write.
+To try the interface without a keyboard, choose **Offline demo** on the **Connect a device** page. Editing and importing change only the configuration in the page. Writing a configuration and starting calibration each require confirmation.
 
 ## Features
 
 - **Keys and macros:** Edit the normal, right Fn, and left Fn layers. Set shortcuts, rapid fire, and macros, with undo and redo.
 - **Configuration files:** Import JSON and ATOM66 Windows `.pro` files, export JSON, and manage local browser backups.
 - **Devices:** Manage multiple keyboards and read key counts. Set per-key colors on RGB models.
+- **Key calibration:** Use the guided release/held-key workflow on the [enabled model and firmware](docs/usage.md#key-calibration).
 - **Offline editing:** Try the app, import files, and edit without a connected keyboard. The interface supports Simplified Chinese and English.
 
 ## Where your configuration is saved
@@ -41,7 +42,7 @@ Once loaded, the app does not upload your keyboard configuration or key counts. 
 
 ## Current limitations
 
-- No firmware updates, sensor calibration, or global macro recording.
+- No firmware updates or global macro recording. Calibration on real hardware still needs validation.
 - An interrupted write may leave partial changes. There is no automatic rollback. Read the keyboard again, check its state, and restore a backup from before the write if needed.
 - Connecting requires a browser with WebHID support. Other browsers can use offline features only.
 

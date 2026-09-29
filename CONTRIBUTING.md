@@ -40,6 +40,16 @@ The project uses React, strict TypeScript, Vite, Zustand, and shadcn/ui. See [Ar
 
 Run `npm run check` before submitting code. For documentation-only changes, check links, commands, and behavior descriptions, then run `git diff --check`.
 
+## Calibration
+
+Calibration is available by default in the development server and production builds. Use the normal `npm run dev` or `npm run build` command; no environment flag is required.
+
+The enabled ATOM66 combinations are `0483:522A` with firmware `66EC(S);V1.4.4;V1.0;`, and `0483:502A` with firmware `66EC(XRGB)BLe;V1.2.5;V1.0;`. Each requires the exact firmware and matching 64-byte configuration reports. Other combinations cannot start calibration. Default availability does not change the evidence status: no firmware is hardware-qualified yet. Connecting only identifies the device; calibration still requires the user to open the tool and confirm **Start calibration**.
+
+See the [user flow and recovery limits](docs/usage.md#key-calibration), [module behavior](docs/architecture.md#calibration), and [implementation plan](docs/calibration-implementation-plan.md). The response deadline is 10 seconds per calibration stage, with a 5-second send limit; these are provisional failure bounds, not measured device timings. FakeHID tests use synthetic responses. Real-device qualification still needs an explicitly initiated hardware session, official-tool traffic comparison, persistence checks, and a tested recovery procedure.
+
+Optional calibration diagnostics stay in memory until explicitly downloaded. They use `niz-calibration-capture`, not the configuration read-capture format. Keep private captures outside the repository and build output. Do not run the existing configuration replay command on calibration traces.
+
 ## Make changes
 
 - Reuse components in `src/components/ui/` and theme tokens in `src/styles.css`.

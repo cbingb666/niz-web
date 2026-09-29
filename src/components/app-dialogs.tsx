@@ -3,6 +3,7 @@ import { backupReason } from '@/i18n/core';
 import { useAppStore } from '@/store/context';
 import { OperationOverlay } from './operation-overlay';
 import { ConfirmationDialog } from './confirmation-dialog';
+import { CalibrationDialog } from './calibration-dialog';
 import { ChangeReview } from './change-review';
 import { ActivityLog } from './activity-log';
 import { DeviceDetails } from './connected-device';
@@ -15,7 +16,10 @@ export function AppDialogs() {
   const operation = useAppStore((state) => state.hardwareOperation);
   const backups = useAppStore((state) => state.backupRows);
   const actions = useAppStore((state) => state.actions);
-  if (operation) return <OperationOverlay operation={operation} />;
+  const calibration = useAppStore(state => state.calibration);
+  if (calibration && (operation === 'calibrate' || dialog?.kind === 'calibration'))
+    return <CalibrationDialog key={`${calibration.target.id}:${calibration.target.epoch}`} view={calibration} />;
+  if (operation === 'read' || operation === 'write') return <OperationOverlay operation={operation} />;
   if (!dialog) return null;
   if (dialog.kind === 'confirm') return <ConfirmationDialog dialog={dialog} onConfirm={actions.confirm} />;
   return (

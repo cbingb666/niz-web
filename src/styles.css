@@ -1066,6 +1066,14 @@ main {
 .device-card-grid[data-multiple='true'] .device-card-content > h3 { font-size: 1.5rem; }
 .device-card-actions { display: flex; align-items: center; gap: 8px; width: 100%; }
 .device-card-actions .configure-device { flex: 1; width: auto; }
+.device-calibration { margin-top: 10px; }
+.calibration-heading { display: grid; gap: 6px; }
+.calibration-stage { display: flex; align-items: center; gap: 10px; font-weight: 600; }
+.calibration-stage > svg { width: 20px; height: 20px; flex: none; }
+.calibration-copy { display: grid; gap: 12px; font-size: .9375rem; line-height: 1.7; text-align: left; }
+.calibration-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 12px; }
+.calibration-actions:empty { display: none; }
+.calibration-recovery > svg { color: var(--destructive); flex: none; }
 .device-pending-edits { font-size: .875rem; color: var(--warning); margin-bottom: 16px; }
 .guide-pick-again { align-self: flex-start; min-height: 44px; margin-top: 14px; }
 .device-card-art {

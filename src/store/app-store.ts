@@ -9,6 +9,8 @@ import {
   type Locale,
 } from '../i18n/core';
 import { localizedKeyName } from '../i18n/key-names';
+import { deviceName } from '../i18n/device';
+import { initialCalibration, type CalibrationTarget, type CalibrationSnapshot, type CalibrationRun } from '../calibration';
 import { createStore } from 'zustand/vanilla';
 import { EditorState, type EditorSource } from '../editor';
 import { HIDSession, protocolError, type ConnectedHIDDevice } from '../hid';
@@ -52,7 +54,7 @@ interface ConfirmationDetails {
 export type AppDialog =
   | ({ kind: 'confirm'; title: Message; body: Message; label: Message } & ConfirmationDetails)
   | { kind: 'message'; title: Message; body: Message }
-  | { kind: 'backups' | 'help' | 'activity' | 'device' }
+  | { kind: 'backups' | 'help' | 'activity' | 'device' | 'calibration' }
   | { kind: 'changes'; review: ChangeReview };
 export interface SessionView {
   id: string | null;
@@ -87,6 +89,13 @@ interface EditingSession {
 export interface DeviceView extends ConnectedHIDDevice {
   hasEdits: boolean;
 }
+export interface CalibrationView {
+  target: CalibrationTarget;
+  name: Message;
+  state: CalibrationSnapshot;
+  recordTrace: boolean;
+  hasCapture: boolean;
+}
 export interface AppState {
   page: AppPage;
   model: KeyboardModel;
@@ -115,7 +124,9 @@ export interface AppState {
   disconnectedEditors: { id: string; number: number; model: string }[];
   hasUnsavedChanges: boolean;
   busy: Message;
-  hardwareOperation: 'read' | 'write' | null;
+  hardwareOperation: 'read' | 'write' | 'calibrate' | null;
+  calibration: CalibrationView | null;
+  calibrationResults: Record<string, CalibrationView>;
   reading: boolean;
   status: Message;
   progress: OperationProgress | null;
@@ -161,6 +172,14 @@ export interface AppActions {
   closeDialog(): void;
   confirm(accepted: boolean): void;
   write(): Promise<void>;
+  openCalibration(id: string): void;
+  setCalibrationTrace(record: boolean): void;
+  startCalibration(): Promise<void>;
+  calibrateHeldKeys(): Promise<void>;
+  finishCalibration(): Promise<void>;
+  closeCalibration(): void;
+  reviewCalibration(id: string): void;
+  exportCalibration(): void;
 }
 export interface AppDependencies {
   locale?: Locale;
@@ -179,7 +198,8 @@ const emptyForm = (): EditorForm => ({
   color: '#42ddb4',
 });
 export const isLocked = (state: AppState) =>
-  !!state.busy || state.session.pending > 0 || state.session.authorizing || state.dialog?.kind === 'confirm';
+  !!state.busy || state.session.pending > 0 || state.session.authorizing || state.dialog?.kind === 'confirm' ||
+    (state.dialog?.kind === 'calibration' && state.calibration?.state.phase === 'preparing');
 
 export function createAppStore(dependencies: AppDependencies) {
   const session: HIDSession = dependencies.session;
@@ -191,6 +211,7 @@ export function createAppStore(dependencies: AppDependencies) {
   let logId = 0;
   let started = false;
   let disposed = false;
+  let calibrationRun: CalibrationRun | null = null;
   let resolveConfirmation: ((accepted: boolean) => void) | null = null;
   let unregisterTools = () => {};
   let modelContext: ModelContext | undefined;
@@ -521,6 +542,71 @@ export function createAppStore(dependencies: AppDependencies) {
       );
     }
     const actions: AppActions = {
+      openCalibration(id) {
+        if (disposed || isLocked(get()) || get().dialog) return;
+        try {
+          const target = session.calibrationTarget(id);
+          const devices = session.connectedDevices;
+          const device = devices.find(device => device.id === id)!;
+          set({ calibration: { target, name: deviceName(device, devices), state: initialCalibration(),
+            recordTrace: false, hasCapture: false }, dialog: { kind: 'calibration' } });
+        } catch (error) { fail(error); }
+      },
+      setCalibrationTrace(recordTrace) {
+        const calibration = get().calibration;
+        if (!disposed && calibration?.state.phase === 'preparing') set({ calibration: { ...calibration, recordTrace } });
+      },
+      async startCalibration() {
+        const view = get().calibration;
+        if (disposed || calibrationRun || view?.state.phase !== 'preparing' || get().hardwareOperation) return;
+        let outcome: CalibrationSnapshot = { ...view.state, phase: 'identifying' };
+        let runStarted = false;
+        set({ busy: msg('calibration.phase.identifying'), hardwareOperation: 'calibrate',
+          calibration: { ...view, state: outcome } });
+        try {
+          calibrationRun = session.beginCalibration(view.target, state => {
+            outcome = state;
+            if (!disposed) set({ calibration: { ...view, state } });
+          }, { recordTrace: view.recordTrace });
+          runStarted = true;
+          outcome = await calibrationRun.done;
+        } catch (error) {
+          outcome = { ...outcome, phase: 'failed', error: protocolError(error).description };
+        } finally {
+          calibrationRun = null;
+          const result = { ...view, state: outcome, hasCapture: runStarted && !!session.calibrationCapture(view.target.id) };
+          set(state => ({ busy: '', hardwareOperation: null, calibration: result,
+            calibrationResults: { ...state.calibrationResults, [view.target.id]: result } }));
+          if (!disposed) {
+            log(joinMessages(view.name, ' · ', outcome.error ?? msg('calibration.unlockSent')), !!outcome.error);
+            syncEditor();
+          }
+        }
+      },
+      async calibrateHeldKeys() {
+        if (disposed || get().calibration?.state.phase !== 'awaiting-held-keys' || !calibrationRun) return;
+        // The owning run publishes failures after bounded cleanup, preserving the wizard.
+        await calibrationRun.calibrateHeldKeys().catch(() => {});
+      },
+      async finishCalibration() {
+        if (disposed || get().calibration?.state.phase !== 'awaiting-held-keys' || !calibrationRun) return;
+        await calibrationRun.finish().catch(() => {});
+      },
+      closeCalibration() {
+        if (calibrationRun || get().hardwareOperation === 'calibrate') return;
+        set({ calibration: null, dialog: null });
+      },
+      reviewCalibration(id) {
+        if (disposed || isLocked(get()) || get().dialog) return;
+        const result = get().calibrationResults[id];
+        if (result) set({ calibration: result, dialog: { kind: 'calibration' } });
+      },
+      exportCalibration() {
+        const view = get().calibration;
+        if (disposed || !view?.hasCapture || calibrationRun) return;
+        const capture = session.calibrationCapture(view.target.id);
+        if (capture) download(renderMessage(msg('calibration.download'), get().locale), capture);
+      },
       resumeEditor(id) {
         if (disposed || isLocked(get()) || get().dialog || !editingSessions.get(id)?.editor.profile) return;
         if (session.selectDevice(id, true)) set({ page: 'editor' });
@@ -754,7 +840,8 @@ export function createAppStore(dependencies: AppDependencies) {
         set({ dialog: { kind: 'device' } });
       },
       closeDialog() {
-        if (resolveConfirmation) actions.confirm(false);
+        if (get().dialog?.kind === 'calibration') actions.closeCalibration();
+        else if (resolveConfirmation) actions.confirm(false);
         else set({ dialog: null });
       },
       confirm(accepted) {
@@ -833,6 +920,8 @@ export function createAppStore(dependencies: AppDependencies) {
       hasUnsavedChanges: false,
       busy: '',
       hardwareOperation: null,
+      calibration: null,
+      calibrationResults: {},
       reading: false,
       status: msg('status.initial'),
       progress: null,

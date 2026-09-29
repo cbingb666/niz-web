@@ -6,6 +6,8 @@ import { Script } from 'node:vm';
 import { build } from 'vite';
 import { expect, test, vi } from 'vitest';
 import { JSDOM, VirtualConsole } from 'jsdom';
+import { FakeHID } from './helpers';
+import { CalibrationDevice, calibrationTraffic, rgbCalibrationDevice } from './calibration-helpers';
 
 test('production is one offline HTML with hash CSP and HID permissions', async () => {
   const outDir = resolve(tmpdir(), `niz-web-build-${process.pid}`);
@@ -64,6 +66,41 @@ test('production is one offline HTML with hash CSP and HID permissions', async (
     } finally {
       dom.window.close();
     }
+    // The real production artifact offers calibration by default, while opening
+    // and cancelling its confirmation sends no calibration commands. Synthetic HID only.
+    const devices = [new CalibrationDevice(), rgbCalibrationDevice()];
+    const connected = new JSDOM(html, {
+      url: 'https://niz.example/niz-web/', runScripts: 'dangerously', pretendToBeVisual: true, virtualConsole: console,
+      beforeParse(window) {
+        Object.defineProperty(window, 'isSecureContext', { value: true });
+        Object.defineProperty(window, 'TextDecoder', { value: TextDecoder });
+        Object.defineProperty(window.navigator, 'hid', { value: new FakeHID(devices) });
+        window.localStorage.setItem('atom66.locale', 'en');
+      },
+    });
+    try {
+      await vi.waitFor(() => expect(connected.window.document.querySelectorAll('.device-card')).toHaveLength(devices.length));
+      const document = connected.window.document;
+      const cards = document.querySelectorAll('.device-card');
+      for (const [index, device] of devices.entries()) {
+        const card = cards[index];
+        expect(card.textContent).toContain(device.profile.version);
+        const calibrate = card.querySelector<HTMLButtonElement>('.device-calibration');
+        expect(calibrate).not.toBeNull();
+        expect(calibrate!.disabled).toBe(false);
+        expect(calibrationTraffic(device)).toEqual([]);
+        calibrate!.click();
+        await vi.waitFor(() => expect(document.querySelector('[role="alertdialog"]')).not.toBeNull());
+        const dialog = document.querySelector('[role="alertdialog"]')!;
+        expect(dialog.textContent).toContain('Calibration on real hardware has not yet been verified');
+        const cancel = Array.from(dialog.querySelectorAll('button')).find(button => button.textContent === 'Cancel')!;
+        expect(document.activeElement).toBe(cancel);
+        cancel.click();
+        await vi.waitFor(() => expect(document.querySelector('[role="alertdialog"]')).toBeNull());
+        expect(device.sent.map(bytes => bytes[1])).toEqual([0xf9]);
+      }
+      expect(errors).toEqual([]);
+    } finally { connected.window.close(); }
     const script = scripts[0][1];
     expect(script).toMatch(/data:image\/webp;base64,/);
     expect(() => new Script(script)).not.toThrow();

@@ -101,6 +101,31 @@ Use the control at the top right to switch between Simplified Chinese and Englis
 
 Without a keyboard, choose **Offline demo** on the **Connect a device** page. The built `dist/index.html` contains all runtime resources and translations, so it supports offline import, editing, and export. When opening the file directly, USB and backup permissions depend on the browser and have not been validated on real hardware.
 
+## Key calibration
+
+Calibration is available by default in development and production builds, without an environment flag, for these ATOM66 combinations:
+
+| Device | VID/PID | Exact firmware |
+| --- | --- | --- |
+| `66EC-S` | `0483:522A` | `66EC(S);V1.4.4;V1.0;` |
+| `66EC-XRGB` | `0483:502A` | `66EC(XRGB)BLe;V1.2.5;V1.0;` |
+
+The configuration interface must also match. Other combinations remain unavailable. Calibration on real hardware has not yet been verified, and configuration backups cannot restore calibration data.
+
+On the target device card, choose **Calibrate keys**. This does not select a different editor or read key configurations. Existing edits and drafts remain in the page.
+
+1. Release every key. Optionally enable local diagnostic recording, then choose **Start calibration**. Cancel is focused by default. Use a mouse or trackpad; if starting with Enter/Space, release the activation key before the operation can begin.
+2. Wait for release calibration to finish. Hold one or several affected keys firmly and choose **Calibrate held keys**. Keep holding until the completion message, then release. Repeat for another group if needed, or choose **Finish and unlock**. A pressed-key batch is optional.
+3. After the unlock command is sent, check the affected keys in the local typing area. Its text is not saved in diagnostics. This is a manual check, not proof that every sensor is calibrated or calibration has been saved permanently.
+
+The page stays locked throughout the hardware session, including time waiting for you to hold keys. During communication, Escape and backdrop clicks cannot close it. Between completed stages, **Finish and unlock** is the exit; it does not undo calibration. There are no automatic calibration retries or rollbacks.
+
+After a calibration-changing command, the target's live write baseline is invalidated. Its loaded configuration, staged edits, drafts and undo history remain. Before a later configuration write, preserve your edits and use the existing explicit reread/import flow. Calibration never reloads the editor automatically.
+
+If the operation fails, the page unlocks and a reviewable error remains on the Devices page even if that device had no loaded configuration. Failed connections do not automatically restore. An unlock command may have been sent without proving that typing resumed; a stalled send or disconnect can leave the outcome unknown. Check the keyboard first, use the vendor tool or contact vendor support if it remains abnormal, then explicitly reconnect and read the configuration. Replugging and closing the tab are not guaranteed recovery procedures. No automatic unlock can be promised after a browser crash or forced tab closure.
+
+When recording was enabled before starting, **Export calibration diagnostics** downloads this run's bounded report trace. It is neither a calibration backup nor a configuration import. No diagnostics are uploaded, and no ordinary typed text is recorded.
+
 ## Troubleshooting
 
 ### The keyboard does not appear in the browser
@@ -123,4 +148,4 @@ Export your current configuration, then check browser storage space and privacy 
 
 ### Mouse, media, or lighting actions do not work
 
-The app offers vendor function codes; their effect depends on the keyboard model and firmware. Per-key RGB is available only on RGB models. Firmware updates, sensor calibration, global macro recording, and unverified global device settings are outside this version's scope.
+The app offers vendor function codes; their effect depends on the keyboard model and firmware. Per-key RGB is available only on RGB models. Firmware updates, global macro recording, and unverified global device settings are outside this version's scope. Key calibration is available for the combinations listed above; its real-hardware behavior still needs validation.

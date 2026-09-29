@@ -15,6 +15,7 @@ NIZ Web runs entirely in the browser and accesses the keyboard's USB configurati
 | `src/store/` | Zustand state, actions, device events, and React subscriptions |
 | `src/editor.ts` | Framework-independent editing model, differences, and undo history |
 | `src/hid.ts` | Device communication, connection state, read baselines, and write protection |
+| `src/calibration.ts` | Independent calibration stages, completion validation, outcomes, and bounded diagnostics |
 | `src/protocol.ts` | NIZ EC report parsing, model ownership, and configuration conversion |
 | `src/devices/` | Model definitions and identification registry; `atom66/` includes layout and `.pro` conversion |
 | `src/storage.ts` | IndexedDB backup transactions |
@@ -87,6 +88,18 @@ The editor retains up to 50 applied operations, including linked Fn edits, batch
 | Local backup, device processing, and verification | No transfer percentage; show phase status and a waiting indicator |
 
 Low-level events record actual transfer counts. The interface does not display step numbers or packet details. Counts do not advance while transmission is blocked or after it fails. The page remains locked until the entire operation succeeds or fails.
+
+## Calibration
+
+[Calibration](../CONTRIBUTING.md#calibration) is enabled by default in both development and production builds for the exact tuples declared in the ATOM66 model. Availability is `available` or `unsupported`, based on model identity, VID/PID, firmware and descriptor; it is independent of build mode and environment flags. Model metadata separately retains candidate/validated evidence, and both current entries remain candidates: default availability does not certify hardware behavior. `HIDSession` rechecks the tuple and descriptor when preparing a confirmation target and when beginning the run.
+
+`calibration.ts` owns the release/press sequence, expected `DA`/`DE` replies, user waits and typed outcomes. `HIDSession` resolves a captured connection record without selecting its editor and holds one exclusive operation until finish or failure. Press/finish actions signal that run instead of queueing another exclusive operation. New configuration operations are rejected during calibration. Tokens are single-use and bound to the exact device and connection epoch. There is no automatic calibration on connection, reread, retry, or rollback.
+
+`PacketChannel` tracks the actual send promise separately from its deadline. A private capability permits one terminal unlock on the original open device when no prior send remains unresolved, including after a receive/protocol failure. It cannot reset the failed channel or send arbitrary cleanup commands. Unknown or failed outcomes retire only the target connection and suppress its automatic restoration; other device connections and editors survive. Controlled shutdown interrupts user waits and attempts eligible bounded cleanup before closing handles. Forced closure has no cleanup guarantee.
+
+Calibration invalidates the target's hardware write baseline before a changing command and preserves local editing state. Its snapshots and per-device results are separate from `Profile`. The optional `niz-calibration-capture` trace holds at most 256 observations, marks truncation, distinguishes attempted/sent/rejected/timed-out output and input, and retains complete observed report bytes. It contains no typed test text, is explicitly downloaded, and does not replace existing configuration formats or backups. The current 10-second response deadline is experimental, not measured firmware timing.
+
+The calibration dialog reuses existing UI primitives. It remains interactive only for valid stage actions while the background is inert. Terminal errors release the page operation lock and remain reviewable independently of whether a profile was loaded. WebMCP exposes no calibration action. Hardware qualification remains outstanding; see [research](calibration-research.md) and the [implementation plan](calibration-implementation-plan.md).
 
 ## Interface implementation
 

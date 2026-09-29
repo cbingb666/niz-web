@@ -184,11 +184,11 @@ function AppContent({ notices = [], usbAvailable = false }: AppContentProps) {
     applyDocumentLocale(locale, document);
   }, [locale]);
   useEffect(() => {
-    if (!unsaved) return;
+    if (!unsaved && !operating) return;
     const warn = (event: BeforeUnloadEvent) => { event.preventDefault(); event.returnValue = ''; };
     window.addEventListener('beforeunload', warn);
     return () => window.removeEventListener('beforeunload', warn);
-  }, [unsaved]);
+  }, [unsaved, operating]);
   return (
     <>
       <div className="app-shell" data-page={page} data-changes-collapsed={changesCollapsed || compactChanges} inert={operating} aria-busy={operating}>
