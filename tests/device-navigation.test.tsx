@@ -335,8 +335,8 @@ test('configuring a connected device cannot silently replace a demo with drafts'
 
 test.each([
   { entry: '设备管理', edit: 'mapping' },
-  { entry: '返回设备管理', edit: 'draft' },
-  { entry: '返回设备管理', edit: 'lighting' },
+  { entry: '设备管理', edit: 'draft' },
+  { entry: '设备管理', edit: 'lighting' },
 ])('$entry confirms leaving with $edit changes and preserves them for resuming', async ({ entry, edit }) => {
   const { store, actions } = application();
   await actions.demo();
@@ -367,7 +367,7 @@ test('returning from an unchanged editor needs no confirmation', async () => {
   const { store, actions } = application();
   await actions.demo();
   render(<App store={store} />);
-  fireEvent.click(screen.getByRole('button', { name: '返回设备管理' }));
+  fireEvent.click(screen.getByRole('button', { name: '设备管理' }));
   expect(screen.getByRole('heading', { name: '连接键盘' })).toBeVisible();
   expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
 });

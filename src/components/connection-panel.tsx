@@ -7,9 +7,10 @@ import { Button } from './ui/button';
 export function ConnectionPanel() {
   const { t, text } = useI18n();
   const session = useAppStore((state) => state.session);
+  const profile = useAppStore((state) => state.profile);
   const locked = useAppStore(isLocked);
   const actions = useAppStore((state) => state.actions);
-  if (session.connected) return null;
+  if (session.connected || profile) return null;
   const titles = {
     waiting: t('connection.waiting'),
     connecting: t('connection.connecting'),

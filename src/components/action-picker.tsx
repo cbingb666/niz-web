@@ -1,4 +1,5 @@
 import { useId, useRef, useState, type KeyboardEvent } from 'react';
+import { Check } from 'lucide-react';
 import { KEY_NAMES, ENGLISH_KEY_NAMES, KEY_DESCRIPTIONS, keyDescription, localizedKeyName } from '@/i18n/key-names';
 import { keyAbbreviation, keycapName } from '@/i18n/key-labels';
 import { useI18n } from '@/i18n/use-i18n';
@@ -22,8 +23,8 @@ function groupFor(code: number): Group {
   if ((code >= 15 && code <= 24) || (code >= 29 && code <= 38) || (code >= 43 && code <= 51) || (code >= 56 && code <= 62)) return 'letters';
   return 'navigation';
 }
-export function ActionPicker({ kind = 'key', value, disabled, onChoose }: {
-  kind?: 'key' | 'system'; value?: number; disabled: boolean; onChoose(code: number): void;
+export function ActionPicker({ kind = 'key', value, disabled, showFnHint = true, onChoose }: {
+  kind?: 'key' | 'system'; value?: number; disabled: boolean; showFnHint?: boolean; onChoose(code: number): void;
 }) {
   const { t, locale } = useI18n();
   const id = useId();
@@ -65,14 +66,14 @@ export function ActionPicker({ kind = 'key', value, disabled, onChoose }: {
       <SelectContent>{groups.map((item) => <SelectItem key={item} value={item}>{t(`mapping.${item}`)}</SelectItem>)}</SelectContent>
     </Select>
     <div id={`${id}-result`} className="sr-only" aria-live="polite">{search && matches[highlight] !== undefined ? localizedKeyName(matches[highlight], locale) : ''}</div>
-    {matches.some(code => model.fn.codes.includes(code)) && <p className="fn-scope">{t('mapping.fnScope', { count: model.layers.length })}</p>}
+    {showFnHint && matches.some(code => model.fn.codes.includes(code)) && <p className="fn-scope">{t('mapping.fnScope', { count: model.layers.length })}</p>}
     <div className="action-options" ref={options}>
       {matches.map((code, index) => {
         const abbreviation = keyAbbreviation(code, locale);
         const description = keyDescription(code, locale);
         return <Button key={code} type="button" variant="outline" className={`action-option ${search && index === highlight ? 'search-highlight' : ''}`}
           disabled={disabled} aria-pressed={code === value} onClick={() => onChoose(code)}>
-          <span>{localizedKeyName(code, locale)}</span>
+          <span className="action-option-name">{localizedKeyName(code, locale)}{code === value && <Check aria-hidden="true" />}</span>
           {(abbreviation || search) && <span className="action-option-meta">
             {abbreviation && <span className="key-abbreviation" aria-hidden="true" title={t('mapping.abbreviation', { name: abbreviation })}>{abbreviation}</span>}
             {search && <span className="action-category">{t(`mapping.${groupFor(code)}`)}</span>}

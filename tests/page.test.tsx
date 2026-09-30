@@ -4,11 +4,50 @@ import { StrictMode } from 'react';
 import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { afterEach, expect, test, vi } from 'vitest';
 import { App } from '../src/app';
-import { chooseMappingType, confirmSupportedModel } from './page-helpers';
-import { application, acceptRead, profileFile } from './store-helpers';
+import { chooseMappingType, confirmSupportedModel, openDeviceEditor } from './page-helpers';
+import { application, acceptRead, memoryBackups, profileFile } from './store-helpers';
 import { FakeDevice, FakeHID, fixture } from './helpers';
+import { msg, renderMessage, translate, type Locale } from '../src/i18n/core';
+import { ProtocolError } from '../src/protocol';
 
 afterEach(cleanup);
+
+test.each<Locale>(['zh-CN', 'en'])('offline editing keeps drafts visible and connects from the footer in %s', async locale => {
+  const { store, actions } = application(null, undefined, { locale });
+  const view = render(<App store={store} />);
+  await act(() => actions.demo());
+  const footer = within(view.container.querySelector<HTMLElement>('.commit-bar')!);
+  expect(view.container.querySelector('.connection-bar')).toBeNull();
+  await chooseMappingType(translate(locale, 'mapping.advanced'));
+  fireEvent.change(screen.getByLabelText(new RegExp(translate(locale, 'editor.sequence'))), { target: { value: 'unfinished' } });
+  const editor = screen.getByRole('complementary', { name: translate(locale, 'editor.section') });
+  expect(within(editor).getByText(translate(locale, 'mapping.draft'))).toBeVisible();
+  expect(footer.queryByText(translate(locale, 'mapping.finishDrafts'))).not.toBeInTheDocument();
+  expect(footer.getByRole('button', { name: translate(locale, 'keyboard.export') })).toBeDisabled();
+  fireEvent.click(footer.getByRole('button', { name: translate(locale, 'guide.title') }));
+  expect(store.getState().page).toBe('connect');
+  expect(store.getState().draftIndices).toEqual([0]);
+  await act(() => actions.navigate('editor'));
+  expect(screen.getByLabelText(new RegExp(translate(locale, 'editor.sequence')))).toHaveValue('unfinished');
+});
+
+test('backup failure details remain available in Activity after footer status text is removed', async () => {
+  const device = new FakeDevice();
+  const backups = memoryBackups();
+  const error = msg('error.storageTransaction');
+  vi.mocked(backups.save).mockRejectedValueOnce(new ProtocolError(error));
+  const { store, actions } = application(new FakeHID([device]), backups);
+  const view = render(<App store={store} usbAvailable />);
+  await act(async () => { await actions.start(); await acceptRead(store); });
+  await openDeviceEditor();
+  const footer = within(view.container.querySelector<HTMLElement>('.commit-bar')!);
+  const status = msg('status.readReady', { backup: msg('status.backupFailed') });
+  expect(footer.queryByText(renderMessage(status))).not.toBeInTheDocument();
+  fireEvent.click(footer.getByRole('button', { name: '操作记录' }));
+  expect(within(screen.getByRole('dialog', { name: '操作记录' })).getByText(renderMessage(error))).toBeVisible();
+  act(() => actions.setLocale('en'));
+  expect(within(screen.getByRole('dialog', { name: 'Activity' })).getByText(renderMessage(error, 'en'))).toBeVisible();
+});
 
 test('activity opens from the workbench footer, handles an empty session and keeps diagnostic export read-only', async () => {
   const device = new FakeDevice();

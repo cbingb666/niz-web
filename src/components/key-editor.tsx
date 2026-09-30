@@ -1,5 +1,5 @@
 import { useEffect, useId, useState, type KeyboardEvent } from 'react';
-import { Keyboard, RotateCcw, X } from 'lucide-react';
+import { Check, Keyboard, PencilLine, RotateCcw, X } from 'lucide-react';
 import { useI18n } from '@/i18n/use-i18n';
 import { keyDescription, localizedKeyName } from '@/i18n/key-names';
 import { keycapSummary, localizedSummary } from '@/i18n/profile';
@@ -99,23 +99,30 @@ export function KeyEditor() {
     return def.type === 0 && def.keys.length === 1 && model.fn.codes.includes(def.keys[0]);
   }));
   const target = profile ? localizedSummary(profile, layer * model.keyCount + key, locale) : '—';
-  const mapping = `#${String(key + 1).padStart(2, '0')} - ${text(model.layers[layer])} -> ${target}`;
+  const position = t('keyboard.position', { position: key + 1 });
+  const layerName = text(model.layers[layer]);
+  const changed = changes.includes(layer * model.keyCount + key);
   const description = definition?.keys.length === 1 ? keyDescription(definition.keys[0], locale) : undefined;
   return <aside className="inspector" aria-label={t('editor.section')} tabIndex={0}>
-    <div className="inspector-header">
+    <div className="inspector-header" tabIndex={0} role="group" aria-label={t('mapping.previewTitle')}>
     <div className="key-editor-heading">
       <h2>{t('mapping.previewTitle')}</h2>
-      <Button variant="ghost" size="icon" aria-label={t('editor.reset')} title={t('editor.reset')}
-        disabled={disabled || (!dirty && !changes.some(index => hasFn ? index % model.keyCount === key : index === layer * model.keyCount + key))} onClick={actions.resetKey}><RotateCcw /></Button>
+      <Button variant="ghost" size="sm" aria-label={t('editor.reset')} title={t('editor.reset')}
+        disabled={disabled || (!dirty && !changes.some(index => hasFn ? index % model.keyCount === key : index === layer * model.keyCount + key))} onClick={actions.resetKey}><RotateCcw />{t('editor.reset')}</Button>
     </div>
     <figure className="mapping-preview" aria-label={t('mapping.previewTitle')}>
       <KeycapSample legends={model.layers.map((_, index) => profile ? keycapSummary(profile, index * model.keyCount + key) : '—')}
         position={key} measureKey={key} activeLayer={layer}
         changedLayers={model.layers.map((_, index) => index).filter(index => changes.includes(index * model.keyCount + key))} showNumber={false} />
-      <figcaption aria-live="polite" title={[mapping, description].filter(Boolean).join('\n')}>
-        {mapping}{description && <span className="action-description block">{description}</span>}
+      <figcaption aria-live="polite">
+        <span className="mapping-location"><span>{position}</span>{' '}<span>{layerName}</span></span>{' '}
+        <strong className="mapping-assignment">{target}</strong>
+        {description && <span className="action-description block">{description}</span>}
       </figcaption>
     </figure>
+    {profile && (dirty || changed) && <p className="editor-state" data-draft={dirty} aria-live="polite">
+      {dirty ? <PencilLine aria-hidden="true" /> : <Check aria-hidden="true" />}{t(dirty ? 'mapping.draft' : 'mapping.staged')}
+    </p>}
     </div>
     <div className="inspector-content" tabIndex={0} aria-label={t('mapping.categories')}>
     <div className="mapping-editor">
@@ -126,8 +133,8 @@ export function KeyEditor() {
       </Select>
       <div className="mapping-editor-content">
         {(category === 'key' || category === 'system') && <>
-          {(hasFn || category === 'system') && <p className="fn-scope">{t('mapping.fnScope', { count: model.layers.length })}</p>}
-          <ActionPicker key={category} kind={category} disabled={disabled} value={definition?.type === 0 && definition.keys.length === 1 ? definition.keys[0] : undefined} onChoose={actions.assignKey} />
+          {hasFn && <p className="fn-scope">{t('mapping.fnScope', { count: model.layers.length })}</p>}
+          <ActionPicker key={category} kind={category} showFnHint={!hasFn} disabled={disabled} value={definition?.type === 0 && definition.keys.length === 1 ? definition.keys[0] : undefined} onChoose={actions.assignKey} />
         </>}
         {category === 'chord' && <ShortcutEditor disabled={disabled} onAdvanced={() => selectCategory('advanced')} />}
         {category === 'advanced' && <><p className="field-hint">{t('mapping.advancedHint')}</p><AdvancedKeyEditor /></>}
@@ -135,7 +142,6 @@ export function KeyEditor() {
     </div>
     {hasFn && category !== 'key' && category !== 'system' && <p className="fn-scope">{t('mapping.fnScope', { count: model.layers.length })}</p>}
     {formError && <p className="editor-error" role="alert">{text(formError)}</p>}
-    {profile && (dirty || changes.includes(layer * model.keyCount + key)) && <p className="editor-state" aria-live="polite">{t(dirty ? 'mapping.draft' : 'mapping.staged')}</p>}
     {dirty && category !== 'advanced' && category !== 'chord' && <Button variant="ghost" size="sm" disabled={disabled} onClick={actions.discardForm}>{t('mapping.discard')}</Button>}
     <details className="lighting-section"><summary>{t('lighting.title')}</summary>
       <p className="field-hint">{profile?.lights ? t('lighting.staged') : version && !model.capabilities(version).perKeyRGB ? t('lighting.unsupported') : t('lighting.unavailable')}</p>

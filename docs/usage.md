@@ -35,6 +35,8 @@ Clicking **Disconnect** tries to revoke this site's permission for the device, s
 
 Each ATOM66 key shows its Normal, Right Fn, and Left Fn mappings. Click the mapping you want to edit, then choose an action. Search by Chinese or English names, or by abbreviations. Enable **Show key numbers** to see key positions.
 
+The editor summary shows the selected key position, layer, and current action. It also marks unapplied input and locally staged changes. Use **Devices** in the top bar to return to the device list; your edits are kept. **Import** and **Export** are visible buttons on the right of the bottom bar. When editing offline, use the bottom bar to connect a keyboard or choose one that is already connected.
+
 | Task | Action |
 | --- | --- |
 | Assign a key or system action | Click the target action to stage it |

@@ -2,7 +2,7 @@ import { useI18n } from '@/i18n/use-i18n';
 import { localizedSummary, keycapSummary } from '@/i18n/profile';
 import { renderMessage } from '@/i18n/core';
 import { useRef, type CSSProperties, type KeyboardEvent } from 'react';
-import { ArrowLeft, PanelLeftOpen, RotateCw } from 'lucide-react';
+import { PanelLeftOpen, RotateCw } from 'lucide-react';
 import { isLocked } from '@/store/app-store';
 import { useAppStore } from '@/store/context';
 import { Button } from './ui/button';
@@ -151,7 +151,7 @@ function KeycapGuide({ counts, showNumbers }: { counts: boolean; showNumbers: bo
 }
 
 export function KeyboardPanel({ onEdit, onShowChanges, changesExpanded = false }: { onEdit?: () => void; onShowChanges?: () => void; changesExpanded?: boolean }) {
-  const { t, count } = useI18n();
+  const { t } = useI18n();
   const profile = useAppStore((state) => state.profile);
   const model = useAppStore((state) => state.model);
   const source = useAppStore((state) => state.source);
@@ -170,13 +170,11 @@ export function KeyboardPanel({ onEdit, onShowChanges, changesExpanded = false }
     <div className="keyboard-panel" role="region" aria-label={t('keyboard.layout')} tabIndex={0}>
       <div className="panel-toolbar">
         <div className="keyboard-panel-heading">
-          <Button className="workspace-back" variant="ghost" size="icon" disabled={locked}
-            title={t('devices.back')} aria-label={t('devices.back')} onClick={() => actions.navigate('devices')}><ArrowLeft /></Button>
           <div>
-            <h2>{model.name} · {t('keyboard.layout')}</h2>
+            <h2>{t('keyboard.chooseKey')}</h2>
             <p>
               {profile
-                ? `${t(source === 'demo' ? 'keyboard.demo' : source === 'read' ? 'keyboard.deviceProfile' : 'keyboard.imported')} · ${count(profile.records.length, 'keyboard.records.one', 'keyboard.records.other')}${stale ? ' · ' + t('keyboard.stale') : ''}`
+                ? `${t(source === 'demo' ? 'keyboard.demo' : source === 'read' ? 'keyboard.deviceProfile' : 'keyboard.imported')}${stale ? ' · ' + t('keyboard.stale') : ''}`
                 : t('keyboard.notLoaded')}
             </p>
           </div>
@@ -187,7 +185,7 @@ export function KeyboardPanel({ onEdit, onShowChanges, changesExpanded = false }
             aria-controls="pending-changes" aria-expanded={changesExpanded} onClick={onShowChanges}>
             <PanelLeftOpen />{t('mapping.reviewTitle')}
             <span className="pending-count" aria-label={t('mapping.changeItems', { count: pendingCount })} aria-live="polite">{pendingCount}</span>
-            {draftCount > 0 && <span className="pending-draft-indicator" aria-label={t('mapping.drafts', { count: draftCount })} />}
+            {draftCount > 0 && <span className="pending-draft-label">{t('mapping.unappliedCount', { count: draftCount })}</span>}
           </Button>}
           <Button variant="outline" disabled={!session.connected || locked} onClick={actions.read}>
           <RotateCw />

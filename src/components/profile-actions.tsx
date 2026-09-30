@@ -9,23 +9,31 @@ export function ProfileActions() {
   const { t } = useI18n();
   const profile = useAppStore(state => state.profile);
   const draftCount = useAppStore(state => state.draftIndices.length);
-  const backupCount = useAppStore(state => state.backupRows.length);
-  const backupAvailable = useAppStore(state => state.backupAvailable);
   const locked = useAppStore(isLocked);
   const actions = useAppStore(state => state.actions);
   const input = useRef<HTMLInputElement>(null);
   return <div className="profile-actions">
-    <Button variant="ghost" title={t('keyboard.import')} disabled={locked} onClick={() => input.current?.click()}><Upload /><span className="sr-only">{t('keyboard.import')}</span></Button>
-    <Button variant="ghost" title={t('keyboard.export')} disabled={!profile || locked || draftCount > 0} onClick={actions.exportProfile}><Download /><span className="sr-only">{t('keyboard.export')}</span></Button>
-    <Button variant="ghost" title={t('backup.title')} disabled={locked} onClick={actions.showBackups}>
-      <DatabaseBackup /><span className="sr-only">{t('backup.title')} {backupAvailable ? backupCount : t('common.unavailable')}</span>
-    </Button>
-    <Button id="activity-trigger" variant="ghost" title={t('activity.title')} disabled={locked} aria-haspopup="dialog" onClick={actions.showActivity}><ScrollText /><span className="sr-only">{t('activity.title')}</span></Button>
+    <Button variant="outline" aria-label={t('keyboard.import')} title={t('keyboard.import')} disabled={locked} onClick={() => input.current?.click()}><Upload />{t('common.import')}</Button>
+    <Button variant="outline" aria-label={t('keyboard.export')} title={t('keyboard.export')} disabled={!profile || locked || draftCount > 0} onClick={actions.exportProfile}><Download />{t('common.export')}</Button>
     <input ref={input} type="file" aria-label={t('keyboard.importFile')} accept=".json,.pro,application/json" hidden
       onChange={event => {
         const file = event.currentTarget.files?.[0];
         event.currentTarget.value = '';
         if (file) void actions.importFile(file);
       }} />
+  </div>;
+}
+
+export function ProfileUtilities() {
+  const { t } = useI18n();
+  const backupCount = useAppStore(state => state.backupRows.length);
+  const backupAvailable = useAppStore(state => state.backupAvailable);
+  const locked = useAppStore(isLocked);
+  const actions = useAppStore(state => state.actions);
+  return <div className="profile-utilities">
+    <Button size="icon" variant="ghost" title={t('backup.title')} disabled={locked} onClick={actions.showBackups}>
+      <DatabaseBackup /><span className="sr-only">{t('backup.title')} {backupAvailable ? backupCount : t('common.unavailable')}</span>
+    </Button>
+    <Button id="activity-trigger" size="icon" variant="ghost" title={t('activity.title')} disabled={locked} aria-haspopup="dialog" onClick={actions.showActivity}><ScrollText /><span className="sr-only">{t('activity.title')}</span></Button>
   </div>;
 }
