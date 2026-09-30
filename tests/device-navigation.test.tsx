@@ -175,7 +175,7 @@ test('the guide presents one step at a time and only its third step can request 
   render(<App store={store} usbAvailable />);
   await act(() => actions.start());
   expect(screen.getByRole('heading', { name: '连接键盘' })).toBeVisible();
-  expect(screen.queryByRole('button', { name: '离线演示' })).not.toBeInTheDocument();
+  expect(screen.getByRole('button', { name: '离线演示' })).toBeEnabled();
   expect(screen.queryByRole('button', { name: '配置设备' })).not.toBeInTheDocument();
   openGuide();
   expect(screen.getByRole('heading', { name: '连接 USB 数据线' })).toBeVisible();

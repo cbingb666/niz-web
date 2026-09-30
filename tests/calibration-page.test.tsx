@@ -33,6 +33,7 @@ test('66EC-XRGB V1.2.5 exposes calibration without loading a configuration', asy
   render(<App store={store} usbAvailable />);
   await act(() => actions.start());
   const card = screen.getByRole('article', { name: '66EC-XRGB' });
+  expect(within(card).getByRole('button', { name: '校准按键' })).toBeVisible();
   expect(card).toHaveTextContent('0x502A');
   expect(card).toHaveTextContent('66EC(XRGB)BLe;V1.2.5;V1.0;');
   const entry = within(card).getByRole('button', { name: '校准按键' });

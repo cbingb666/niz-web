@@ -101,6 +101,7 @@ export interface AppState {
   model: KeyboardModel;
   locale: Locale;
   profile: Profile | null;
+  editorName: Message;
   baseline: Profile | null;
   generation: number;
   source: EditorSource;
@@ -121,7 +122,7 @@ export interface AppState {
   showKeyNumbers: boolean;
   session: SessionView;
   connectedDevices: DeviceView[];
-  disconnectedEditors: { id: string; number: number; model: string }[];
+  disconnectedEditors: { id: string; number: number; model: string; name: Message }[];
   hasUnsavedChanges: boolean;
   busy: Message;
   hardwareOperation: 'read' | 'write' | 'calibrate' | null;
@@ -207,6 +208,7 @@ export function createAppStore(dependencies: AppDependencies) {
   let editor = new EditorState();
   let editorDeviceId = session.activeDeviceId;
   const editingSessions = new Map<string, EditingSession>();
+  const knownDevices = new Map<string, { name: string; number: number }>();
   let lastConnection = '';
   let logId = 0;
   let started = false;
@@ -259,14 +261,23 @@ export function createAppStore(dependencies: AppDependencies) {
     }
     function syncEditor() {
       const activeDirty = editor.dirty || Object.keys(get().drafts).length > 0;
+      for (const device of session.connectedDevices)
+        knownDevices.set(device.id, { name: device.product.trim() || device.model.name, number: device.number });
+      const savedDeviceName = (id: string, model: string): Message => msg('devices.numberedName', {
+        name: knownDevices.get(id)?.name ?? model,
+        number: knownDevices.get(id)?.number ?? Number(id.slice('device-'.length)),
+      });
       const connectedDevices = session.connectedDevices.map(device => {
         const saved = editingSessions.get(device.id);
         return { ...device, hasEdits: device.id === editorDeviceId ? activeDirty :
           !!saved && (saved.editor.dirty || Object.keys(saved.drafts).length > 0) };
       });
+      const currentDevice = connectedDevices.find(device => device.id === editorDeviceId);
       set({
         model: editor.model,
         profile: editor.profile?.clone() ?? null,
+        editorName: currentDevice ? deviceName(currentDevice, connectedDevices)
+          : editorDeviceId ? savedDeviceName(editorDeviceId, editor.model.name) : editor.model.name,
         baseline: editor.baseline?.clone() ?? null,
         generation: editor.generation,
         canUndo: editor.canUndo,
@@ -282,7 +293,8 @@ export function createAppStore(dependencies: AppDependencies) {
         connectedDevices,
         disconnectedEditors: [...editingSessions].filter(([id, saved]) =>
           id !== editorDeviceId && !!saved.editor.profile && !connectedDevices.some(device => device.id === id))
-          .map(([id, saved]) => ({ id, number: Number(id.slice('device-'.length)), model: saved.editor.model.name })),
+          .map(([id, saved]) => ({ id, number: Number(id.slice('device-'.length)), model: saved.editor.model.name,
+            name: savedDeviceName(id, saved.editor.model.name) })),
         hasUnsavedChanges: activeDirty || [...editingSessions].some(([id, saved]) =>
           id !== editorDeviceId && (saved.editor.dirty || Object.keys(saved.drafts).length > 0)),
         canWrite:
@@ -896,6 +908,7 @@ export function createAppStore(dependencies: AppDependencies) {
       model: editor.model,
       locale: dependencies.locale ?? defaultLocale,
       profile: null,
+      editorName: '',
       baseline: null,
       generation: 0,
       source: '',
