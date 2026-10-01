@@ -206,6 +206,10 @@ function AppContent({ notices = [], usbAvailable = false }: AppContentProps) {
       </Dialog>}
       {page === 'editor' && narrow && <Dialog open={editorOpen && !operating} onOpenChange={setEditorOpen}>
         <DialogContent className="editor-drawer" closeLabel={t('common.close')} aria-describedby={undefined}
+          onEscapeKeyDown={event => {
+            // Radix handles Escape at document capture, before the editor's key handlers.
+            if (event.target instanceof Element && event.target.closest('[data-editor-escape="true"]')) event.preventDefault();
+          }}
           onCloseAutoFocus={event => {
             event.preventDefault();
             document.querySelector<HTMLButtonElement>('.keyboard .key-layer[aria-pressed="true"]')?.focus({ preventScroll: true });

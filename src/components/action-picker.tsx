@@ -1,5 +1,5 @@
 import { useId, useRef, useState, type KeyboardEvent } from 'react';
-import { Check } from 'lucide-react';
+import { Check, Search, X } from 'lucide-react';
 import { KEY_NAMES, ENGLISH_KEY_NAMES, KEY_DESCRIPTIONS, keyDescription, localizedKeyName } from '@/i18n/key-names';
 import { keyAbbreviation, keycapName } from '@/i18n/key-labels';
 import { useI18n } from '@/i18n/use-i18n';
@@ -23,16 +23,17 @@ function groupFor(code: number): Group {
   if ((code >= 15 && code <= 24) || (code >= 29 && code <= 38) || (code >= 43 && code <= 51) || (code >= 56 && code <= 62)) return 'letters';
   return 'navigation';
 }
-export function ActionPicker({ kind = 'key', value, disabled, showFnHint = true, onChoose }: {
-  kind?: 'key' | 'system'; value?: number; disabled: boolean; showFnHint?: boolean; onChoose(code: number): void;
+export function ActionPicker({ value, disabled, selectionDisabled = false, showFnHint = true, label, onChoose }: {
+  value?: number; disabled: boolean; selectionDisabled?: boolean; showFnHint?: boolean; label?: string; onChoose(code: number): void;
 }) {
   const { t, locale } = useI18n();
   const id = useId();
   const model = useAppStore(state => state.model);
   const [query, setQuery] = useState('');
-  const [group, setGroup] = useState<Group>(kind === 'system' ? 'media' : 'common');
+  const [group, setGroup] = useState<Group>('all');
   const [highlight, setHighlight] = useState(0);
   const options = useRef<HTMLDivElement>(null);
+  const searchInput = useRef<HTMLInputElement>(null);
   const search = normalizeSearch(query.trim());
   const matches = KEY_NAMES.map((_, code) => code).filter((code) => {
     if (code === 200) return false;
@@ -45,34 +46,69 @@ export function ActionPicker({ kind = 'key', value, disabled, showFnHint = true,
     const exact = (code: number) => [localizedKeyName(code, locale), keycapName(code), KEY_NAMES[code], ENGLISH_KEY_NAMES[code]].some(name => normalizeSearch(name) === search);
     matches.sort((a, b) => Number(exact(b)) - Number(exact(a)));
   }
+  const activeIndex = Math.min(highlight, Math.max(0, matches.length - 1));
+  function focusOption(index: number) {
+    const next = Math.max(0, Math.min(matches.length - 1, index));
+    setHighlight(next);
+    const option = options.current?.querySelectorAll<HTMLButtonElement>('button')[next];
+    option?.focus();
+    option?.scrollIntoView?.({ block: 'nearest' });
+  }
+  function clearSearch() {
+    setQuery('');
+    setHighlight(0);
+    searchInput.current?.focus();
+  }
   function navigate(event: KeyboardEvent<HTMLInputElement>) {
     if (event.nativeEvent.isComposing) return;
-    if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+    if ((event.key === 'ArrowDown' || event.key === 'ArrowUp') && !selectionDisabled && matches.length) {
       event.preventDefault();
-      const next = Math.max(0, Math.min(matches.length - 1, highlight + (event.key === 'ArrowDown' ? 1 : -1)));
-      setHighlight(next);
-      options.current?.children[next]?.scrollIntoView?.({ block: 'nearest' });
-    } else if (event.key === 'Enter' && matches[highlight] !== undefined) {
-      event.preventDefault(); onChoose(matches[highlight]);
-    } else if (event.key === 'Escape') { setQuery(''); setHighlight(0); }
+      focusOption(event.key === 'ArrowDown' ? 0 : matches.length - 1);
+    } else if (event.key === 'Enter') {
+      event.preventDefault();
+      if (!disabled && !selectionDisabled && matches[activeIndex] !== undefined) onChoose(matches[activeIndex]);
+    } else if (event.key === 'Escape' && query) {
+      event.preventDefault(); event.stopPropagation(); clearSearch();
+    }
+  }
+  function navigateOptions(event: KeyboardEvent<HTMLButtonElement>, index: number) {
+    if (event.nativeEvent.isComposing) return;
+    const offset = event.key === 'ArrowDown' || event.key === 'ArrowRight' ? 1 : event.key === 'ArrowUp' || event.key === 'ArrowLeft' ? -1 : 0;
+    if (offset || event.key === 'Home' || event.key === 'End') {
+      event.preventDefault();
+      focusOption(event.key === 'Home' ? 0 : event.key === 'End' ? matches.length - 1 : index + offset);
+    } else if (event.key === 'Escape') {
+      event.preventDefault(); event.stopPropagation(); searchInput.current?.focus();
+    }
   }
   return <div className="action-picker">
-    <Label htmlFor={id}>{t('mapping.choose')}</Label>
-    <Input id={id} type="search" value={query} disabled={disabled} autoComplete="off"
-      placeholder={t('mapping.search')} onKeyDown={navigate} aria-describedby={`${id}-result`}
-      onChange={(event) => { setQuery(event.target.value); setHighlight(0); }} />
-    <Select value={group} disabled={disabled} onValueChange={(value) => { setGroup(value as Group); setHighlight(0); }}>
-      <SelectTrigger aria-label={t('mapping.group')}><SelectValue /></SelectTrigger>
+    <Label htmlFor={id}>{label ?? t('mapping.choose')}</Label>
+    <div className="action-search">
+      <Search aria-hidden="true" />
+      <Input ref={searchInput} id={id} type="search" value={query} disabled={disabled} autoComplete="off"
+        data-editor-escape={query ? true : undefined}
+        placeholder={t('mapping.search')} onKeyDown={navigate} aria-controls={`${id}-options`} aria-describedby={`${id}-hint`}
+        onChange={(event) => { setQuery(event.target.value); setHighlight(0); }} />
+      {query && <Button variant="ghost" size="icon" disabled={disabled} aria-label={t('mapping.clearSearch')} onClick={clearSearch}><X /></Button>}
+    </div>
+    {search ? <p className="field-hint" id={`${id}-hint`}>{t('mapping.searchAll')}</p> : <div className="action-filter">
+      <Label htmlFor={`${id}-group`}>{t('mapping.group')}</Label>
+      <Select value={group} disabled={disabled} onValueChange={(value) => { setGroup(value as Group); setHighlight(0); }}>
+      <SelectTrigger id={`${id}-group`}><SelectValue /></SelectTrigger>
       <SelectContent>{groups.map((item) => <SelectItem key={item} value={item}>{t(`mapping.${item}`)}</SelectItem>)}</SelectContent>
-    </Select>
-    <div id={`${id}-result`} className="sr-only" aria-live="polite">{search && matches[highlight] !== undefined ? localizedKeyName(matches[highlight], locale) : ''}</div>
+      </Select>
+      <span className="sr-only" id={`${id}-hint`}>{t('mapping.searchKeys')}</span>
+    </div>}
+    <div className="action-result-count" role="status">{t('mapping.results', { count: matches.length })}</div>
     {showFnHint && matches.some(code => model.fn.codes.includes(code)) && <p className="fn-scope">{t('mapping.fnScope', { count: model.layers.length })}</p>}
-    <div className="action-options" ref={options}>
+    <div id={`${id}-options`} className="action-options" ref={options} role="group" aria-label={label ?? t('mapping.choose')}>
       {matches.map((code, index) => {
         const abbreviation = keyAbbreviation(code, locale);
         const description = keyDescription(code, locale);
-        return <Button key={code} type="button" variant="outline" className={`action-option ${search && index === highlight ? 'search-highlight' : ''}`}
-          disabled={disabled} aria-pressed={code === value} onClick={() => onChoose(code)}>
+        return <Button key={code} type="button" variant="outline" className="action-option"
+          data-editor-escape="true"
+          disabled={disabled || selectionDisabled} tabIndex={index === activeIndex ? 0 : -1} aria-pressed={code === value}
+          onFocus={() => setHighlight(index)} onKeyDown={event => navigateOptions(event, index)} onClick={() => onChoose(code)}>
           <span className="action-option-name">{localizedKeyName(code, locale)}{code === value && <Check aria-hidden="true" />}</span>
           {(abbreviation || search) && <span className="action-option-meta">
             {abbreviation && <span className="key-abbreviation" aria-hidden="true" title={t('mapping.abbreviation', { name: abbreviation })}>{abbreviation}</span>}

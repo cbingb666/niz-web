@@ -18,7 +18,7 @@ const modes = [
   'editor.mode.macroHold',
   'editor.mode.macroToggle',
 ] as const;
-export function AdvancedKeyEditor() {
+export function AdvancedKeyEditor({ formId }: { formId: string }) {
   const { t, locale } = useI18n();
   const profile = useAppStore((state) => state.profile);
   const form = useAppStore((state) => state.form);
@@ -29,6 +29,7 @@ export function AdvancedKeyEditor() {
   const hint = type === 0 ? t('editor.hint.single') : type === 1 ? t('editor.hint.repeat') : custom ? t('editor.hint.custom') : t('editor.hint.uniform');
   return (
       <form
+        id={formId}
         onSubmit={(event) => {
           event.preventDefault();
           actions.saveForm(true);
@@ -135,14 +136,6 @@ export function AdvancedKeyEditor() {
               {t('editor.customDelay')} <span className="label-note">{t('editor.delayHint')}</span>
             </Label>
           )}
-          <div className="editor-actions">
-            <Button type="submit" variant="secondary">
-              {t('editor.save')}
-            </Button>
-            <Button type="button" variant="ghost" onClick={actions.discardForm}>
-              {t('mapping.discard')}
-            </Button>
-          </div>
         </fieldset>
       </form>
   );

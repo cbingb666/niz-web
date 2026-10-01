@@ -19,11 +19,16 @@ const modifiers = [67, 68, 69, 55, 74, 72, 71, 66];
 function readChord(sequence: string) {
   try { return parseSequence(sequence, { type: 0 }).keys; } catch { return []; }
 }
+function canEditChord(type: string, sequence: string) {
+  if (type !== '0') return false;
+  try { parseSequence(sequence, { type: 0 }); return true; } catch { return false; }
+}
 function ShortcutEditor({ disabled, onAdvanced }: { disabled: boolean; onAdvanced(): void }) {
   const { t, locale } = useI18n();
   const form = useAppStore(state => state.form);
-  const dirty = useAppStore(state => state.formDirty);
   const actions = useAppStore(state => state.actions);
+  const previewId = useId();
+  const recordHintId = useId();
   const [recording, setRecording] = useState(false);
   const [recordError, setRecordError] = useState(false);
   useEffect(() => {
@@ -38,7 +43,9 @@ function ShortcutEditor({ disabled, onAdvanced }: { disabled: boolean; onAdvance
   }
   function record(event: KeyboardEvent<HTMLButtonElement>) {
     if (!recording || disabled || event.nativeEvent.isComposing || event.repeat) return;
+    if (event.key === 'Tab') { setRecording(false); return; }
     event.preventDefault();
+    event.stopPropagation();
     if (event.key === 'Escape') { setRecording(false); return; }
     if (['Control', 'Shift', 'Alt', 'Meta'].includes(event.key)) return;
     try {
@@ -50,24 +57,33 @@ function ShortcutEditor({ disabled, onAdvanced }: { disabled: boolean; onAdvance
     setRecording(false);
   }
   return <div className="shortcut-editor">
-    <Label>{t('mapping.modifiers')}</Label>
+    <div className="shortcut-summary" role="group" aria-labelledby={previewId}>
+      <p id={previewId} className="field-hint">{t('mapping.chordPreview')}</p>
+      <div className="shortcut-preview" aria-live="polite">{keys.map((code, index) => <Button key={`${code}-${index}`} variant="secondary" size="sm" disabled={disabled}
+        aria-label={t('mapping.removeKey', { key: localizedKeyName(code, locale) })} onClick={() => update(keys.filter((_, position) => position !== index))}>{localizedKeyName(code, locale)}<X aria-hidden="true" /></Button>)}
+        {!keys.length && <p className="field-hint">{t('mapping.chordEmpty')}</p>}
+      </div>
+    </div>
+    <div className="shortcut-record">
+      <Button variant="outline" disabled={disabled} aria-pressed={recording && !disabled} aria-describedby={recordHintId}
+        data-editor-escape={recording && !disabled ? true : undefined}
+        onClick={() => { setRecording(value => !value); setRecordError(false); }} onKeyDown={record} onBlur={() => setRecording(false)}><Keyboard />{t(recording && !disabled ? 'mapping.recording' : 'mapping.record')}</Button>
+      <p id={recordHintId} className="field-hint">{t(recording ? 'mapping.recordHint' : 'mapping.recordIdleHint')}</p>
+      {recordError && <p className="editor-error" role="alert">{t('mapping.recordUnsupported')}</p>}
+    </div>
+    <fieldset className="modifier-fieldset">
+    <legend>{t('mapping.modifiers')}</legend>
     <div className="modifier-options">{modifiers.map(code => <Label key={code} className="modifier-option"><Checkbox disabled={disabled} checked={keys.includes(code)}
       onCheckedChange={checked => update(checked ? [...keys, code] : keys.filter(key => key !== code))} />{localizedKeyName(code, locale)}</Label>)}</div>
-    <Label>{t('mapping.mainKey')}</Label>
-    <ActionPicker disabled={disabled} value={mainKeys.length === 1 ? mainKeys[0] : undefined} onChoose={code => update([...new Set([...keys.filter(key => modifiers.includes(key)), code])])} />
-    <div className="shortcut-preview" aria-label={t('mapping.chordPreview')}>{keys.map((code, index) => <Button key={`${code}-${index}`} variant="secondary" size="sm" disabled={disabled}
-      aria-label={t('mapping.removeKey', { key: localizedKeyName(code, locale) })} onClick={() => update(keys.filter((_, position) => position !== index))}>{localizedKeyName(code, locale)}<X /></Button>)}</div>
-    <Button variant="outline" disabled={disabled} onClick={() => { setRecording(value => !value); setRecordError(false); }} onKeyDown={record} onBlur={() => setRecording(false)}><Keyboard />{t(recording && !disabled ? 'mapping.recording' : 'mapping.record')}</Button>
-    <p className="field-hint">{t('mapping.recordHint')}</p>
-    {recordError && <p className="editor-error" role="alert">{t('mapping.recordUnsupported')}</p>}
-    <div className="editor-actions"><Button disabled={disabled || !dirty || !keys.length} onClick={() => actions.saveForm(true)}>{t('mapping.useChord')}</Button>
-      {dirty && <Button variant="ghost" disabled={disabled} onClick={actions.discardForm}>{t('mapping.discard')}</Button>}</div>
+    </fieldset>
+    <ActionPicker label={t('mapping.mainKey')} disabled={disabled} value={mainKeys.length === 1 ? mainKeys[0] : undefined} onChoose={code => update([...new Set([...keys.filter(key => modifiers.includes(key)), code])])} />
     <Button variant="link" size="sm" disabled={disabled} onClick={onAdvanced}>{t('mapping.moreChord')}</Button>
   </div>;
 }
 export function KeyEditor() {
   const { t, locale, text } = useI18n();
   const categoryId = useId();
+  const formId = useId();
   const profile = useAppStore(state => state.profile);
   const baseline = useAppStore(state => state.baseline);
   const model = useAppStore(state => state.model);
@@ -103,6 +119,8 @@ export function KeyEditor() {
   const layerName = text(model.layers[layer]);
   const changed = changes.includes(layer * model.keyCount + key);
   const description = definition?.keys.length === 1 ? keyDescription(definition.keys[0], locale) : undefined;
+  const quickChoice = category === 'key' || category === 'system';
+  const guardedDraft = dirty && (quickChoice || (category === 'chord' && !canEditChord(form.type, form.sequence)));
   return <aside className="inspector" aria-label={t('editor.section')} tabIndex={0}>
     <div className="inspector-header" tabIndex={0} role="group" aria-label={t('mapping.previewTitle')}>
     <div className="key-editor-heading">
@@ -115,7 +133,7 @@ export function KeyEditor() {
         position={key} measureKey={key} activeLayer={layer}
         changedLayers={model.layers.map((_, index) => index).filter(index => changes.includes(index * model.keyCount + key))} showNumber={false} />
       <figcaption aria-live="polite">
-        <span className="mapping-location"><span>{position}</span>{' '}<span>{layerName}</span></span>{' '}
+        <span className="mapping-location"><span>{position}</span>{' '}<span className="mapping-layer">{layerName}</span></span>{' '}
         <strong className="mapping-assignment">{target}</strong>
         {description && <span className="action-description block">{description}</span>}
       </figcaption>
@@ -133,22 +151,37 @@ export function KeyEditor() {
       </Select>
       <div className="mapping-editor-content">
         {(category === 'key' || category === 'system') && <>
+          {guardedDraft && <p className="draft-guard">{t('mapping.finishCurrentDraft')}</p>}
           {hasFn && <p className="fn-scope">{t('mapping.fnScope', { count: model.layers.length })}</p>}
-          <ActionPicker key={category} kind={category} showFnHint={!hasFn} disabled={disabled} value={definition?.type === 0 && definition.keys.length === 1 ? definition.keys[0] : undefined} onChoose={actions.assignKey} />
+          <ActionPicker key={category} showFnHint={!hasFn} disabled={disabled} selectionDisabled={dirty} value={definition?.type === 0 && definition.keys.length === 1 ? definition.keys[0] : undefined} onChoose={actions.assignKey} />
         </>}
-        {category === 'chord' && <ShortcutEditor disabled={disabled} onAdvanced={() => selectCategory('advanced')} />}
-        {category === 'advanced' && <><p className="field-hint">{t('mapping.advancedHint')}</p><AdvancedKeyEditor /></>}
+        {category === 'chord' && <>
+          {guardedDraft && <p className="draft-guard">{t('mapping.finishCurrentDraft')}</p>}
+          <ShortcutEditor disabled={disabled || guardedDraft} onAdvanced={() => selectCategory('advanced')} />
+        </>}
+        {category === 'advanced' && <AdvancedKeyEditor formId={formId} />}
       </div>
     </div>
     {hasFn && category !== 'key' && category !== 'system' && <p className="fn-scope">{t('mapping.fnScope', { count: model.layers.length })}</p>}
-    {formError && <p className="editor-error" role="alert">{text(formError)}</p>}
-    {dirty && category !== 'advanced' && category !== 'chord' && <Button variant="ghost" size="sm" disabled={disabled} onClick={actions.discardForm}>{t('mapping.discard')}</Button>}
     <details className="lighting-section"><summary>{t('lighting.title')}</summary>
       <p className="field-hint">{profile?.lights ? t('lighting.staged') : version && !model.capabilities(version).perKeyRGB ? t('lighting.unsupported') : t('lighting.unavailable')}</p>
-      <div className="lighting-controls"><Input type="color" aria-label={t('lighting.color')} disabled={!profile?.lights || locked} value={form.color} onChange={event => actions.updateForm({ color: event.target.value })} />
-        <Button variant="outline" size="sm" disabled={!profile?.lights || locked} onClick={() => actions.applyColor()}>{t('lighting.key')}</Button>
-        <Button variant="outline" size="sm" disabled={!profile?.lights || locked} onClick={() => actions.applyColor(true)}>{t('lighting.all')}</Button></div>
+      {profile?.lights && <div className="lighting-controls"><Input type="color" aria-label={t('lighting.color')} disabled={locked} value={form.color} onChange={event => actions.updateForm({ color: event.target.value })} />
+        <Button variant="outline" size="sm" disabled={locked} onClick={() => actions.applyColor()}>{t('lighting.key')}</Button>
+        <Button variant="outline" size="sm" disabled={locked} onClick={() => actions.applyColor(true)}>{t('lighting.all')}</Button></div>}
     </details>
     </div>
+    {(!quickChoice || dirty || formError) && <div className="inspector-footer">
+      {formError && <p className="editor-error" role="alert">{text(formError)}</p>}
+      <div className="editor-actions">
+        {quickChoice || guardedDraft ? dirty && <Button disabled={disabled} onClick={() => selectCategory(quickChoice && canEditChord(form.type, form.sequence) ? 'chord' : 'advanced')}>{t('mapping.resumeDraft')}</Button>
+          : <Button type={category === 'advanced' ? 'submit' : 'button'} form={category === 'advanced' ? formId : undefined}
+            disabled={disabled || !dirty || (category === 'chord' && !readChord(form.sequence).length)}
+            onClick={category === 'chord' ? () => actions.saveForm(true) : undefined}>{t(category === 'chord' ? 'mapping.useChord' : 'editor.save')}</Button>}
+        {dirty && <Button variant="ghost" disabled={disabled} onClick={() => {
+          actions.discardForm();
+          document.getElementById(categoryId)?.focus({ preventScroll: true });
+        }}>{t('mapping.discard')}</Button>}
+      </div>
+    </div>}
   </aside>;
 }

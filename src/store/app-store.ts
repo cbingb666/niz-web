@@ -758,6 +758,10 @@ export function createAppStore(dependencies: AppDependencies) {
       saveForm,
       assignKey(code) {
         if (isLocked(get()) || !editor.profile) return;
+        if (get().formDirty) {
+          set({ formError: msg('mapping.finishCurrentDraft') });
+          return;
+        }
         try { applyDefinition({ type: 0, keys: [code] }); }
         catch (error) { set({ formError: protocolError(error).description }); }
       },

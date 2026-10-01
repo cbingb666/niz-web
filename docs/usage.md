@@ -35,20 +35,22 @@ Clicking **Disconnect** opens a confirmation naming the keyboard, with **Cancel*
 
 Each ATOM66 key shows its Normal, Right Fn, and Left Fn mappings. Click the mapping you want to edit, then choose an action. Search by Chinese or English names, or by abbreviations. Enable **Show key numbers** to see key positions.
 
+Action categories default to **All**. Search covers all categories and shows the result count. **Clear search** returns to the category you were browsing. From the search field, press Down to focus the first result, then use arrow keys to browse and Enter to choose. Escape returns to search; pressing it again clears the query.
+
 The editor summary shows the selected key position, layer, and current action. It also marks unapplied input and locally staged changes. Use **Devices** in the top bar to return to the device list; your edits are kept. **Import** and **Export** are visible buttons on the right of the bottom bar. When editing offline, use the bottom bar to connect a keyboard or choose one that is already connected.
 
 | Task | Action |
 | --- | --- |
 | Assign a key or system action | Click the target action to stage it |
 | Leave a mapping unassigned | Choose **Unassigned**; keycaps show “—” |
-| Set a shortcut | Choose modifiers and a main key, then click **Apply this edit** |
+| Set a shortcut | Choose modifiers and a main key, then click **Use this shortcut** |
 | Set a macro or repeat action | Edit the sequence and parameters, then click **Apply this edit** |
 | Restore a key's loaded value | Click **Restore** |
 | Review pending changes | Open **View all changes**; click an entry to return to that key |
 
-Shortcut recording starts only when you enable it and stops when the recording area loses focus. You can still choose shortcuts reserved by the operating system with the mouse. Macros can repeat a set number of times, play while held, or stop on another press. They support a uniform interval or per-step delays.
+Shortcut recording starts only when you enable it. Escape cancels, and Tab stops recording while letting you move to the next control. Recording also stops when the button or window loses focus. To include Tab or Escape in a shortcut, choose it from the action list. You can also choose shortcuts reserved by the operating system from the list. Macros can repeat a set number of times, play while held, or stop on another press. They support a uniform interval or per-step delays.
 
-Unapplied input stays with its key. Switching keys does not apply or discard it. Apply or discard unfinished input before exporting or writing.
+Unapplied input stays with its key and layer when you switch keys, mapping types, language, pages, or devices. If you switch to a picker that cannot edit the current draft, action choices stay disabled until you apply or discard it. **Continue editing** returns to the draft. Apply and discard controls, along with any edit error, stay at the bottom of the editor while its contents scroll. Apply or discard unfinished input before exporting or writing.
 
 Undo and redo retain up to 50 applied operations, including batch edits, linked Fn changes, and lighting changes. Loading a configuration again or completing a successful write clears the history. **Restore** returns to the loaded value; it is not a factory reset.
 

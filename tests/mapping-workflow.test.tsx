@@ -133,9 +133,12 @@ test('mapping type select switches all editors while preserving unapplied input'
   await act(() => actions.demo());
   const original = store.getState().profile!.toJSON();
   expect(screen.getByRole('combobox', { name: '映射类型' })).toHaveTextContent('按键');
+  expect(screen.getByRole('combobox', { name: '功能分类' })).toHaveTextContent('全部');
   await chooseMappingType('系统功能');
+  expect(screen.getByRole('combobox', { name: '功能分类' })).toHaveTextContent('全部');
   expect(screen.getByRole('button', { name: '下一曲' })).toBeInTheDocument();
   await chooseMappingType('快捷键');
+  expect(screen.getByRole('combobox', { name: '功能分类' })).toHaveTextContent('全部');
   expect(screen.getByRole('button', { name: '按下快捷键录入' })).toBeInTheDocument();
   await chooseMappingType('宏 / 高级');
   fireEvent.change(screen.getByLabelText(/按键序列/), { target: { value: 'unfinished' } });
@@ -185,7 +188,7 @@ test('key numbers are opt-in on the layout and guide, appear only in the editor 
   expect(device.sent).toEqual(sent);
 });
 
-test('Unassigned is first in common actions, updates the keycap preview, and Restore recovers the loaded mapping', async () => {
+test('Unassigned is first in all actions, updates the keycap preview, and Restore recovers the loaded mapping', async () => {
   const device = new FakeDevice();
   device.profile.setDefinition(66, { type: 0, keys: [44] });
   const { store, actions } = application(new FakeHID([device]));
@@ -569,4 +572,163 @@ test('returning to an unfinished text edit restores its editor as well as its co
   fireEvent.click(screen.getByRole('button', { name: /普通层，第 1 键，/ }));
   expect(screen.getByRole('combobox', { name: '映射类型' })).toHaveTextContent('宏 / 高级');
   expect(screen.getByLabelText(/按键序列/)).toHaveValue('not-ready');
+});
+
+test.each(['zh-CN', 'en'] as const)('%s search crosses categories and clearing restores the previous filter', async locale => {
+  const { store, actions } = application(null, undefined, { locale });
+  render(<App store={store} />);
+  await act(() => actions.demo());
+  await chooseMappingType(translate(locale, 'mapping.system'));
+  const search = screen.getByRole('searchbox', { name: translate(locale, 'mapping.choose') });
+  const categoryName = translate(locale, 'mapping.group');
+  expect(screen.getByRole('combobox', { name: categoryName })).toHaveTextContent(translate(locale, 'mapping.all'));
+  fireEvent.keyDown(screen.getByRole('combobox', { name: categoryName }), { key: 'ArrowDown' });
+  fireEvent.keyDown(await screen.findByRole('option', { name: translate(locale, 'mapping.media') }), { key: 'Enter' });
+  expect(screen.getByRole('combobox', { name: categoryName })).toHaveTextContent(translate(locale, 'mapping.media'));
+  fireEvent.change(search, { target: { value: 'Esc' } });
+  expect(screen.queryByRole('combobox', { name: categoryName })).not.toBeInTheDocument();
+  expect(screen.getByText(translate(locale, 'mapping.searchAll'))).toBeVisible();
+  expect(screen.getByText(translate(locale, 'mapping.results', { count: 1 }))).toBeVisible();
+  fireEvent.keyDown(search, { key: 'Enter' });
+  expect(store.getState().profile!.definition(0).keys).toEqual([1]);
+  fireEvent.change(search, { target: { value: 'no-such-action' } });
+  expect(screen.getByText(translate(locale, 'mapping.noResults'))).toBeVisible();
+  const before = store.getState().profile!.toJSON();
+  fireEvent.keyDown(search, { key: 'Enter' });
+  expect(store.getState().profile!.toJSON()).toEqual(before);
+  fireEvent.click(screen.getByRole('button', { name: translate(locale, 'mapping.clearSearch') }));
+  expect(search).toHaveValue('');
+  expect(search).toHaveFocus();
+  expect(screen.getByRole('combobox', { name: categoryName })).toHaveTextContent(translate(locale, 'mapping.media'));
+  expect(screen.getByRole('button', { name: localizedKeyName(111, locale) })).toBeVisible();
+});
+
+test('action choices use one tab stop and real focus for arrow navigation without applying on focus', async () => {
+  const { store, actions } = application();
+  render(<App store={store} />);
+  await act(() => actions.demo());
+  const search = screen.getByRole('searchbox');
+  fireEvent.change(search, { target: { value: 'screen brightness' } });
+  const first = screen.getByRole('button', { name: /^Scroll Lock/ });
+  const last = screen.getByRole('button', { name: /^Pause/ });
+  fireEvent.keyDown(search, { key: 'ArrowDown' });
+  expect(first).toHaveFocus();
+  expect(first.tabIndex).toBe(0);
+  expect(last.tabIndex).toBe(-1);
+  fireEvent.keyDown(first, { key: 'End' });
+  expect(last).toHaveFocus();
+  fireEvent.keyDown(last, { key: 'Home' });
+  expect(first).toHaveFocus();
+  fireEvent.keyDown(first, { key: 'ArrowDown' });
+  expect(last).toHaveFocus();
+  expect(first.tabIndex).toBe(-1);
+  expect(last.tabIndex).toBe(0);
+  expect(store.getState().changes).toEqual([]);
+  fireEvent.keyDown(last, { key: 'Escape' });
+  expect(search).toHaveFocus();
+  expect(search).toHaveValue('screen brightness');
+  fireEvent.keyDown(search, { key: 'Enter' });
+  expect(store.getState().profile!.definition(0).keys).toEqual([80]);
+  fireEvent.keyDown(search, { key: 'Escape' });
+  expect(search).toHaveValue('');
+});
+
+test.each(['zh-CN', 'en'] as const)('%s unfinished edits cannot be overwritten by quick choices and can be resumed or discarded', async locale => {
+  const { store, actions } = application(null, undefined, { locale });
+  render(<App store={store} />);
+  await act(() => actions.demo());
+  const before = store.getState().profile!.toJSON();
+  await chooseMappingType(translate(locale, 'mapping.advanced'));
+  fireEvent.change(screen.getByLabelText(new RegExp(translate(locale, 'editor.sequence'))), { target: { value: 'not-ready' } });
+  await chooseMappingType(translate(locale, 'mapping.key'));
+  expect(screen.getByText(translate(locale, 'mapping.finishCurrentDraft'))).toBeVisible();
+  expect(screen.getByRole('button', { name: 'C' })).toBeDisabled();
+  fireEvent.keyDown(screen.getByRole('searchbox'), { key: 'Enter' });
+  act(() => actions.assignKey(58));
+  expect(store.getState().form.sequence).toBe('not-ready');
+  expect(store.getState().profile!.toJSON()).toEqual(before);
+  expect(screen.getByRole('alert')).toHaveTextContent(translate(locale, 'mapping.finishCurrentDraft'));
+  fireEvent.click(screen.getByRole('button', { name: translate(locale, 'mapping.resumeDraft') }));
+  expect(screen.getByLabelText(new RegExp(translate(locale, 'editor.sequence')))).toHaveValue('not-ready');
+  await chooseMappingType(translate(locale, 'mapping.key'));
+  fireEvent.click(screen.getByRole('button', { name: translate(locale, 'mapping.discard') }));
+  expect(screen.getByRole('combobox', { name: translate(locale, 'mapping.categories') })).toHaveFocus();
+  expect(screen.getByRole('button', { name: 'C' })).toBeEnabled();
+  fireEvent.click(screen.getByRole('button', { name: 'C' }));
+  expect(store.getState().profile!.definition(0).keys).toEqual([58]);
+});
+
+test('switching a macro draft to the shortcut picker preserves its sequence and timing', async () => {
+  const { store, actions } = application();
+  render(<App store={store} />);
+  await act(() => actions.demo());
+  act(() => actions.updateForm({ view: 'advanced', type: '2', sequence: 'A @10\nB', interval: '45', cycles: '3', customDelay: true }));
+  await chooseMappingType('快捷键');
+  expect(screen.getByRole('checkbox', { name: 'L Ctrl' })).toBeDisabled();
+  expect(screen.getByRole('button', { name: '按下快捷键录入' })).toBeDisabled();
+  expect(screen.queryByRole('button', { name: '使用此快捷键' })).not.toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: '继续编辑' }));
+  expect(screen.getByLabelText(/按键序列/)).toHaveValue('A @10\nB');
+  expect(store.getState().form).toMatchObject({ type: '2', interval: '45', cycles: '3', customDelay: true });
+  fireEvent.click(screen.getByRole('button', { name: '应用这次编辑' }));
+  expect(store.getState().formDirty).toBe(false);
+  expect(store.getState().profile!.definition(0)).toMatchObject({ type: 2, keys: [43, 60], cycles: 3 });
+});
+
+test.each(['zh-CN', 'en'] as const)('%s shortcut recording releases Tab and consumes Escape without changing the draft', async locale => {
+  const { store, actions } = application(null, undefined, { locale });
+  const outsideKeyDown = vi.fn();
+  render(<div onKeyDown={outsideKeyDown}><App store={store} /></div>);
+  await act(() => actions.demo());
+  await chooseMappingType(translate(locale, 'mapping.chord'));
+  const record = screen.getByRole('button', { name: translate(locale, 'mapping.record') });
+  const before = store.getState().form;
+  fireEvent.click(record);
+  expect(record).toHaveAttribute('aria-pressed', 'true');
+  expect(fireEvent.keyDown(record, { key: 'Tab', code: 'Tab' })).toBe(true);
+  expect(record).toHaveAttribute('aria-pressed', 'false');
+  expect(store.getState().form).toEqual(before);
+  fireEvent.click(record);
+  outsideKeyDown.mockClear();
+  expect(fireEvent.keyDown(record, { key: 'Escape', code: 'Escape' })).toBe(false);
+  expect(record).toHaveAttribute('aria-pressed', 'false');
+  expect(outsideKeyDown).not.toHaveBeenCalled();
+  expect(store.getState().form).toEqual(before);
+  expect(store.getState().formDirty).toBe(false);
+});
+
+test.each(['zh-CN', 'en'] as const)('%s Escape cancels recording and clears search before closing the editor drawer', async locale => {
+  const mediaDescriptor = Object.getOwnPropertyDescriptor(window, 'matchMedia');
+  Object.defineProperty(window, 'matchMedia', { configurable: true, value: vi.fn(() => ({ matches: true, addEventListener: vi.fn(), removeEventListener: vi.fn() })) });
+  try {
+    const { store, actions } = application(null, undefined, { locale });
+    render(<App store={store} />);
+    await act(() => actions.demo());
+    fireEvent.click(screen.getByRole('button', { name: locale === 'en' ? /^Normal, key 1,/ : /^普通层，第 1 键，/ }));
+    const drawerName = translate(locale, 'editor.section');
+    await chooseMappingType(translate(locale, 'mapping.chord'));
+    const record = screen.getByRole('button', { name: translate(locale, 'mapping.record') });
+    fireEvent.click(record);
+    fireEvent.keyDown(record, { key: 'Escape' });
+    expect(record).toHaveAttribute('aria-pressed', 'false');
+    expect(screen.getByRole('dialog', { name: drawerName })).toBeVisible();
+    await chooseMappingType(translate(locale, 'mapping.key'));
+    const search = screen.getByRole('searchbox');
+    fireEvent.change(search, { target: { value: 'Esc' } });
+    fireEvent.keyDown(search, { key: 'ArrowDown' });
+    fireEvent.keyDown(screen.getByRole('button', { name: /^Esc/ }), { key: 'Escape' });
+    expect(search).toHaveFocus();
+    expect(search).toHaveValue('Esc');
+    expect(screen.getByRole('dialog', { name: drawerName })).toBeVisible();
+    fireEvent.keyDown(search, { key: 'Escape' });
+    expect(search).toHaveValue('');
+    expect(screen.getByRole('dialog', { name: drawerName })).toBeVisible();
+    await act(async () => { fireEvent.keyDown(search, { key: 'Escape' }); });
+    expect(screen.queryByRole('dialog', { name: drawerName })).not.toBeInTheDocument();
+    expect(store.getState().changes).toEqual([]);
+  } finally {
+    cleanup();
+    if (mediaDescriptor) Object.defineProperty(window, 'matchMedia', mediaDescriptor);
+    else Reflect.deleteProperty(window, 'matchMedia');
+  }
 });
