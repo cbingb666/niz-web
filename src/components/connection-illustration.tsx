@@ -1,10 +1,10 @@
 import { CheckCircle2, Globe2, Keyboard, Laptop, RotateCcw, Unplug } from 'lucide-react';
-import { defaultModel } from '@/devices';
+import { defaultModel, type KeyboardModel } from '@/devices';
 import { useI18n } from '@/i18n/use-i18n';
 import { DeviceIllustration } from './device-illustration';
 
 /** Static instructions; only the final result reflects the actual connection. */
-export function ConnectionIllustration({ step, connected }: { step: 'support' | 'cable' | 'permission' | 'complete'; connected: boolean }) {
+export function ConnectionIllustration({ step, connected, model }: { step: 'support' | 'cable' | 'permission' | 'complete'; connected: boolean; model?: KeyboardModel }) {
   const { t } = useI18n();
   if (step === 'support') return <figure className="support-preview" aria-label={t('guide.nameplateIllustration')}>
     <svg viewBox="0 0 440 320" fill="none" aria-hidden="true">
@@ -54,7 +54,7 @@ export function ConnectionIllustration({ step, connected }: { step: 'support' | 
     <figcaption>{t('guide.pickerCaption')}</figcaption>
   </figure>;
   return <div className="connection-result-art" data-connected={connected}>
-    <DeviceIllustration />
+    <DeviceIllustration model={model} />
     <span className="connection-result-mark" aria-hidden="true">{connected ? <CheckCircle2 /> : <Unplug />}</span>
   </div>;
 }

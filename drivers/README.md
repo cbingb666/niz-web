@@ -19,3 +19,12 @@
 - `66EC(XRGB)BleRES.dll`
 
 未执行、修改或重新打包这些程序。保留已有来源资料；未额外推断其发布版本或适配范围。
+
+`ATOM68/`：2026-10-01 从 [NiZ 官网下载入口](https://www.nizkeyboard.com/pages/order)所链接的 [ATOM68 原有系列 Software 目录](https://drive.google.com/drive/folders/1CWGM9N1DIR4i6YdScP-Sr2yV9YhgItqL)及上层型号目录下载，原样保留：
+
+- `68EC.exe`
+- `68ECHWI.dll`
+- `68ECRES.dll`
+- `68EC(XRGB)Ble User Manual.doc`
+
+客户端显示软件版本 1.1.4，三个程序的 PE 时间戳为 2022-08-17；时间戳不等于发布日。来源链接、大小、SHA-256 和静态协议核对见 [ATOM68 研究记录（英文）](../docs/atom68-research.md)。仅静态检查，没有执行程序、修改文件或刷新固件。文件与图片仍归原权利人所有，不包含在代码 MIT 许可内；这些原厂资料不随网页构建发布。本次适配为 ATOM68 普通 68EC 系列，未实机验证，不包含使用独立客户端的 ATOM68 Pro。

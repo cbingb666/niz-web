@@ -75,6 +75,8 @@ export const en = {
   'devices.localDescription': 'Your edits for {model} stay in this page.',
   'devices.resume': 'Resume editing',
   'devices.keyboardIllustration': 'Retouched product image of the NIZ ATOM66 electrocapacitive keyboard',
+  'devices.modelIllustration': '{model} keyboard illustration',
+  'devices.atom68Illustration': 'Official product photo of the NIZ ATOM68 electrocapacitive keyboard',
   'guide.title': 'Connection guide',
   'guide.modelHelp': 'Model not listed?',
   'guide.connectionHelp': 'Having trouble connecting?',
@@ -340,9 +342,9 @@ export const en = {
   'help.reconnect':
     'Reconnecting preserves pending edits, unsaved input and offline imports. Read the configuration again and confirm to replace the editor contents.',
   'help.features':
-    'Supports chords, repeat, three macro modes, per-step delays, per-key RGB and JSON / ATOM66 Windows .pro imports. Extended groups are preserved; editable layers depend on the current model.',
+    'Supports chords, repeat, three macro modes, per-step delays, per-key RGB, JSON imports and Windows .pro imports for ATOM66 and ATOM68. Extended groups are preserved; editable layers depend on the current model.',
   'help.validation':
-    'Writes and calibration on real hardware still need validation. Firmware upgrades and global macro recording are not included.',
+    'ATOM68 writes and calibration on all models still need hardware validation. Firmware upgrades and global macro recording are not included.',
   'help.privacy':
     'Configurations and key counts are never uploaded. Read diagnostics cannot be imported as recovery configurations.',
   'help.webhid': 'Browser WebHID documentation ↗',
@@ -569,10 +571,10 @@ export const en = {
   'error.legacyName': 'The .pro file is missing a key name.',
   'error.legacyFile': 'The .pro file is too large or invalid.',
   'error.legacyDTD': 'Configurations with DTDs or external entities are not supported.',
-  'error.legacyModel': 'This is not a supported ATOM66 Windows configuration.',
+  'error.legacyModel': 'This is not a supported NIZ Windows configuration.',
   'error.xmlUnavailable': 'XML parsing is unavailable in this environment.',
   'error.legacyXML': 'The .pro file has an invalid XML structure.',
-  'error.legacyKeys': 'A .pro file must contain all 66 keys across 3 layers.',
+  'error.legacyKeys': 'A .pro file must contain all {keys} keys across {layers} layers.',
   'error.legacyIndex': 'Key indices in a .pro file must start at 1.',
   'error.legacyDuplicate': 'Duplicate key index in the .pro file.',
   'error.legacyList': 'The .pro file is missing a key list.',

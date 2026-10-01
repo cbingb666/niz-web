@@ -12,6 +12,10 @@ export interface KeyboardCapabilities {
 interface ModelDefinition {
   readonly id: string;
   readonly name: string;
+  // Configuration evidence only; calibration has its own qualification status.
+  readonly hardwareValidation?: 'verified' | 'unverified';
+  readonly legacyRoots?: readonly string[];
+  readonly legacyGroupCount?: number;
   // Only the existing NIZ EC wire protocol is implemented. A different protocol
   // needs its own implementation, not a new model with guessed parameters.
   readonly protocol: 'niz-ec';
@@ -48,6 +52,7 @@ export function defineModel(definition: ModelDefinition): KeyboardModel {
     keys.length > 255 ||
     !layers ||
     !definition.groupCounts.includes(layers) ||
+    (definition.legacyGroupCount !== undefined && !definition.groupCounts.includes(definition.legacyGroupCount)) ||
     definition.groupCounts.some((count) => !Number.isInteger(count) || count < layers || count > 255) ||
     definition.rows.some((row) => !row.length) ||
     keys.some((key) => !key.label || !Number.isFinite(key.width) || key.width <= 0) ||

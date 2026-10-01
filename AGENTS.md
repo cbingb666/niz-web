@@ -31,7 +31,7 @@
 - 切换键位、层、语言、页面或设备时保留未应用输入及已暂存修改。导出和写入前必须完成或放弃未应用输入；离开页面提醒覆盖所有设备的未完成编辑。
 - Fn 分配与移除同步全部可编辑层，至少保留一个 Fn，不覆盖其他层的未应用输入。「还原」恢复载入基线，不是恢复出厂。
 - 型号由 USB 配置接口与固件唯一匹配，不按 USB ID 或报文数量猜测。配置比较、导入和写入都检查型号归属；扩展组原始字节必须保留。
-- 生产注册表目前只有 ATOM66。`tests/model-fixtures.ts` 中的虚构型号只用于测试，不代表新增硬件支持。新增型号流程见[架构说明](docs/architecture.md#add-a-model)。
+- 生产注册表包含 ATOM66 和 ATOM68；ATOM66 已实机验证，ATOM68 依据官网软件适配、尚未实机验证。`tests/model-fixtures.ts` 中的虚构型号只用于测试，不代表新增硬件支持。新增型号流程见[架构说明](docs/architecture.md#add-a-model)。
 - 保留 ATOM66 的 JSON、诊断、`.pro`、IndexedDB、语言偏好和页面工具兼容标识；不要因为项目名是 `niz-web` 就统一重命名。具体标识见[兼容格式](docs/architecture.md#compatible-formats)。
 - 可选 WebMCP 工具只能查看状态、读取已载入配置或暂存改键，不能授权 USB 或写入硬件。硬件写入始终由用户在页面确认。
 - 生产产物保持独立 HTML，所有运行时资源随构建内联；保留脚本哈希 CSP 与 `connect-src 'none'`。不要引入 CDN、配置上传或后台设备代理。

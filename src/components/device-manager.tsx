@@ -48,7 +48,7 @@ export function DeviceManager() {
         const name = text(deviceName(device, devices));
         return <article key={device.id} className="device-card" aria-label={name}
           onFocusCapture={() => { focusedDevice.current = device.id; }}>
-        <div className="device-card-art"><DeviceIllustration /></div>
+        <div className="device-card-art"><DeviceIllustration model={device.model} /></div>
         <div className="device-card-content">
           <div className="device-card-heading">
             <span className="device-status"><span className="status-dot connected" aria-hidden="true" />{t('connection.connectedShort')}</span>

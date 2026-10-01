@@ -4,11 +4,11 @@
 
 [Back to README](../README.md) · [Report a bug](https://github.com/cbingb666/niz-web/issues/new?template=bug-report.yml)
 
-Only ATOM66 is currently supported. USB authorization, reads, writes, and RGB controls have not yet been validated on a real keyboard through the web app. Start by reading, checking, and downloading a backup. See the [validation history (Chinese)](../VALIDATION.md) for details.
+ATOM66 and ATOM68 are supported. ATOM66 has been verified on a real keyboard; ATOM68 is based on official software analysis and has not been tested on hardware. Start by reading, checking, and downloading a backup. See the [validation history (Chinese)](../VALIDATION.md) for details.
 
 ## Connect and read
 
-Open [NIZ Web](https://cbingb666.github.io/niz-web/) in its own tab in desktop Chrome or Edge. Connect the keyboard with a USB data cable and close other ATOM66 configuration tools. See [Chrome's WebHID documentation](https://developer.chrome.com/docs/capabilities/hid) for browser requirements.
+Open [NIZ Web](https://cbingb666.github.io/niz-web/) in its own tab in desktop Chrome or Edge. Connect the keyboard with a USB data cable and close other keyboard configuration tools. See [Chrome's WebHID documentation](https://developer.chrome.com/docs/capabilities/hid) for browser requirements.
 
 Click **Connect a device** and follow the four steps:
 
@@ -33,7 +33,7 @@ Clicking **Disconnect** opens a confirmation naming the keyboard, with **Cancel*
 
 ## Edit keys
 
-Each ATOM66 key shows its Normal, Right Fn, and Left Fn mappings. Click the mapping you want to edit, then choose an action. Search by Chinese or English names, or by abbreviations. Enable **Show key numbers** to see key positions.
+Each key shows its Normal, Right Fn, and Left Fn mappings. Click the mapping you want to edit, then choose an action. Search by Chinese or English names, or by abbreviations. Enable **Show key numbers** to see key positions.
 
 Action categories default to **All**. Search covers all categories and shows the result count. **Clear search** returns to the category you were browsing. From the search field, press Down to focus the first result, then use arrow keys to browse and Enter to choose. Escape returns to search; pressing it again clears the query.
 
@@ -94,9 +94,11 @@ To restore a saved configuration:
 2. Import a saved JSON file or choose a configuration from **Local backups**.
 3. Check the imported content, then click **Review and write** and confirm.
 
-You can import compatible JSON from the original native port and ATOM66 Windows `.pro` files. Exports contain the full configuration as JSON. Configurations from different models or firmware versions cannot be mixed directly.
+You can import compatible JSON from the original native port, plus Windows `.pro` files for ATOM66 and ATOM68. Exports contain the full configuration as JSON. Configurations from different models or firmware versions cannot be mixed directly.
 
 ATOM66 supports configurations with three or nine groups. The interface edits only the first three. The other six groups in a nine-group configuration are preserved unchanged. Importing a three-group file after reading a nine-group keyboard also preserves the device's existing extended groups.
+
+ATOM68's official configuration contains six groups, including its Windows `.pro` files. The editor changes the first three and preserves the other three. A three-group JSON import after reading the keyboard preserves its existing extended groups. ATOM68 Pro is not included in this adaptation.
 
 Offline demos and imported files do not represent the current keyboard state. To write offline edits, export them first, connect and read the target keyboard, then import the file again.
 

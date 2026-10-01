@@ -14,7 +14,7 @@ import { initialCalibration, type CalibrationTarget, type CalibrationSnapshot, t
 import { createStore } from 'zustand/vanilla';
 import { EditorState, type EditorSource } from '../editor';
 import { HIDSession, protocolError, type ConnectedHIDDevice } from '../hid';
-import { importWindowsProfile } from '../devices/atom66/legacy';
+import { importWindowsProfile } from '../devices/legacy';
 import type { KeyboardModel } from '../devices/index';
 import { registerModelTools, type ModelContext } from '../model-tools';
 import {
@@ -723,7 +723,7 @@ export function createAppStore(dependencies: AppDependencies) {
           const text = await file.text();
           const live = session.hasLiveBaseline;
           const profile = file.name.toLowerCase().endsWith('.pro')
-            ? importWindowsProfile(text, live ? session.version : undefined, live ? session.identity : {})
+            ? importWindowsProfile(text, live ? session.version : undefined, live ? session.identity : {}, globalThis.DOMParser, session.models)
             : Profile.fromJSON(text, session.models);
           stageImport(profile, file.name);
         });
@@ -905,7 +905,7 @@ export function createAppStore(dependencies: AppDependencies) {
         if (!(await confirm(msg('confirm.writeTitle'), summary, msg('confirm.writeAction'), {
           locksKeyboard: true,
           notice: msg('operation.keepConnected'),
-          warning: msg('confirm.writeValidation'),
+          warning: editor.model.hardwareValidation === 'verified' ? undefined : msg('confirm.writeValidation'),
           review: review(),
         }))) {
           return;

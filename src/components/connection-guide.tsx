@@ -78,7 +78,7 @@ export function ConnectionGuide({ usbAvailable }: { usbAvailable: boolean }) {
         {!disconnected && !(step.id === 'permission' && selected) && <p>{t(step.description)}</p>}
       </header>
       <div className="guide-illustration-stage" key={activeStep}>
-        <ConnectionIllustration step={step.id} connected={!!selected} />
+        <ConnectionIllustration step={step.id} connected={!!selected} model={selected?.model} />
       </div>
       <div className="guide-instructions" key={step.id}>
         {step.id === 'support' && <div className="guide-support">

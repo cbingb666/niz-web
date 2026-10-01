@@ -8,8 +8,8 @@ import { Profile, demoProfile, encodeDefinition, mergeImported } from '../src/pr
 import { FakeDevice, FakeHID, fixture } from './helpers';
 import { modelFixture, test68 } from './model-fixtures';
 
-test('only Atom66 is registered; existing files and backups retain their exact format', () => {
-  expect(supportedModels.map((model) => model.id)).toEqual(['atom66']);
+test('official models are registered; existing Atom66 files and backups retain their exact format', () => {
+  expect(supportedModels.map((model) => model.id)).toEqual(['atom66', 'atom68']);
   const original = fixture(9, true).toJSON();
   expect(original.format).toBe('atom66-macos');
   expect(original).not.toHaveProperty('model');

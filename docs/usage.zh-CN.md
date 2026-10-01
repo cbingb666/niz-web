@@ -4,11 +4,11 @@
 
 [返回 README](../README.zh-CN.md) · [报告问题](https://github.com/cbingb666/niz-web/issues/new?template=bug-report.yml)
 
-目前仅支持 ATOM66，网页端的 USB 授权、读写和 RGB 尚未完成实机验收。首次使用先读取、核对并下载备份；详细范围见[验证记录](../VALIDATION.md)。
+目前支持 ATOM66 和 ATOM68。ATOM66 已实机验证；ATOM68 依据官方软件分析适配，未实机验证。首次使用先读取、核对并下载备份；详细范围见[验证记录](../VALIDATION.md)。
 
 ## 连接与读取
 
-使用桌面版 Chrome 或 Edge，在独立标签页打开 [NIZ Web](https://cbingb666.github.io/niz-web/)。通过 USB 数据线连接键盘，退出其他 ATOM66 配置工具。浏览器要求见 [Chrome 的 WebHID 说明](https://developer.chrome.com/docs/capabilities/hid)。
+使用桌面版 Chrome 或 Edge，在独立标签页打开 [NIZ Web](https://cbingb666.github.io/niz-web/)。通过 USB 数据线连接键盘，退出其他键盘配置工具。浏览器要求见 [Chrome 的 WebHID 说明](https://developer.chrome.com/docs/capabilities/hid)。
 
 点击「连接设备」，依次完成四步：
 
@@ -33,7 +33,7 @@
 
 ## 编辑按键
 
-ATOM66 的每个键位显示普通层、右 Fn 层和左 Fn 层。点击要修改的那一层映射，再选择功能。可用中文、英文或缩写搜索；勾选「显示编码」可查看键位编号。
+每个键位显示普通层、右 Fn 层和左 Fn 层。点击要修改的那一层映射，再选择功能。可用中文、英文或缩写搜索；勾选「显示编码」可查看键位编号。
 
 功能分类默认选择「全部」。搜索覆盖全部分类，并显示结果数量。「清除搜索」会返回之前浏览的分类。在搜索框中按下方向键聚焦首个结果，再用方向键浏览、Enter 选择。Esc 返回搜索框，再按一次会清除搜索。
 
@@ -94,9 +94,11 @@ ATOM66 的每个键位显示普通层、右 Fn 层和左 Fn 层。点击要修�
 2. 导入之前保存的 JSON，或从「本地备份」中选择配置。
 3. 核对导入后的内容，点击「核对并写入」并确认。
 
-支持导入兼容的原生版 JSON 和 ATOM66 Windows `.pro` 文件，导出为完整 JSON。不同型号或固件版本的配置不能直接混用。
+支持导入兼容的原生版 JSON 和 ATOM66 和 ATOM68 Windows `.pro` 文件，导出为完整 JSON。不同型号或固件版本的配置不能直接混用。
 
 ATOM66 支持三组或九组配置，界面只编辑前三组。九组配置的其余六组会原样保留；向已读取的九组键盘导入三组文件时，也会保留设备原有的扩展组。
+
+ATOM68 的原厂配置为六组，Windows `.pro` 文件也包含六组。界面编辑前三组，保留其余三组；读取设备后导入三组 JSON，同样保留已有扩展组。本次适配不包含 ATOM68 Pro。
 
 离线演示和离线导入不代表当前键盘状态。要将离线编辑写入键盘，先导出，再连接并读取目标键盘，最后重新导入文件。
 

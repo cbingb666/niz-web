@@ -2,19 +2,28 @@
 
 **English** · [简体中文](README.zh-CN.md)
 
-Remap keys, set up macros, and back up your NIZ keyboard configuration in a browser. Connect directly over USB, with no configuration software to install. **Currently supports ATOM66 only.**
+Remap keys, set up macros, and back up your NIZ keyboard configuration in a browser. Connect directly over USB, with no configuration software to install.
 
 ![ATOM66 key layout showing normal, left Fn, and right Fn mappings, with the 1 key's left Fn mapping selected as F1.](docs/images/three-layer-keymap.jpg)
 
 **[Open NIZ Web](https://cbingb666.github.io/niz-web/)** · [User guide](docs/usage.md) · [Report a bug](https://github.com/cbingb666/niz-web/issues/new?template=bug-report.yml)
 
 > [!WARNING]
-> This is an experimental port. USB authorization, reads, writes, and RGB controls have not yet been validated on a real keyboard through the web app.
+> ATOM68 support is experimental and has not been tested on a real keyboard. Calibration still needs hardware validation on all models.
 > Start by reading the configuration and downloading a backup. Check its contents before trying a write. [Validation history (Chinese)](VALIDATION.md)
+
+## Supported models
+
+| Model | Hardware validation |
+| --- | --- |
+| ATOM66 | Verified on a real keyboard |
+| ATOM68 | Not yet tested on a real keyboard |
+
+ATOM68 support covers the original 68EC family and is based on [NiZ's official software](docs/atom68-research.md). ATOM68 Pro is not included.
 
 ## Get started
 
-You need an ATOM66, a USB data cable, and desktop Chrome or Edge. Close other keyboard configuration tools first.
+You need a supported keyboard, a USB data cable, and desktop Chrome or Edge. Close other keyboard configuration tools first.
 
 1. **Connect your keyboard.** Open the app, click **Connect a device**, and follow the steps to check the model, plug in the cable, and grant access.
 2. **Read the configuration.** Back on the Devices page, click **Configure device** on the keyboard's card and confirm the read.
@@ -29,7 +38,7 @@ To try the interface without a keyboard, choose **Offline demo** on the **Connec
 ## Features
 
 - **Keys and macros:** Edit the normal, right Fn, and left Fn layers. Set shortcuts, rapid fire, and macros, with undo and redo.
-- **Configuration files:** Import JSON and ATOM66 Windows `.pro` files, export JSON, and manage local browser backups.
+- **Configuration files:** Import JSON and ATOM66 and ATOM68 Windows `.pro` files, export JSON, and manage local browser backups.
 - **Devices:** Manage multiple keyboards and read key counts. Set per-key colors on RGB models.
 - **Key calibration:** Use the guided release/held-key workflow on the [enabled model and firmware](docs/usage.md#key-calibration).
 - **Offline editing:** Try the app, import files, and edit without a connected keyboard. The interface supports Simplified Chinese and English.

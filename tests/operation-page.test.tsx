@@ -125,7 +125,7 @@ test('write progress locks the whole transaction, including backup and read-back
   const confirmation = screen.getByRole('alertdialog', { name: '键盘将暂时锁定' });
   expect(confirmation).toHaveTextContent('无法输入');
   expect(within(confirmation).getByRole('img', { name: translate('zh-CN', 'confirm.lockIllustration') })).toBeVisible();
-  expect(within(confirmation).getByText('实机写入尚未验证。', { exact: false })).toBeVisible();
+  expect(within(confirmation).queryByText('实机写入尚未验证。', { exact: false })).not.toBeInTheDocument();
   expect(confirmation.querySelector('.confirmation-review')).not.toHaveAttribute('open');
   expect(within(confirmation).getByRole('table')).not.toBeVisible();
   fireEvent.click(within(confirmation).getByText('查看改动明细', { selector: 'summary' }));

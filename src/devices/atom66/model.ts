@@ -14,6 +14,8 @@ let position = 0;
 export const atom66 = defineModel({
   id: 'atom66',
   name: 'ATOM66',
+  hardwareValidation: 'verified',
+  legacyRoots: ['66EC(XRGB)Ble', '66EC(XRGB)BLe', '66EC(S)Ble', '66EC(S)BLe', '66EC(S)'],
   protocol: 'niz-ec',
   filters: [0x502a, 0x512a, 0x522a].map((productId) => ({
     vendorId: 0x0483, productId, usagePage: 0x8c, usage: 1,

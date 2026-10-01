@@ -4,7 +4,7 @@
 
 [Back to contributing](../CONTRIBUTING.md) · [Agent instructions (Chinese)](../AGENTS.md)
 
-NIZ Web runs entirely in the browser and accesses the keyboard's USB configuration interface through WebHID. There is no local device proxy, backend service, or cloud configuration storage. The protocol implementation is based on the original DLL, the existing native port, and real read captures. Validation of the web app on real hardware is still incomplete.
+NIZ Web runs entirely in the browser and accesses the keyboard's USB configuration interface through WebHID. There is no local device proxy, backend service, or cloud configuration storage. The protocol implementation is based on the original DLL, the existing native port, and real read captures. ATOM66 configuration use has been verified on a real keyboard (reported by the user). ATOM68 and calibration still need hardware validation.
 
 ## Module map
 
@@ -30,9 +30,9 @@ The project root is the only active web source directory. The package, build plu
 
 ## Model identification and configuration ownership
 
-`src/devices/atom66/model.ts` defines USB filters, firmware matching, physical layout, editable layers, group counts, Fn rules, count and RGB capabilities, and demo content.
+`src/devices/atom66/model.ts` and `src/devices/atom68/model.ts` define USB filters, firmware matching, physical layout, editable layers, group counts, Fn rules, count and RGB capabilities, and demo content.
 
-`src/devices/model.ts` defines the interface and derives key counts and editable record ranges from the layout and layers. `src/devices/index.ts` is the only production model registry. It currently registers ATOM66 alone.
+`src/devices/model.ts` defines the interface and derives key counts and editable record ranges from the layout and layers. `src/devices/index.ts` is the only production model registry. It registers ATOM66 and ATOM68; ATOM68 remains hardware-unverified.
 
 Connection first filters USB configuration interfaces, then reads firmware and requires exactly one matching model. Unknown or ambiguous devices do not proceed to read key configurations. A shared USB ID does not establish model identity, and report counts must not be used to guess a model.
 
@@ -61,9 +61,11 @@ The 68-key, two-layer, four-group device in `tests/model-fixtures.ts` is fiction
 | Language preference | `atom66.locale` |
 | Page tools | `atom66_read_status`, `atom66_read_keys`, `atom66_stage_key_edits` |
 
-Windows `.pro` support is limited to the ATOM66 formats explicitly recognized in `src/devices/atom66/legacy.ts`. JSON imports and device writes check firmware compatibility; files are not written directly across firmware versions.
+Windows `.pro` conversion in `src/devices/legacy.ts` uses each model's explicitly recognized roots and geometry. The original `src/devices/atom66/legacy.ts` import path remains available. JSON imports and device writes check firmware compatibility; files are not written directly across firmware versions.
 
 ATOM66 supports complete configurations with three or nine groups. V1.4.4 has 594 records across nine groups. The interface edits only the first three; the other six retain their original reports, and readback compares extended groups byte for byte. Merging a three-group file into a previously read nine-group configuration keeps the device's existing extended groups.
+
+ATOM68 uses 68 keys and three editable layers. Its official client reads and writes six groups (408 records), and its `.pro` files also contain six groups. The last three groups retain their original reports. Three-group JSON imports preserve these groups when merged with a six-group device baseline. Identification excludes the distinct ATOM68 Pro USB interfaces. See [official software evidence and remaining hardware checks](atom68-research.md).
 
 ## Devices, editing, and writing
 

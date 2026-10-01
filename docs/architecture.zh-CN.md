@@ -4,7 +4,7 @@
 
 [返回贡献指南](../CONTRIBUTING.zh-CN.md) · [Agent 工作约定](../AGENTS.md)
 
-NIZ Web 是纯浏览器应用，通过 WebHID 访问键盘的 USB 配置接口。没有本地设备代理、后端服务或云端配置存储。当前协议实现来自原版 DLL、已有原生移植及真实读取样本；网页实机验收仍未完成。
+NIZ Web 是纯浏览器应用，通过 WebHID 访问键盘的 USB 配置接口。没有本地设备代理、后端服务或云端配置存储。当前协议实现来自原版 DLL、已有原生移植及真实读取样本；ATOM66 的配置使用已实机验证（用户反馈）；ATOM68 和校准效果仍待实机验证。
 
 ## 模块入口
 
@@ -30,9 +30,9 @@ NIZ Web 是纯浏览器应用，通过 WebHID 访问键盘的 USB 配置接口�
 
 ## 型号识别与配置归属
 
-`src/devices/atom66/model.ts` 集中维护 USB 筛选条件、固件识别、物理布局、编辑层、配置组数、Fn 规则、计数 / RGB 能力及演示内容。
+`src/devices/atom66/model.ts` 和 `src/devices/atom68/model.ts` 集中维护 USB 筛选条件、固件识别、物理布局、编辑层、配置组数、Fn 规则、计数 / RGB 能力及演示内容。
 
-`src/devices/model.ts` 定义接口，并从布局和层数推导键数与可编辑记录范围。`src/devices/index.ts` 是生产型号的唯一注册入口，目前只注册 ATOM66。
+`src/devices/model.ts` 定义接口，并从布局和层数推导键数与可编辑记录范围。`src/devices/index.ts` 是生产型号的唯一注册入口，目前注册 ATOM66 和 ATOM68，ATOM68 尚未实机验证。
 
 连接时先筛选 USB 配置接口，再读取固件，在候选型号中唯一匹配。未知或匹配多个型号时，不继续读取按键配置。同一个 USB ID 不代表同一型号，也不能按报文数量猜测型号。
 
@@ -61,9 +61,11 @@ NIZ Web 是纯浏览器应用，通过 WebHID 访问键盘的 USB 配置接口�
 | 语言偏好 | `atom66.locale` |
 | 页面工具 | `atom66_read_status`、`atom66_read_keys`、`atom66_stage_key_edits` |
 
-Windows `.pro` 只支持 `src/devices/atom66/legacy.ts` 中明确识别的 ATOM66 格式。JSON 导入与设备写入检查固件一致性，不直接跨版本写入。
+`src/devices/legacy.ts` 根据各型号明确识别的根标签和键位数量转换 Windows `.pro`，保留原有 `src/devices/atom66/legacy.ts` 导入路径。JSON 导入与设备写入检查固件一致性，不直接跨版本写入。
 
 ATOM66 支持完整三组或九组配置。V1.4.4 九组共 594 条记录，界面只编辑前三组；其余六组保留原始报文，写后校验逐字节比较扩展组。三组文件合并到已读取的九组配置时，使用设备原有扩展组，不将其清空。
+
+ATOM68 为 68 键、三个可编辑层。原厂客户端读写六组配置（408 条记录），`.pro` 同样保存六组。后三组保留原始报文，三组 JSON 合并到已读取的六组配置时保留设备原有扩展组。型号识别排除使用独立 USB 接口的 ATOM68 Pro。详见[官方软件核对与待实机验证项（英文）](atom68-research.md)。
 
 ## 设备、编辑与写入
 
