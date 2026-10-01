@@ -2,7 +2,7 @@ import type { Locale } from './core';
 import { KEY_NAMES, localizedKeyName } from './key-names';
 
 const sharedLabels: Readonly<Record<number, string>> = {
-  0: '∅', 27: '⌫', 28: 'Tab', 42: 'Caps', 54: 'Enter', 70: 'Space', 73: 'Menu',
+  0: '—', 27: '⌫', 28: 'Tab', 42: 'Caps', 54: 'Enter', 70: 'Space', 73: 'Menu',
   75: 'Wake', 76: 'Sleep', 77: 'Power', 78: 'PrtSc', 79: 'ScrLk', 80: 'Pause',
   81: 'Ins', 82: 'Home', 83: 'PgUp', 84: 'Del', 85: 'End', 86: 'PgDn', 91: 'Num',
   108: '⏭', 109: '⏮', 110: 'Stop', 111: '⏯', 112: 'Mute', 113: 'Vol+', 114: 'Vol−',

@@ -6,7 +6,7 @@ import { keycapName } from './key-labels';
 /** English legends only; accessible labels and editing keep the full localized name. */
 export function keycapSummary(profile: Profile, index: number): string {
   const definition = profile.definition(index);
-  if (!definition.keys.length) return index >= profile.model.keyCount ? '—' : '∅';
+  if (!definition.keys.length) return '—';
   if (definition.type >= 2) return `M·${definition.keys.length}`;
   const names = definition.keys.map(keycapName);
   if (definition.keys.length > 2) return `${names[0]}+${definition.keys.length - 1}`;
@@ -16,7 +16,7 @@ export function keycapSummary(profile: Profile, index: number): string {
 export function localizedSummary(profile: Profile, index: number, locale: Locale): string {
   const definition = profile.definition(index);
   if (!definition.keys.length)
-    return translate(locale, index >= profile.model.keyCount ? 'keyboard.unassigned' : 'keyboard.noAction');
+    return translate(locale, 'keyboard.unassigned');
   if (definition.type >= 2)
     return renderMessage(
       countMessage(definition.keys.length, 'keyboard.macro.one', 'keyboard.macro.other'),

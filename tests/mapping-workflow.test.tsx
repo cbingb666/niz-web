@@ -185,7 +185,7 @@ test('key numbers are opt-in on the layout and guide, appear only in the editor 
   expect(device.sent).toEqual(sent);
 });
 
-test('No action is first in common actions, updates the keycap preview, and Restore recovers the loaded mapping', async () => {
+test('Unassigned is first in common actions, updates the keycap preview, and Restore recovers the loaded mapping', async () => {
   const device = new FakeDevice();
   device.profile.setDefinition(66, { type: 0, keys: [44] });
   const { store, actions } = application(new FakeHID([device]));
@@ -199,7 +199,7 @@ test('No action is first in common actions, updates the keycap preview, and Rest
   expect(within(editor).queryByRole('button', { name: /清空按键/ })).not.toBeInTheDocument();
   expect(within(editor).queryByRole('combobox', { name: '编辑层' })).not.toBeInTheDocument();
   const options = within(editor.querySelector<HTMLElement>('.action-options')!).getAllByRole('button');
-  expect(options[0]).toHaveAccessibleName('无功能');
+  expect(options[0]).toHaveAccessibleName('未设置');
   const preview = within(editor).getByRole('figure', { name: '映射编辑' });
   expect(within(preview).getByText('键位 #1')).toBeVisible();
   expect(within(preview).getByText('右 Fn')).toBeVisible();
@@ -207,8 +207,12 @@ test('No action is first in common actions, updates the keycap preview, and Rest
   fireEvent.click(options[0]);
   expect(store.getState().changes).toEqual([66]);
   expect(store.getState().profile!.definition(66).keys).toEqual([0]);
-  expect(preview.querySelector('.key-front .assignment')).toHaveTextContent('∅');
-  expect(within(preview.querySelector<HTMLElement>('figcaption')!).getByText('无功能')).toBeVisible();
+  expect(preview.querySelector('.key-front .assignment')).toHaveTextContent('—');
+  expect(within(preview.querySelector<HTMLElement>('figcaption')!).getByText('未设置')).toBeVisible();
+  act(() => actions.setLocale('en'));
+  expect(within(editor).getByRole('button', { name: 'Unassigned' })).toBeVisible();
+  expect(within(preview.querySelector<HTMLElement>('figcaption')!).getByText('Unassigned')).toBeVisible();
+  act(() => actions.setLocale('zh-CN'));
   expect(within(editor).getByRole('button', { name: '还原' })).toBeEnabled();
   fireEvent.click(within(editor).getByRole('button', { name: '还原' }));
   expect(store.getState().profile!.toJSON()).toEqual(original);

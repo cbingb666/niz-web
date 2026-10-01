@@ -40,6 +40,7 @@ The editor summary shows the selected key position, layer, and current action. I
 | Task | Action |
 | --- | --- |
 | Assign a key or system action | Click the target action to stage it |
+| Leave a mapping unassigned | Choose **Unassigned**; keycaps show “—” |
 | Set a shortcut | Choose modifiers and a main key, then click **Apply this edit** |
 | Set a macro or repeat action | Edit the sequence and parameters, then click **Apply this edit** |
 | Restore a key's loaded value | Click **Restore** |

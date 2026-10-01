@@ -188,7 +188,6 @@ export const zhCN = {
   'keyboard.export': '导出配置',
   'keyboard.importFile': '导入配置文件',
   'keyboard.unassigned': '未设置',
-  'keyboard.noAction': '无功能',
   'keyboard.macro.one': '宏 · {count} 步',
   'keyboard.macro.other': '宏 · {count} 步',
   'keyboard.reserved': '保留代码 {code}',

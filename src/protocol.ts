@@ -100,6 +100,8 @@ export function parseKey(text: string) {
     lfn: 166,
     rfn: 156,
     none: 0,
+    '无功能': 0,
+    'no action': 0,
     up: 87,
     left: 88,
     down: 89,
@@ -270,7 +272,7 @@ export class Profile {
   }
   summary(index: number) {
     const def = this.definition(index);
-    if (!def.keys.length) return index >= this.model.keyCount ? '未设置' : '无功能';
+    if (!def.keys.length) return '未设置';
     if (def.type >= 2) return `宏 · ${def.keys.length} 步`;
     return def.keys.map(keyName).join(' + ');
   }

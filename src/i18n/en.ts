@@ -191,7 +191,6 @@ export const en = {
   'keyboard.export': 'Export configuration',
   'keyboard.importFile': 'Import configuration file',
   'keyboard.unassigned': 'Unassigned',
-  'keyboard.noAction': 'No action',
   'keyboard.macro.one': 'Macro · {count} step',
   'keyboard.macro.other': 'Macro · {count} steps',
   'keyboard.reserved': 'Reserved code {code}',

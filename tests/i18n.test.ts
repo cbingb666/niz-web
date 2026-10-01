@@ -29,6 +29,7 @@ function placeholders(value: string) {
 test.each(['zh-CN', 'en'] as const)('long functions share keycap abbreviations and keep their full %s descriptions', locale => {
   const profile = fixture();
   const cases = [
+    [0, '—'],
     [142, 'BSeq−'], [143, 'BSeq+'], [151, 'Sft/↑'],
     [152, 'Caps/Ctrl'], [155, 'Win/Mac'], [167, 'Wire/WL'], [178, 'Rsv178'],
   ] as const;
@@ -117,6 +118,8 @@ test('every English and Chinese key name maps back to the same wire code', () =>
   expect(parseKey('Mouse left button')).toBe(130);
   expect(parseKey('Right Fn')).toBe(156);
   expect(parseKey('Key scan period')).toBe(177);
+  expect(parseKey('无功能')).toBe(0);
+  expect(parseKey('No action')).toBe(0);
 });
 test('localized macro text and mixed-language input preserve the encoded reports', () => {
   const definition = {

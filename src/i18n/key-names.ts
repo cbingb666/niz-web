@@ -2,7 +2,7 @@ import { translate, type Locale } from './core.ts';
 
 // Canonical names remain accepted in saved text and legacy callers. Wire codes do not change.
 export const KEY_NAMES =
-  "无功能|Esc|F1|F2|F3|F4|F5|F6|F7|F8|F9|F10|F11|F12|`|1|2|3|4|5|6|7|8|9|0|-|=|Backspace|Tab|Q|W|E|R|T|Y|U|I|O|P|[|]|\\|Caps Lock|A|S|D|F|G|H|J|K|L|;|'|Return|左 Shift|Z|X|C|V|B|N|M|,|.|/|右 Shift|左 Control|左 Command|左 Option|Space|右 Option|右 Command|Menu|右 Control|唤醒|睡眠|电源|Print Screen|Scroll Lock|Pause|Insert|Home|Page Up|Delete|End|Page Down|↑|←|↓|→|Num Lock|小键盘 /|小键盘 *|小键盘 7|小键盘 8|小键盘 9|小键盘 4|小键盘 5|小键盘 6|小键盘 1|小键盘 2|小键盘 3|小键盘 0|小键盘 .|小键盘 -|小键盘 +|小键盘 Enter|下一曲|上一曲|停止播放|播放/暂停|静音|音量 +|音量 -|媒体|邮件|计算器|我的电脑|搜索|浏览器主页|后退|前进|停止加载|刷新|收藏夹|鼠标左移|鼠标右移|鼠标上移|鼠标下移|鼠标左键|鼠标右键|鼠标中键|滚轮上|滚轮下|灯光开关|灯光宏|灯光演示|繁星|波纹|停止演示|呼吸|呼吸顺序 -|呼吸顺序 +|亮度 -|亮度 +|黄昏 / 极光|彩色呼吸|背景色切换|触发行程|键盘锁|Shift / ↑ 切换|Caps / Ctrl 切换|Win 键锁|鼠标锁|Win / Mac 切换|右 Fn|鼠标移动像素|鼠标移动间隔|编程模式切换|灯光记录 1|灯光记录 2|灯光记录 3|灯光记录 4|灯光记录 5|灯光记录 6|左 Fn|有线 / 无线切换|蓝牙设备 1|蓝牙设备 2|蓝牙设备 3|Game 模式|ECO 模式|鼠标首次延迟|按键重复速度|按键响应延迟|USB 报告率|按键扫描周期".split(
+  "未设置|Esc|F1|F2|F3|F4|F5|F6|F7|F8|F9|F10|F11|F12|`|1|2|3|4|5|6|7|8|9|0|-|=|Backspace|Tab|Q|W|E|R|T|Y|U|I|O|P|[|]|\\|Caps Lock|A|S|D|F|G|H|J|K|L|;|'|Return|左 Shift|Z|X|C|V|B|N|M|,|.|/|右 Shift|左 Control|左 Command|左 Option|Space|右 Option|右 Command|Menu|右 Control|唤醒|睡眠|电源|Print Screen|Scroll Lock|Pause|Insert|Home|Page Up|Delete|End|Page Down|↑|←|↓|→|Num Lock|小键盘 /|小键盘 *|小键盘 7|小键盘 8|小键盘 9|小键盘 4|小键盘 5|小键盘 6|小键盘 1|小键盘 2|小键盘 3|小键盘 0|小键盘 .|小键盘 -|小键盘 +|小键盘 Enter|下一曲|上一曲|停止播放|播放/暂停|静音|音量 +|音量 -|媒体|邮件|计算器|我的电脑|搜索|浏览器主页|后退|前进|停止加载|刷新|收藏夹|鼠标左移|鼠标右移|鼠标上移|鼠标下移|鼠标左键|鼠标右键|鼠标中键|滚轮上|滚轮下|灯光开关|灯光宏|灯光演示|繁星|波纹|停止演示|呼吸|呼吸顺序 -|呼吸顺序 +|亮度 -|亮度 +|黄昏 / 极光|彩色呼吸|背景色切换|触发行程|键盘锁|Shift / ↑ 切换|Caps / Ctrl 切换|Win 键锁|鼠标锁|Win / Mac 切换|右 Fn|鼠标移动像素|鼠标移动间隔|编程模式切换|灯光记录 1|灯光记录 2|灯光记录 3|灯光记录 4|灯光记录 5|灯光记录 6|左 Fn|有线 / 无线切换|蓝牙设备 1|蓝牙设备 2|蓝牙设备 3|Game 模式|ECO 模式|鼠标首次延迟|按键重复速度|按键响应延迟|USB 报告率|按键扫描周期".split(
     '|',
   );
 while (KEY_NAMES.length < 256) KEY_NAMES.push(`保留代码 ${KEY_NAMES.length}`);
@@ -11,7 +11,7 @@ KEY_NAMES[200] = '延迟标记（宏专用）';
 KEY_NAMES[204] = 'ISO \\ / |';
 
 const englishOverrides: Record<number, string> = {
-  '0': 'No action',
+  '0': 'Unassigned',
   '55': 'Left Shift',
   '66': 'Right Shift',
   '67': 'Left Control',
