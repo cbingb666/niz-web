@@ -17,26 +17,30 @@ export function ConnectedDevice() {
   return <div className="connected-device">
     <Button id="device-details-trigger" variant="ghost" size="sm" className="device-summary" disabled={locked}
       aria-label={t('connection.connected', { product: name })} aria-haspopup="dialog" title={`${t('connection.details')} · ${name}`}
-      onClick={actions.showDeviceDetails}>
+      onClick={() => actions.showDeviceDetails()}>
       <span className="status-dot connected" aria-hidden="true" /><span className="device-name">{name}</span><ChevronRight />
     </Button>
-    <Button variant="ghost" size="icon" className="device-disconnect" title={t('connection.disconnect')} disabled={locked} onClick={() => actions.disconnect()}><Unplug /><span className="sr-only">{t('connection.disconnect')}</span></Button>
+    <Button id="device-disconnect-trigger" variant="ghost" size="icon" className="device-disconnect" title={t('connection.disconnect')}
+      aria-haspopup="dialog" disabled={locked} onClick={() => actions.disconnect()}><Unplug /><span className="sr-only">{t('connection.disconnect')}</span></Button>
   </div>;
 }
 
-export function DeviceDetails() {
-  const { t, text } = useI18n();
-  const session = useAppStore(state => state.session);
-  const device = useAppStore(state => state.connectedDevices.find(device => device.id === state.session.id));
-  const reading = useAppStore(state => state.reading);
+export function DeviceDetails({ deviceId }: { deviceId: string }) {
+  const { t } = useI18n();
+  const device = useAppStore(state => state.connectedDevices.find(device => device.id === deviceId));
+  if (!device) return null;
   const details = [
-    ['connection.deviceStatus', session.connected ? t('connection.connectedShort') : text(session.message) || t('connection.waiting')],
-    ['connection.model', session.model?.name || '—'],
-    ['connection.product', session.product || '—'],
-    ['connection.vendorId', <code>{formatUsbId(device?.vendorId)}</code>],
-    ['connection.productId', <code>{formatUsbId(device?.productId)}</code>],
-    ['connection.firmware', session.version || '—'],
-    ['connection.configuration', t(reading ? 'connection.reading' : session.hasLiveBaseline ? 'connection.loaded' : 'connection.notRead')],
+    ['connection.deviceStatus', t('connection.connectedShort')],
+    ['connection.model', device.model.name],
+    ['connection.product', device.product || '—'],
+    ['connection.vendorId', <code>{formatUsbId(device.vendorId)}</code>],
+    ['connection.productId', <code>{formatUsbId(device.productId)}</code>],
+    ['connection.firmware', device.version || '—'],
+    ['connection.configuration', t(device.hasLiveBaseline ? 'connection.loaded' : 'connection.notRead')],
   ] as const;
-  return <dl className="device-details">{details.map(([label, value]) => <div key={label}><dt>{t(label)}</dt><dd>{value}</dd></div>)}</dl>;
+  return <>
+    <dl className="device-details">{details.map(([label, value]) => <div key={label}><dt>{t(label)}</dt><dd>{value}</dd></div>)}</dl>
+    {device.calibration === 'unsupported' && <p className="device-details-hint">{t('calibration.unsupported')}</p>}
+    <p className="device-details-hint">{t('devices.disconnectHint')}</p>
+  </>;
 }

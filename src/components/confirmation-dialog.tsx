@@ -19,8 +19,16 @@ export function ConfirmationDialog({ dialog, onConfirm }: {
   const description = [dialog.body, dialog.notice, dialog.warning]
     .filter(value => value !== undefined).map(value => text(value!)).join('\n\n');
   return <AlertDialog open onOpenChange={open => { if (!open) onConfirm(false); }}>
-    <AlertDialogContent className={dialog.review ? 'review-dialog' : undefined}>
-      <AlertDialogTitle className={dialog.locksKeyboard ? 'text-center' : undefined}>{text(dialog.title)}</AlertDialogTitle>
+    <AlertDialogContent className={dialog.review ? 'review-dialog' : undefined}
+      onCloseAutoFocus={event => {
+        if (!dialog.triggerId) return;
+        event.preventDefault();
+        const trigger = document.getElementById(dialog.triggerId);
+        const target = trigger instanceof HTMLButtonElement && !trigger.disabled ? trigger
+          : document.getElementById('page-title') ?? document.querySelector('main');
+        target?.focus({ preventScroll: true });
+      }}>
+      <AlertDialogTitle className={dialog.locksKeyboard ? 'text-center' : dialog.disconnectTarget ? 'text-balance' : undefined}>{text(dialog.title)}</AlertDialogTitle>
       {dialog.locksKeyboard && <KeyboardLockIllustration />}
       <AlertDialogDescription asChild={dialog.locksKeyboard}
         className={dialog.locksKeyboard ? 'lock-confirmation-copy leading-relaxed' : 'whitespace-pre-wrap leading-relaxed'}>

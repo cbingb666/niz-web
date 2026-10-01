@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
-import { ArrowRight, ChevronDown, FileCheck2, FileInput, PencilLine, Play, Plus, SlidersHorizontal, Unplug, ScanLine, TriangleAlert } from 'lucide-react';
+import { ArrowRight, FileCheck2, FileInput, Info, PencilLine, Play, Plus, SlidersHorizontal, Unplug, ScanLine, TriangleAlert } from 'lucide-react';
 import { supportedModels } from '@/devices';
-import { deviceName, formatUsbId } from '@/i18n/device';
+import { deviceName } from '@/i18n/device';
 import { useI18n } from '@/i18n/use-i18n';
 import { isLocked } from '@/store/app-store';
 import { useAppStore } from '@/store/context';
@@ -52,8 +52,15 @@ export function DeviceManager() {
         <div className="device-card-content">
           <div className="device-card-heading">
             <span className="device-status"><span className="status-dot connected" aria-hidden="true" />{t('connection.connectedShort')}</span>
-            <Button className="device-disconnect" variant="ghost" disabled={locked} aria-describedby={`disconnect-hint-${device.id}`}
-              title={t('devices.disconnectHint')} onClick={() => actions.disconnect(device.id)}><Unplug />{t('connection.disconnect')}</Button>
+            <div className="device-card-tools">
+              <Button id={`device-details-${device.id}`} className="device-details-entry" variant="ghost" size="icon" disabled={locked}
+                aria-label={t('connection.details')} aria-haspopup="dialog" title={t('connection.details')}
+                onClick={() => actions.showDeviceDetails(device.id)}><Info /></Button>
+              <Button id={`device-disconnect-${device.id}`} className="device-disconnect" variant="ghost" size="icon" disabled={locked}
+                aria-label={t('connection.disconnect')} aria-haspopup="dialog" aria-describedby={`disconnect-hint-${device.id}`}
+                title={t('connection.disconnect')} onClick={() => actions.disconnect(device.id)}><Unplug /></Button>
+            </div>
+            <span className="sr-only" id={`disconnect-hint-${device.id}`}>{t('devices.disconnectHint')}</span>
           </div>
           <h3>{name}</h3>
           <p className="device-specification">{t('keyboard.dimensions', { keys: device.model.keyCount, layers: device.model.layers.length })}</p>
@@ -71,19 +78,6 @@ export function DeviceManager() {
               <Button id={`calibration-${device.id}`} variant="outline" className="device-calibration" disabled={locked}
                 onClick={() => actions.openCalibration(device.id)}><ScanLine />{t('calibration.entry')}</Button>}
           </div>
-          <details className="device-options">
-            <summary>{t('connection.details')}<ChevronDown aria-hidden="true" /></summary>
-            <div className="device-options-content">
-              <dl className="device-card-details">
-                <div><dt>{t('connection.model')}</dt><dd>{device.model.name}</dd></div>
-                <div><dt>{t('connection.firmware')}</dt><dd>{device.version || '—'}</dd></div>
-                <div><dt>{t('connection.vendorId')}</dt><dd><code>{formatUsbId(device.vendorId)}</code></dd></div>
-                <div><dt>{t('connection.productId')}</dt><dd><code>{formatUsbId(device.productId)}</code></dd></div>
-              </dl>
-              {device.calibration === 'unsupported' && <p className="device-option-hint">{t('calibration.unsupported')}</p>}
-              <p className="device-option-hint" id={`disconnect-hint-${device.id}`}>{t('devices.disconnectHint')}</p>
-            </div>
-          </details>
         </div>
       </article>;
       })}</div> : <div className="devices-empty">

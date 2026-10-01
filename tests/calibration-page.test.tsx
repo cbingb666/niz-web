@@ -34,8 +34,13 @@ test('66EC-XRGB V1.2.5 exposes calibration without loading a configuration', asy
   await act(() => actions.start());
   const card = screen.getByRole('article', { name: '66EC-XRGB' });
   expect(within(card).getByRole('button', { name: '校准按键' })).toBeVisible();
-  expect(card).toHaveTextContent('0x502A');
-  expect(card).toHaveTextContent('66EC(XRGB)BLe;V1.2.5;V1.0;');
+  const detailsEntry = within(card).getByRole('button', { name: '设备详情' });
+  fireEvent.click(detailsEntry);
+  const details = screen.getByRole('dialog', { name: '设备详情' });
+  expect(details).toHaveTextContent('0x502A');
+  expect(details).toHaveTextContent('66EC(XRGB)BLe;V1.2.5;V1.0;');
+  await act(async () => { fireEvent.click(within(details).getByRole('button', { name: '关闭' })); });
+  await vi.waitFor(() => expect(detailsEntry).toHaveFocus());
   const entry = within(card).getByRole('button', { name: '校准按键' });
   expect(entry).toBeEnabled();
   fireEvent.click(entry);

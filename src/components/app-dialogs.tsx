@@ -1,5 +1,6 @@
 import { useI18n } from '@/i18n/use-i18n';
 import { backupReason } from '@/i18n/core';
+import { deviceName } from '@/i18n/device';
 import { useAppStore } from '@/store/context';
 import { OperationOverlay } from './operation-overlay';
 import { ConfirmationDialog } from './confirmation-dialog';
@@ -13,10 +14,12 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 export function AppDialogs() {
   const { t, text, locale, count } = useI18n();
   const dialog = useAppStore((state) => state.dialog);
+  const devices = useAppStore(state => state.connectedDevices);
   const operation = useAppStore((state) => state.hardwareOperation);
   const backups = useAppStore((state) => state.backupRows);
   const actions = useAppStore((state) => state.actions);
   const calibration = useAppStore(state => state.calibration);
+  const detailDevice = dialog?.kind === 'device' ? devices.find(device => device.id === dialog.deviceId) : undefined;
   if (calibration && (operation === 'calibrate' || dialog?.kind === 'calibration'))
     return <CalibrationDialog key={`${calibration.target.id}:${calibration.target.epoch}`} view={calibration} />;
   if (operation === 'read' || operation === 'write') return <OperationOverlay operation={operation} />;
@@ -31,8 +34,12 @@ export function AppDialogs() {
     >
       <DialogContent closeLabel={t('common.close')} className={dialog.kind === 'changes' ? 'review-dialog' : dialog.kind === 'activity' ? 'activity-dialog' : undefined}
         onCloseAutoFocus={event => {
-          const trigger = dialog.kind === 'activity' ? 'activity-trigger' : dialog.kind === 'device' ? 'device-details-trigger' : null;
-          if (trigger) { event.preventDefault(); (document.getElementById(trigger) ?? document.getElementById('activity-trigger'))?.focus(); }
+          const trigger = dialog.kind === 'activity' ? 'activity-trigger' : dialog.kind === 'device' ? dialog.triggerId : null;
+          if (trigger) {
+            event.preventDefault();
+            const fallback = dialog.kind === 'device' ? 'page-title' : 'activity-trigger';
+            (document.getElementById(trigger) ?? document.getElementById(fallback))?.focus({ preventScroll: true });
+          }
         }}>
         {dialog.kind === 'changes' ? <>
           <DialogHeader><DialogTitle>{t('mapping.reviewTitle')}</DialogTitle><DialogDescription>{t('mapping.reviewHint')}</DialogDescription></DialogHeader>
@@ -41,8 +48,10 @@ export function AppDialogs() {
           <DialogHeader><DialogTitle>{t('activity.title')}</DialogTitle><DialogDescription>{t('activity.description')}</DialogDescription></DialogHeader>
           <ActivityLog />
         </> : dialog.kind === 'device' ? <>
-          <DialogHeader><DialogTitle>{t('connection.details')}</DialogTitle><DialogDescription>{t('connection.detailsDescription')}</DialogDescription></DialogHeader>
-          <DeviceDetails />
+          <DialogHeader><DialogTitle>{t('connection.details')}</DialogTitle><DialogDescription>{t('connection.detailsDescription', {
+            name: detailDevice ? text(deviceName(detailDevice, devices)) : '—',
+          })}</DialogDescription></DialogHeader>
+          <DeviceDetails deviceId={dialog.deviceId} />
         </> : dialog.kind === 'message' ? (
           <>
             <DialogHeader>

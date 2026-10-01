@@ -84,7 +84,14 @@ test('production is one offline HTML with hash CSP and HID permissions', async (
       const cards = document.querySelectorAll('.device-card');
       for (const [index, device] of devices.entries()) {
         const card = cards[index];
-        expect(card.textContent).toContain(device.profile.version);
+        const detailsEntry = card.querySelector<HTMLButtonElement>('.device-details-entry')!;
+        detailsEntry.click();
+        await vi.waitFor(() => expect(document.querySelector('[role="dialog"]')).not.toBeNull());
+        const details = document.querySelector('[role="dialog"]')!;
+        expect(details.textContent).toContain(device.profile.version);
+        Array.from(details.querySelectorAll('button')).find(button => button.textContent === 'Close')!.click();
+        await vi.waitFor(() => expect(document.querySelector('[role="dialog"]')).toBeNull());
+        await vi.waitFor(() => expect(document.activeElement).toBe(detailsEntry));
         const calibrate = card.querySelector<HTMLButtonElement>('.device-calibration');
         expect(calibrate).not.toBeNull();
         expect(calibrate!.disabled).toBe(false);

@@ -25,11 +25,11 @@ The keyboard is temporarily locked during reads and writes. You cannot type or u
 
 Each keyboard has its own card, configuration, drafts, and undo history. Connecting another keyboard does not switch the active editor. Cancelling authorization or selecting the same device again keeps existing connections intact. Device numbers identify keyboards within the current page; they are not hardware serial numbers.
 
-Each card shows whether its configuration has been loaded and whether edits are pending. **Configure device** asks for a read confirmation when needed; with a current loaded configuration, it returns to that device's editor without another read. **Disconnect** is at the upper right of the card, and supported devices offer **Calibrate keys** beside **Configure device**. Expand **Device details** for firmware and USB identifiers. Expanding these details sends no device commands.
+Each card shows whether its configuration has been loaded and whether edits are pending. **Configure device** asks for a read confirmation when needed; with a current loaded configuration, it returns to that device's editor without another read. The **Disconnect** icon is at the upper right of the card, and supported devices offer **Calibrate keys** beside **Configure device**. Click the information icon to its left to open **Device details**, including firmware and USB identifiers. Opening these details sends no device commands and keeps the current editor selected.
 
 If the keyboard you are editing disconnects, the app returns to the Devices page and keeps your edits under **Edits kept in this page**. Choose **Resume editing** to view or export them offline. These sessions are kept only in the current page; save anything you need before closing it.
 
-Clicking **Disconnect** tries to revoke this site's permission for the device, so you will need to select it again next time. Unplugging the cable or closing the page does not revoke permission. If the browser cannot revoke it, follow the app's instructions to remove device access in site settings.
+Clicking **Disconnect** opens a confirmation naming the keyboard, with **Cancel** focused by default. Confirm **Disconnect** to close the connection and try to revoke this site's device permission; you will need to select the keyboard again next time. Cancelling keeps the device connected. A changed connection cancels the old confirmation. Your edits remain in this page. Unplugging the cable or closing the page does not revoke permission. If the browser cannot revoke it, follow the app's instructions to remove device access in site settings.
 
 ## Edit keys
 

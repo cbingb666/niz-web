@@ -1,6 +1,6 @@
 import { expect, test, vi } from 'vitest';
 import { FakeDevice, FakeHID } from './helpers';
-import { acceptRead, application, ready } from './store-helpers';
+import { acceptDisconnect, acceptRead, application, ready } from './store-helpers';
 import type { ConfigDevice } from '../src/types/hid';
 import type { ModelTool } from '../src/model-tools';
 
@@ -8,7 +8,7 @@ test('manually disconnected devices stay disconnected after the page session is 
   const device = new FakeDevice(), hid = new FakeHID([device]);
   const first = application(hid);
   await first.actions.start();
-  await first.actions.disconnect();
+  await acceptDisconnect(first.store);
   expect(device.opened).toBe(false);
   await first.session.restore();
   expect(first.store.getState().connectedDevices).toHaveLength(0);
@@ -29,7 +29,7 @@ test.each([0, 1])('disconnecting device %i revokes only its own permission acros
   const hid = new FakeHID(devices);
   const first = application(hid);
   await first.actions.start();
-  await first.actions.disconnect(first.session.connectedDevices[index].id);
+  await acceptDisconnect(first.store, first.session.connectedDevices[index].id);
   expect(devices[index].forgotten).toBe(true);
   expect(devices[1 - index].forgotten).toBe(false);
   await first.actions.stop();
@@ -39,13 +39,52 @@ test.each([0, 1])('disconnecting device %i revokes only its own permission acros
   expect(reloaded.session.device).toBe(devices[1 - index]);
 });
 
+test.each([0, 1])('disconnect confirmation for device %i is invalidated before reconnecting it', async index => {
+  const devices = [new FakeDevice(), new FakeDevice()], hid = new FakeHID(devices);
+  const { store, actions, session } = application(hid);
+  await actions.start();
+  await acceptRead(store);
+  actions.assignKey(43);
+  actions.updateForm({ view: 'advanced', sequence: 'unfinished input' });
+  const before = store.getState(), target = session.connectedDevices[index];
+  const pending = actions.disconnect(target.id);
+  expect(store.getState().dialog).toMatchObject({ kind: 'confirm', disconnectTarget: { id: target.id, epoch: target.epoch } });
+  hid.disconnect(devices[index]);
+  await pending;
+  expect(store.getState().dialog).toBeNull();
+  hid.connect(devices[index]);
+  await ready(store);
+  expect(session.connectedDevices.find(device => device.id === target.id)?.epoch).not.toBe(target.epoch);
+  actions.confirm(true);
+  expect(session.connectedDevices).toHaveLength(2);
+  expect(devices.every(device => device.opened && !device.forgotten)).toBe(true);
+  expect(store.getState().profile!.toJSON()).toEqual(before.profile!.toJSON());
+  expect(store.getState().drafts).toEqual(before.drafts);
+});
+
+test.each([0, 1])('queued disconnect for device %i does not revoke a changed connection', async index => {
+  const devices = [new FakeDevice(), new FakeDevice()], hid = new FakeHID(devices);
+  const { session, store, actions } = application(hid);
+  await actions.start();
+  const target = session.connectedDevices[index];
+  const pending = session.disconnectDevice(target.id, target.epoch);
+  hid.disconnect(devices[index]);
+  hid.connect(devices[index]);
+  await pending;
+  expect(devices[index].forgotten).toBe(false);
+  await session.restore();
+  await ready(store);
+  expect(session.connectedDevices).toHaveLength(2);
+  expect(devices.every(device => device.opened && !device.forgotten)).toBe(true);
+});
+
 test.each(['unavailable', 'rejected'] as const)('a device is closed and the user is notified when forgetting is %s', async failure => {
   const device = new FakeDevice();
   if (failure === 'unavailable') Object.defineProperty(device, 'forget', { value: undefined });
   else vi.spyOn(device, 'forget').mockRejectedValueOnce(new Error('permission store unavailable'));
   const { store, actions } = application(new FakeHID([device]));
   await actions.start();
-  await actions.disconnect();
+  await acceptDisconnect(store);
   expect(device.opened).toBe(false);
   expect(store.getState().connectedDevices).toHaveLength(0);
   expect(store.getState().session.pending).toBe(0);
@@ -63,6 +102,7 @@ test('device actions stay locked until revoking permission finishes', async () =
   const { store, actions } = application(hid);
   await actions.start();
   const disconnecting = actions.disconnect();
+  actions.confirm(true);
   try {
     await vi.waitFor(() => expect(revoke).toHaveBeenCalledOnce());
     expect(store.getState().session.pending).toBe(1);
@@ -215,7 +255,7 @@ test('unplugging or disconnecting another device does not invalidate the active 
   await ready(store);
   expect(store.getState().connectedDevices).toHaveLength(2);
   const secondId = store.getState().connectedDevices.find(device => device.id !== session.activeDeviceId)!.id;
-  await actions.disconnect(secondId);
+  await acceptDisconnect(store, secondId);
   await session.restore();
   expect(first.opened).toBe(true);
   expect(second.opened).toBe(false);
@@ -234,7 +274,7 @@ test.each(['manual', 'unplug'] as const)('%s disconnect returns to Devices and k
   actions.assignKey(43);
   actions.updateForm({ view: 'advanced', sequence: 'unfinished macro' });
   const before = store.getState();
-  if (kind === 'manual') await actions.disconnect();
+  if (kind === 'manual') await acceptDisconnect(store);
   else hid.disconnect(device);
   expect(store.getState().page).toBe('devices');
   expect(store.getState().session.connected).toBe(false);

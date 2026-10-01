@@ -50,11 +50,14 @@ interface ConfirmationDetails {
   notice?: Message;
   warning?: Message;
   review?: ChangeReview;
+  disconnectTarget?: { id: string; epoch: number };
+  triggerId?: string;
 }
 export type AppDialog =
   | ({ kind: 'confirm'; title: Message; body: Message; label: Message } & ConfirmationDetails)
   | { kind: 'message'; title: Message; body: Message }
-  | { kind: 'backups' | 'help' | 'activity' | 'device' | 'calibration' }
+  | { kind: 'backups' | 'help' | 'activity' | 'calibration' }
+  | { kind: 'device'; deviceId: string; triggerId: string }
   | { kind: 'changes'; review: ChangeReview };
 export interface SessionView {
   id: string | null;
@@ -169,7 +172,7 @@ export interface AppActions {
   downloadBackup(id: string): Promise<void>;
   showHelp(): void;
   showActivity(): void;
-  showDeviceDetails(): void;
+  showDeviceDetails(id?: string): void;
   closeDialog(): void;
   confirm(accepted: boolean): void;
   write(): Promise<void>;
@@ -470,10 +473,14 @@ export function createAppStore(dependencies: AppDependencies) {
         );
       }
       syncEditor();
+      const dialog = get().dialog;
+      const disconnectTarget = dialog?.kind === 'confirm' ? dialog.disconnectTarget : undefined;
+      if (disconnectTarget && !get().connectedDevices.some(device => device.id === disconnectTarget.id && device.epoch === disconnectTarget.epoch))
+        actions.confirm(false);
+      if (dialog?.kind === 'device' && !get().connectedDevices.some(device => device.id === dialog.deviceId))
+        set({ dialog: null });
       if (disconnected && get().page === 'editor') {
         set({ page: 'devices' });
-        const dialog = get().dialog;
-        if (dialog?.kind === 'device') set({ dialog: null });
         if (dialog?.kind === 'confirm' && typeof dialog.title !== 'string' && 'key' in dialog.title && dialog.title.key === 'confirm.leaveEditorTitle')
           actions.confirm(false);
       }
@@ -679,11 +686,19 @@ export function createAppStore(dependencies: AppDependencies) {
         try { return await session.authorize(); }
         catch (error) { if (!disposed) fail(error); return null; }
       },
-      async disconnect(id = session.activeDeviceId ?? undefined) {
-        if (!isLocked(get())) {
-          if (id) await session.disconnectDevice(id).catch(fail);
-          else await session.disconnect().catch(fail);
-        }
+      async disconnect(id) {
+        if (disposed || isLocked(get()) || get().dialog) return;
+        const devices = get().connectedDevices;
+        const target = devices.find(device => device.id === (id ?? session.activeDeviceId));
+        if (!target) return;
+        if (!(await confirm(msg('confirm.disconnectTitle', { name: deviceName(target, devices) }),
+          msg('confirm.disconnectBody'), msg('connection.disconnect'), {
+            disconnectTarget: { id: target.id, epoch: target.epoch },
+            triggerId: id ? `device-disconnect-${id}` : 'device-disconnect-trigger',
+          }))) return;
+        if (disposed || isLocked(get()) || get().dialog ||
+          !get().connectedDevices.some(device => device.id === target.id && device.epoch === target.epoch)) return;
+        await session.disconnectDevice(target.id, target.epoch).catch(fail);
       },
       async read() {
         await readConfiguration();
@@ -847,9 +862,11 @@ export function createAppStore(dependencies: AppDependencies) {
         if (isLocked(get())) return;
         set({ dialog: { kind: 'activity' } });
       },
-      showDeviceDetails() {
-        if (isLocked(get()) || !get().session.connected) return;
-        set({ dialog: { kind: 'device' } });
+      showDeviceDetails(id) {
+        if (isLocked(get())) return;
+        const deviceId = id ?? get().session.id;
+        if (!deviceId || !get().connectedDevices.some(device => device.id === deviceId)) return;
+        set({ dialog: { kind: 'device', deviceId, triggerId: id ? `device-details-${id}` : 'device-details-trigger' } });
       },
       closeDialog() {
         if (get().dialog?.kind === 'calibration') actions.closeCalibration();

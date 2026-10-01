@@ -48,6 +48,12 @@ export async function ready(store: AppStore) {
     expect(store.getState().session.pending).toBe(0);
   });
 }
+export async function acceptDisconnect(store: AppStore, id?: string) {
+  const pending = store.getState().actions.disconnect(id);
+  expect(store.getState().dialog).toMatchObject({ kind: 'confirm', label: msg('connection.disconnect') });
+  store.getState().actions.confirm(true);
+  await pending;
+}
 export async function acceptRead(store: AppStore) {
   // Connection no longer prompts for a read. Tests that need a baseline request
   // it explicitly; tests of the confirmation itself can open it beforehand.

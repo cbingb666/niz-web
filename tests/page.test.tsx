@@ -108,6 +108,10 @@ test('the header shows the device breadcrumb and disconnecting from the footer r
   await act(async () => { fireEvent.click(within(dialog).getByRole('button', { name: '关闭' })); });
   await vi.waitFor(() => expect(details).toHaveFocus());
   await act(async () => { fireEvent.click(footer.getByRole('button', { name: '断开' })); });
+  const disconnectConfirmation = screen.getByRole('alertdialog', { name: '断开 ATOM66 fixture？' });
+  expect(within(disconnectConfirmation).getByRole('button', { name: '取消' })).toHaveFocus();
+  expect(device.opened).toBe(true);
+  await act(async () => { fireEvent.click(within(disconnectConfirmation).getByRole('button', { name: '断开' })); });
   expect(store.getState().session.connected).toBe(false);
   expect(footer.queryByRole('button', { name: '断开' })).not.toBeInTheDocument();
   expect(view.container.querySelector('.commit-bar')).toBeNull();

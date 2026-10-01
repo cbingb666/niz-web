@@ -332,6 +332,7 @@ interface DeviceConnection {
 }
 export interface ConnectedHIDDevice {
   id: string;
+  epoch: number;
   number: number;
   vendorId: number;
   productId: number;
@@ -440,6 +441,7 @@ export class HIDSession extends EventTarget {
     this.rememberActive();
     return [...this.connections].filter(([, record]) => record.device.opened).map(([id, record]) => ({
       id,
+      epoch: record.epoch,
       number: Number(id.slice('device-'.length)),
       vendorId: record.device.vendorId,
       productId: record.device.productId,
@@ -774,10 +776,11 @@ export class HIDSession extends EventTarget {
     this.identity = {};
     this.setState('waiting', message);
   }
-  async disconnect(manual = true) {
+  async disconnect(manual = true, expectedEpoch?: number) {
     assert(!this.calibrationOwner, msg('calibration.busy'));
     const device = this.device;
     await this.exclusive(async () => {
+      if (expectedEpoch !== undefined && (this.epoch !== expectedEpoch || this.device !== device)) return;
       if (manual && device) this.ignoredDevices.add(device);
       this.drop(manual ? msg('hid.disconnected') : msg('hid.switching'));
       if (manual) this.paused = this.connections.size === 0;
@@ -786,12 +789,13 @@ export class HIDSession extends EventTarget {
       if (manual && device) await this.forgetDevice(device);
     });
   }
-  async disconnectDevice(id: string) {
+  async disconnectDevice(id: string, expectedEpoch?: number) {
     assert(!this.calibrationOwner, msg('calibration.busy'));
-    if (id === this.activeDeviceId) return this.disconnect();
+    if (id === this.activeDeviceId) return this.disconnect(true, expectedEpoch);
     const record = this.connections.get(id);
     if (!record) return;
     await this.exclusive(async () => {
+      if (this.connections.get(id) !== record || (expectedEpoch !== undefined && record.epoch !== expectedEpoch)) return;
       this.ignoredDevices.add(record.device);
       this.connections.delete(id);
       record.channel.close();
