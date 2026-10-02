@@ -286,6 +286,8 @@ test('React boots on Devices without WebHID and the guide opens a usable offline
   expect(screen.getByRole('button', { name: '连接键盘' })).toBeDisabled();
   expect(screen.getByText('当前环境无法连接 USB')).toBeInTheDocument();
   await act(async () => { fireEvent.click(screen.getByRole('button', { name: '离线演示' })); });
+  expect(screen.getByRole('heading', { name: '选择演示键盘' })).toBeVisible();
+  await act(async () => { fireEvent.click(screen.getByRole('button', { name: '开始演示' })); });
   expect(screen.getByRole('button', { name: '核对并写入' })).toBeDisabled();
   expect(screen.getAllByRole('button', { name: /第 \d+ 键/ })).toHaveLength(198);
   expect(screen.getByText('当前浏览器不支持 WebHID。')).toBeInTheDocument();
@@ -298,6 +300,7 @@ test('demo editing, Fn key surfaces and reset update the React UI through Zustan
   await act(async () => {
     fireEvent.click(screen.getByRole('button', { name: '离线演示' }));
   });
+  await act(async () => { fireEvent.click(screen.getByRole('button', { name: '开始演示' })); });
   await chooseMappingType('快捷键');
   fireEvent.click(screen.getByRole('checkbox', { name: 'L Cmd' }));
   fireEvent.click(screen.getByRole('button', { name: 'C' }));
@@ -349,6 +352,8 @@ test('shadcn confirmation dialog cancels a replacement and retains unsaved input
   fireEvent.change(screen.getByLabelText(/按键序列/), { target: { value: 'A' } });
   fireEvent.click(screen.getByRole('button', { name: '设备连接引导' }));
   fireEvent.click(screen.getByRole('button', { name: '离线演示' }));
+  expect(screen.getByRole('heading', { name: '选择演示键盘' })).toHaveFocus();
+  fireEvent.click(screen.getByRole('button', { name: '开始演示' }));
   const dialog = await screen.findByRole('alertdialog');
   expect(within(dialog).getByRole('button', { name: '取消' })).toHaveFocus();
   await act(async () => {

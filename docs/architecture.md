@@ -38,6 +38,8 @@ Connection first filters USB configuration interfaces, then reads firmware and r
 
 `HIDSession` holds the device model; `Profile` holds the configuration model. The editor, layout, arrow-key navigation, confirmation summary, and page tools use the configuration's model. Before loading a configuration, the default is ATOM66.
 
+The two offline demo entries reuse `src/components/demo-launcher.tsx` to open the `demo` page. `src/components/demo-picker.tsx` presents the production registry's models with existing product images and native radio inputs, followed by one Start demo action. The selection and return entry are separate from the editor; selection survives page and language changes. The connection guide remains mounted and hidden during this detour, retaining its step and input until the user returns. Starting a demo loads the selected model after the existing replacement confirmation; cancellation preserves the configuration and drafts. A changed editor, generation, or connection invalidates pending replacement approval. Demo selection and loading send no hardware commands.
+
 Import merging, configuration comparison, and hardware writes all check model ownership. Different models cannot share configurations even when firmware strings and record counts match.
 
 ### Add a model

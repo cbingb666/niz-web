@@ -79,7 +79,7 @@ export interface Activity {
   message: Message;
   error: boolean;
 }
-export type AppPage = 'devices' | 'connect' | 'editor';
+export type AppPage = 'devices' | 'connect' | 'demo' | 'editor';
 interface EditingSession {
   editor: EditorState;
   form: EditorForm;
@@ -102,6 +102,8 @@ export interface CalibrationView {
 export interface AppState {
   page: AppPage;
   model: KeyboardModel;
+  demoModelId: string | null;
+  demoReturnPage: 'devices' | 'connect';
   locale: Locale;
   profile: Profile | null;
   editorName: Message;
@@ -150,7 +152,8 @@ export interface AppActions {
   connect(): Promise<string | null>;
   disconnect(id?: string): Promise<void>;
   read(): Promise<void>;
-  demo(): Promise<void>;
+  demo(modelId?: string): Promise<void>;
+  setDemoModel(modelId: string): void;
   importFile(file: Pick<File, 'name' | 'size' | 'text'>): Promise<void>;
   exportProfile(): void;
   exportDiagnostic(): void;
@@ -637,7 +640,8 @@ export function createAppStore(dependencies: AppDependencies) {
           if (!(await confirm(msg('confirm.leaveEditorTitle'), msg('confirm.leaveEditorBody'), msg('confirm.leaveEditorAction')))) return;
           if (disposed || isLocked(get()) || get().dialog || get().page !== 'editor') return;
         }
-        set({ page });
+        if (page === 'demo') set({ page, demoReturnPage: get().page === 'connect' ? 'connect' : 'devices' });
+        else set({ page });
       },
       async configureDevice(id = session.activeDeviceId ?? undefined) {
         if (disposed || isLocked(get()) || get().dialog) return;
@@ -703,9 +707,13 @@ export function createAppStore(dependencies: AppDependencies) {
       async read() {
         await readConfiguration();
       },
-      async demo() {
-        if (isLocked(get()) || !(await discardIfNeeded(msg('confirm.loadDemo'))) || isLocked(get())) return;
-        const profile = demoProfile(editor.model);
+      async demo(modelId) {
+        const model = modelId === undefined ? editor.model : session.models.find(model => model.id === modelId);
+        if (!model || disposed || isLocked(get())) return;
+        const targetEditor = editor, generation = editor.generation, epoch = session.epoch;
+        if (!(await discardIfNeeded(msg('confirm.loadDemo'))) || disposed || isLocked(get()) ||
+          editor !== targetEditor || editor.generation !== generation || session.epoch !== epoch) return;
+        const profile = demoProfile(model);
         if (profile.model.demoColor) {
           profile.lights = new Uint8Array(profile.model.keyCount * 3);
           for (let i = 0; i < profile.model.keyCount; i++) profile.lights.set(profile.model.demoColor, i * 3);
@@ -713,8 +721,12 @@ export function createAppStore(dependencies: AppDependencies) {
         editor.load(profile, { source: 'demo' });
         loadForm(true);
         const status = msg('status.demo');
-        set({ status, page: 'editor' });
+        set({ status, page: 'editor', demoModelId: model.id });
         log(status);
+      },
+      setDemoModel(modelId) {
+        if (disposed || isLocked(get()) || !session.models.some(model => model.id === modelId)) return;
+        set({ demoModelId: modelId });
       },
       async importFile(file) {
         if (isLocked(get()) || !(await discardIfNeeded(msg('keyboard.import')))) return;
@@ -927,6 +939,8 @@ export function createAppStore(dependencies: AppDependencies) {
     return {
       page: 'devices',
       model: editor.model,
+      demoModelId: null,
+      demoReturnPage: 'devices',
       locale: dependencies.locale ?? defaultLocale,
       profile: null,
       editorName: '',

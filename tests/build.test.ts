@@ -61,7 +61,12 @@ test('production is one offline HTML with hash CSP and HID permissions', async (
       supportNext.click();
       await vi.waitFor(() => expect(document.querySelector('.cable-demo svg')).not.toBeNull());
       Array.from(document.querySelectorAll('button')).find(button => button.textContent === 'Offline demo')!.click();
-      await vi.waitFor(() => expect(document.querySelectorAll('.key')).toHaveLength(66));
+      await vi.waitFor(() => expect(document.querySelector('.demo-picker')).not.toBeNull());
+      expect(document.getElementById('page-title')?.textContent).toBe('Choose a demo keyboard');
+      expect(document.querySelectorAll('.demo-picker input[type="radio"]')).toHaveLength(2);
+      document.querySelector<HTMLInputElement>('input[name="demo-keyboard"][value="atom68"]')!.click();
+      Array.from(document.querySelectorAll('button')).find(button => button.textContent === 'Start demo')!.click();
+      await vi.waitFor(() => expect(document.querySelectorAll('.key')).toHaveLength(68));
       expect(errors).toEqual([]);
     } finally {
       dom.window.close();

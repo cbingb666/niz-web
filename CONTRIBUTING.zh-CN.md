@@ -21,7 +21,7 @@
 
 按 [README](README.zh-CN.md) 克隆并启动项目。使用 Node.js 24 和 npm，与 CI 保持一致；也支持 Node.js 22.13+ 的 22.x 版本，完整范围见 [package.json](package.json)。
 
-开发地址为 <http://127.0.0.1:5173>。开发服务只提供网页和热更新，不代理 USB。没有键盘也可以通过「连接设备」→「离线演示」检查界面。
+开发地址为 <http://127.0.0.1:5173>。开发服务只提供网页和热更新，不代理 USB。没有键盘时，可在设备管理空状态或连接引导点击「离线演示」，在下一页选择型号，再点击「开始演示」检查界面。
 
 项目使用 React、TypeScript strict、Vite、Zustand 和 shadcn/ui。模块入口及硬件协议约束见[架构说明](docs/architecture.zh-CN.md)。
 

@@ -90,6 +90,9 @@ test.each(['zh-CN', 'en'] as const)('%s empty devices page opens the offline dem
   await act(() => actions.start());
   expect(screen.getByText(translate(locale, 'devices.supported', { models: 'ATOM66 · ATOM68' }))).toBeVisible();
   await act(async () => { fireEvent.click(screen.getByRole('button', { name: translate(locale, 'keyboard.demo') })); });
+  expect(store.getState().page).toBe('demo');
+  expect(store.getState().profile).toBeNull();
+  await act(async () => { fireEvent.click(screen.getByRole('button', { name: translate(locale, 'demo.start') })); });
   expect(store.getState().page).toBe('editor');
   expect(store.getState().source).toBe('demo');
   expect(store.getState().canWrite).toBe(false);

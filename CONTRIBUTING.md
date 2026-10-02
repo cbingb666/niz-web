@@ -21,7 +21,7 @@ Use the [feature request form](https://github.com/cbingb666/niz-web/issues/new?t
 
 Follow the [README](README.md) to clone and start the project. Use Node.js 24 and npm to match CI. Node.js 22.x from 22.13 onward is also supported; see [package.json](package.json) for the full version range.
 
-The development server runs at <http://127.0.0.1:5173>. It serves the page and hot updates; it does not proxy USB. Without a keyboard, choose **Connect a device** → **Offline demo** to inspect the interface.
+The development server runs at <http://127.0.0.1:5173>. It serves the page and hot updates; it does not proxy USB. Without a keyboard, click **Offline demo** on the empty Devices page or the connection guide, choose a model on the next page, then click **Start demo** to inspect the interface.
 
 The project uses React, strict TypeScript, Vite, Zustand, and shadcn/ui. See [Architecture and compatibility](docs/architecture.md) for module responsibilities and hardware protocol constraints.
 

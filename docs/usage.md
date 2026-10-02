@@ -108,7 +108,9 @@ Offline demos and imported files do not represent the current keyboard state. To
 
 Use the control at the top right to switch between Simplified Chinese and English. Switching keeps your input and does not reconnect the keyboard. The app first uses your saved language, then your browser preference, and falls back to Simplified Chinese if neither matches.
 
-Without a keyboard, choose **Offline demo** on the empty Devices page or in the connection guide. The built `dist/index.html` contains all runtime resources and translations, so it supports offline import, editing, and export. When opening the file directly, USB and backup permissions depend on the browser and have not been validated on real hardware.
+Without a keyboard, click **Offline demo** on the empty Devices page or in the connection guide. On the next page, select the ATOM66 or ATOM68 product card and click **Start demo**. Use the back button to return to the entry page; the connection guide keeps its current step. The selected model stays selected when you change pages or languages. Selecting a model keeps your current configuration unchanged; starting a demo asks for confirmation before replacing pending edits or unapplied input. Cancelling keeps both your edits and the selected demo model. Demos do not request USB access or read or write a keyboard.
+
+The built `dist/index.html` contains all runtime resources and translations, so it supports offline import, editing, and export. When opening the file directly, USB and backup permissions depend on the browser and have not been validated on real hardware.
 
 ## Key calibration
 

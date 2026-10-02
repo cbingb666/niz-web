@@ -33,7 +33,7 @@ You need a supported keyboard, a USB data cable, and desktop Chrome or Edge. Clo
 
 **The keyboard is temporarily locked during reads and writes. You cannot type during this time.** Keep the USB cable connected until the operation finishes.
 
-To try the interface without a keyboard, choose **Offline demo** on the **Connect a device** page. Editing and importing change only the configuration in the page. Writing a configuration and starting calibration each require confirmation.
+To try the interface without a keyboard, click **Offline demo** on the empty Devices page or the **Connect a device** page. Choose ATOM66 or ATOM68 on the next page, then click **Start demo**. Editing and importing change only the configuration in the page. Writing a configuration and starting calibration each require confirmation.
 
 ## Features
 

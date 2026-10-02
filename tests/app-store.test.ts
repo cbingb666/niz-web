@@ -164,6 +164,30 @@ test('discard confirmation can cancel or replace edited state without touching h
   await replaced;
   expect(store.getState().form.sequence).toBe('Esc');
 });
+test('demo selection rejects unregistered models and a connection change invalidates replacement approval', async () => {
+  const device = new FakeDevice(), hid = new FakeHID([device]);
+  const { store, actions, session } = application(hid);
+  await actions.start();
+  await acceptRead(store);
+  actions.updateForm({ sequence: 'unfinished draft' });
+  const before = store.getState();
+  const sent = device.sent.slice();
+  await actions.demo('unknown-model');
+  expect(store.getState().dialog).toBeNull();
+  expect(store.getState().profile?.toJSON()).toEqual(before.profile?.toJSON());
+  const replacing = actions.demo('atom68');
+  expect(store.getState().dialog?.kind).toBe('confirm');
+  const epoch = session.epoch;
+  hid.disconnect(device);
+  await ready(store);
+  expect(session.epoch).not.toBe(epoch);
+  actions.confirm(true);
+  await replacing;
+  expect(store.getState().model.id).toBe('atom66');
+  expect(store.getState().profile?.toJSON()).toEqual(before.profile?.toJSON());
+  expect(store.getState().drafts).toEqual(before.drafts);
+  expect(device.sent).toEqual(sent);
+});
 test('write requires confirmation; cancellation sends no hardware write', async () => {
   const device = new FakeDevice();
   const { store, actions } = application(new FakeHID([device]));

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { ArrowLeft, ArrowRight, Cable, Check, CheckCircle2, CircleAlert, Keyboard, Play } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Cable, Check, CheckCircle2, CircleAlert, Keyboard } from 'lucide-react';
 import { useI18n } from '@/i18n/use-i18n';
 import { deviceName } from '@/i18n/device';
 import { supportedModels } from '@/devices';
@@ -8,6 +8,7 @@ import { useAppStore } from '@/store/context';
 import { Button } from './ui/button';
 import { Checkbox } from './ui/checkbox';
 import { ConnectionIllustration } from './connection-illustration';
+import { DemoLauncher } from './demo-launcher';
 
 const steps = [
   { id: 'support', label: 'guide.supportStep', title: 'guide.supportTitle', description: 'guide.supportDescription' },
@@ -16,7 +17,7 @@ const steps = [
   { id: 'complete', label: 'guide.completeStep', title: 'guide.completeTitle', description: 'guide.completeDescription' },
 ] as const;
 
-export function ConnectionGuide({ usbAvailable }: { usbAvailable: boolean }) {
+export function ConnectionGuide({ usbAvailable, active = true }: { usbAvailable: boolean; active?: boolean }) {
   const { t, text } = useI18n();
   const session = useAppStore(state => state.session);
   const devices = useAppStore(state => state.connectedDevices);
@@ -36,10 +37,10 @@ export function ConnectionGuide({ usbAvailable }: { usbAvailable: boolean }) {
   const focusKey = `${activeStep}:${selected?.id ?? ''}`;
   const lastFocusKey = useRef(focusKey);
   useEffect(() => {
-    if (locked || dialogOpen || lastFocusKey.current === focusKey) return;
+    if (!active || locked || dialogOpen || lastFocusKey.current === focusKey) return;
     lastFocusKey.current = focusKey;
     heading.current?.focus({ preventScroll: true });
-  }, [focusKey, locked, dialogOpen]);
+  }, [focusKey, locked, dialogOpen, active]);
   const unsupported = !usbAvailable || session.state === 'unsupported';
   const selectedName = selected && text(deviceName(selected, devices));
   const status = session.authorizing ? t('connection.authorizing') : selected
@@ -56,7 +57,7 @@ export function ConnectionGuide({ usbAvailable }: { usbAvailable: boolean }) {
     else setSelectionFailed(true);
   }
 
-  return <div className="device-page connection-guide-page">
+  return <div className="device-page connection-guide-page" hidden={!active}>
     <div className="guide-toolbar">
       <Button className="page-back" variant="ghost" disabled={locked} onClick={() => actions.navigate('devices')}>
         <ArrowLeft />{t('devices.back')}
@@ -74,7 +75,7 @@ export function ConnectionGuide({ usbAvailable }: { usbAvailable: boolean }) {
     </ol>
     <section className="guide-layout" aria-labelledby="page-title">
       <header className="guide-step-heading">
-        <h2 id="page-title" ref={heading} tabIndex={-1} aria-describedby="guide-step-progress">{disconnected ? t('guide.disconnectedTitle') : t(step.title)}</h2>
+        <h2 id={active ? 'page-title' : undefined} ref={heading} tabIndex={-1} aria-describedby="guide-step-progress">{disconnected ? t('guide.disconnectedTitle') : t(step.title)}</h2>
         {!disconnected && !(step.id === 'permission' && selected) && <p>{t(step.description)}</p>}
       </header>
       <div className="guide-illustration-stage" key={activeStep}>
@@ -135,6 +136,6 @@ export function ConnectionGuide({ usbAvailable }: { usbAvailable: boolean }) {
               : <Button className="guide-connect" disabled={locked} onClick={() => setActiveStep(2)}>{t('guide.reconnect')}<ArrowRight /></Button>}
       </div>
     </section>
-    <div className="guide-alternative"><Button variant="ghost" disabled={locked} onClick={actions.demo}><Play />{t('keyboard.demo')}</Button></div>
+    <div className="guide-alternative"><DemoLauncher /></div>
   </div>;
 }

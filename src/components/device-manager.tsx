@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { ArrowRight, FileCheck2, FileInput, Info, PencilLine, Play, Plus, SlidersHorizontal, Unplug, ScanLine, TriangleAlert } from 'lucide-react';
+import { ArrowRight, FileCheck2, FileInput, Info, PencilLine, Plus, SlidersHorizontal, Unplug, ScanLine, TriangleAlert } from 'lucide-react';
 import { supportedModels } from '@/devices';
 import { deviceName } from '@/i18n/device';
 import { useI18n } from '@/i18n/use-i18n';
@@ -8,6 +8,7 @@ import { useAppStore } from '@/store/context';
 import { Button } from './ui/button';
 import { DeviceIllustration } from './device-illustration';
 import { ConnectionIllustration } from './connection-illustration';
+import { DemoLauncher } from './demo-launcher';
 
 export function DeviceManager() {
   const { t, text, count } = useI18n();
@@ -89,7 +90,7 @@ export function DeviceManager() {
           <Button disabled={locked} onClick={() => actions.navigate('connect')}>
             {t('devices.add')}<ArrowRight />
           </Button>
-          <Button className="devices-demo" variant="ghost" disabled={locked} onClick={actions.demo}><Play />{t('keyboard.demo')}</Button>
+          <DemoLauncher />
         </div>
       </div>}
     </section>

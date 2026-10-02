@@ -3,6 +3,7 @@ import { ArrowRight, Cable, ChevronRight, CircleHelp, Undo2, Redo2 } from 'lucid
 import { ConnectionPanel } from './components/connection-panel';
 import { DeviceManager } from './components/device-manager';
 import { ConnectionGuide } from './components/connection-guide';
+import { DemoPicker } from './components/demo-picker';
 import { KeyboardPanel } from './components/keyboard-panel';
 import { KeyEditor } from './components/key-editor';
 import { AppDialogs } from './components/app-dialogs';
@@ -88,6 +89,7 @@ function Header() {
   const source = useAppStore(state => state.source);
   const currentDevice = devices.find(device => device.id === session.id);
   const currentPage = page === 'connect' ? t('guide.title')
+    : page === 'demo' ? t('keyboard.demo')
     : source === 'demo' ? `${model.name} · ${t('keyboard.demo')}`
     : currentDevice ? text(deviceName(currentDevice, devices)) : session.product || model.name;
   const header = useRef<HTMLElement>(null);
@@ -134,6 +136,7 @@ function AppContent({ notices = [], usbAvailable = false }: AppContentProps) {
   const [editorOpen, setEditorOpen] = useState(false);
   const [changesPreference, setChangesPreference] = useState<boolean | null>(null);
   const page = useAppStore(state => state.page);
+  const demoReturnPage = useAppStore(state => state.demoReturnPage);
   const main = useRef<HTMLElement>(null);
   const previousPage = useRef(page);
   const changesCollapsed = changesPreference ?? compactChanges;
@@ -182,7 +185,9 @@ function AppContent({ notices = [], usbAvailable = false }: AppContentProps) {
             </div>
           )}
           {page === 'devices' && <DeviceManager />}
-          {page === 'connect' && <ConnectionGuide usbAvailable={usbAvailable} />}
+          {(page === 'connect' || page === 'demo' && demoReturnPage === 'connect') &&
+            <ConnectionGuide usbAvailable={usbAvailable} active={page === 'connect'} />}
+          {page === 'demo' && <DemoPicker />}
           {page === 'editor' && <section className="workspace" aria-label={t('app.editor')}>
             <KeyboardPanel onEdit={() => { if (narrow) setEditorOpen(true); }}
               changesExpanded={!changesCollapsed}

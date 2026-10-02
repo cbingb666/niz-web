@@ -1140,7 +1140,23 @@ main {
 .devices-empty-copy > p { color: var(--muted-foreground); font-size: 1.0625rem; line-height: 1.6; margin-top: 12px; text-wrap: pretty; }
 .devices-empty-copy > .devices-supported { margin-top: 8px; margin-bottom: 24px; font-size: .9375rem; }
 .devices-empty-copy > button { min-height: 48px; padding-inline: 24px; font-size: 1rem; }
-.devices-empty-copy > .devices-demo { min-height: 44px; padding-inline: 12px; margin-top: 12px; color: var(--muted-foreground); font-size: .9375rem; }
+.demo-launch { min-height: 44px; padding-inline: 12px; color: var(--muted-foreground); font-size: .9375rem; }
+.devices-empty-copy > .demo-launch { margin-top: 12px; }
+.demo-picker { display: grid; gap: 24px; max-width: 800px; }
+.demo-picker > .page-back { justify-self: start; }
+.demo-picker > h2 { font-size: clamp(1.5rem, 3vw, 1.875rem); line-height: 1.3; }
+.demo-models { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr)); gap: 16px; }
+.demo-model-card { display: grid; gap: 20px; padding: 24px; border: 1px solid var(--border); border-radius: 16px; background: var(--panel); cursor: pointer; line-height: 1.6; }
+.demo-model-card[data-selected='true'] { border-color: var(--primary); box-shadow: 0 0 0 1px var(--primary); }
+.demo-model-card:has(input:focus-visible) { outline: 2px solid var(--ring); outline-offset: 4px; }
+.demo-model-art { display: flex; align-items: center; height: 120px; }
+.demo-model-art .device-illustration { max-height: 120px; }
+.demo-model-details { display: flex; align-items: center; gap: 12px; }
+.demo-model-radio { width: 20px; height: 20px; flex: none; accent-color: var(--primary); }
+.demo-model-details strong { font-size: 1.125rem; }
+.demo-model-details p { color: var(--muted-foreground); font-size: .9375rem; font-weight: 400; }
+.demo-picker-actions { display: flex; justify-content: flex-end; }
+.demo-picker-actions > button { min-height: 44px; }
 .saved-editors { margin-top: 32px; }
 .saved-editors > h3 { color: var(--muted-foreground); font-size: .9375rem; font-weight: 500; }
 .saved-editors .resume-profile { margin-top: 12px; }
@@ -1218,7 +1234,7 @@ main {
 .guide-connection-state strong { display: block; font-size: .9375rem; font-weight: 600; }
 .guide-connection-state p { margin-top: 8px; font-size: .9375rem; color: var(--muted-foreground); line-height: 1.6; }
 .guide-alternative { margin-top: 16px; text-align: end; }
-.guide-alternative > button { min-height: 44px; color: var(--muted-foreground); }
+.guide-alternative > .demo-launch { min-height: 44px; }
 .cable-demo, .permission-demo { width: 100%; margin: 0; }
 .cable-demo > svg { display: block; width: min(100%, 440px); margin: auto; color: var(--muted-foreground); }
 .diagram-computer, .diagram-keyboard { color: #c2ccd1; }
