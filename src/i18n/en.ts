@@ -413,6 +413,7 @@ export const en = {
     'Write complete: all key groups verified. The previous configuration was backed up.',
   'confirm.replaceTitle': '{action} will replace your edits',
   'confirm.leaveEditorTitle': 'Return to Devices?',
+  'confirm.leavePageTitle': 'Leave the editor?',
   'confirm.leaveEditorBody': 'Your edits will be kept, but not written to the keyboard.\n\nClosing or refreshing the page will lose these edits.',
   'confirm.leaveEditorAction': 'Keep edits and return',
   'confirm.disconnectTitle': 'Disconnect {name}?',

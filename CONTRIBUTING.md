@@ -78,7 +78,7 @@ FakeHID and jsdom tests do not replace real browser and hardware validation. Do 
 
 `dist/_headers` supplies headers such as `Permissions-Policy: hid=(self)` on hosts that support this format. GitHub Pages does not read this file. The page also includes a CSP `<meta>` tag. Use a standalone HTTPS page that permits WebHID to connect devices; do not disable browser security restrictions.
 
-Keep `base: './'` in `vite.config.ts` so the build works under a repository subpath, at a site root, or as offline HTML. In-app navigation does not change the URL and needs no SPA routing fallback.
+Keep `base: './'` in `vite.config.ts` so the build works under a repository subpath, at a site root, or as offline HTML. In-app navigation uses hash routes such as `#/connect`, `#/demo`, and `#/demo/atom68`. The pathname stays unchanged, so no SPA routing fallback is required for Pages or standalone HTML.
 
 ### GitHub Pages
 

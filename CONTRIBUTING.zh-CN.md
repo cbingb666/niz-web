@@ -78,7 +78,7 @@ FakeHID 和 jsdom 测试不能代替真实浏览器与硬件验收。不要将�
 
 `dist/_headers` 提供 `Permissions-Policy: hid=(self)` 等响应头，是否生效取决于托管服务。GitHub Pages 不读取该文件；页面本身另有 CSP `<meta>`。连接设备时使用允许 WebHID 的独立 HTTPS 页面，不要关闭浏览器安全限制。
 
-保留 `vite.config.ts` 的 `base: './'`，让产物适用于仓库子路径、站点根路径和离线 HTML。应用内页面切换不修改 URL，无需配置 SPA 路由回退。
+保留 `vite.config.ts` 的 `base: './'`，让产物适用于仓库子路径、站点根路径和离线 HTML。应用内页面切换使用 `#/connect`、`#/demo`、`#/demo/atom68` 等 hash 路由，网址路径不变，因此 Pages 和独立 HTML 无需配置 SPA 路由回退。
 
 ### GitHub Pages
 

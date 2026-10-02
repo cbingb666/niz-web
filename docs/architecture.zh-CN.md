@@ -11,6 +11,7 @@ NIZ Web 是纯浏览器应用，通过 WebHID 访问键盘的 USB 配置接口�
 | 位置 | 职责 |
 | --- | --- |
 | `src/main.tsx`、`src/app.tsx` | 应用入口、HID 会话生命周期与页面组合 |
+| `src/routing.ts` | Hash 路由、URL 规范化、历史前进后退与导航保护 |
 | `src/components/` | React 界面；`ui/` 为本地 shadcn/ui 基础组件 |
 | `src/store/` | Zustand 状态、操作、设备事件与 React 订阅 |
 | `src/editor.ts` | 独立于 React 的编辑模型、差异和撤销历史 |
@@ -106,6 +107,8 @@ ATOM68 为 68 键、三个可编辑层。原厂客户端读写六组配置（408
 校准向导复用基础 UI，背景 inert 时只允许当前阶段动作。终止错误解除页面操作锁，并且即使没有载入配置也可回看。WebMCP 不提供校准动作。硬件资格验证仍待完成，详见[调研](calibration-research.zh-CN.md)和[落地方案](calibration-implementation-plan.zh-CN.md)。
 
 ## 界面实现
+
+`routing.ts` 在应用入口、渲染之前将浏览器历史与 store 绑定。Hash 路由保留原有路径和查询参数，无需静态托管回退。演示型号选择替换当前历史项，页面切换与进入指定型号的离线编辑器增加历史项。型号来自生产注册表；没有载入数据的硬件编辑器链接返回设备管理。历史导航复用 store 的离开/替换确认，取消或锁定时恢复原历史位置，不授权 USB，也不读取设备配置。路由自身的历史状态仅记录序号，不记录编辑数据。对于拒绝 History API URL 参数的不透明文件来源，只修改地址片段，再以不含 URL 的调用标记历史项。监听器和订阅随应用清理，生命周期独立于 React 渲染。
 
 - 主题令牌位于 `src/styles.css`，`components.json` 配置 `@/` 别名。弹窗复用现有 Dialog / AlertDialog 的尺寸、圆角、间距和按钮。
 - 设备管理、连接引导与工作台共用设备命名：优先设备名称，仅重名时附加本页面编号。编号不作为跨页面身份。

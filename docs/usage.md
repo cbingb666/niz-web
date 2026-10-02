@@ -106,6 +106,23 @@ Offline demos and imported files do not represent the current keyboard state. To
 
 ## Language and offline use
 
+### Page links and browser navigation
+
+Pages use the fragment after `#`, so the same links work under a repository subpath or in the standalone HTML file.
+
+| URL fragment | Page |
+| --- | --- |
+| `#/devices` | Devices |
+| `#/connect` | Connection guide |
+| `#/demo` | Demo keyboard selection |
+| `#/demo/atom66` | ATOM66 offline editor |
+| `#/demo/atom68` | ATOM68 offline editor |
+| `#/editor` | The configuration already loaded in this page |
+
+The selection page records the model and return entry in its URL, for example `#/demo?model=atom68&from=connect`. Changing the model updates that entry without adding another history step. Browser Back and Forward keep loaded configurations and unapplied input; leaving an edited workbench asks for confirmation. Cancelling returns to the original URL and preserves the history entries. During read/write confirmations, reads, writes, or calibration, history navigation keeps the current operation locked.
+
+You can reopen a connection or demo selection link. A fresh connection guide starts at the model check and requires the normal button clicks. A model-specific demo link loads its offline example. URLs contain no configurations, drafts or USB permissions: refreshing loses unsaved page data, and an empty `#/editor` returns to Devices. Opening or changing a URL never grants USB access or reads or writes a hardware configuration.
+
 Use the control at the top right to switch between Simplified Chinese and English. Switching keeps your input and does not reconnect the keyboard. The app first uses your saved language, then your browser preference, and falls back to Simplified Chinese if neither matches.
 
 Without a keyboard, click **Offline demo** on the empty Devices page or in the connection guide. On the next page, select the ATOM66 or ATOM68 product card and click **Start demo**. Use the back button to return to the entry page; the connection guide keeps its current step. The selected model stays selected when you change pages or languages. Selecting a model keeps your current configuration unchanged; starting a demo asks for confirmation before replacing pending edits or unapplied input. Cancelling keeps both your edits and the selected demo model. Demos do not request USB access or read or write a keyboard.

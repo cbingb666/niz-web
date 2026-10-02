@@ -11,6 +11,7 @@ NIZ Web runs entirely in the browser and accesses the keyboard's USB configurati
 | Location | Responsibility |
 | --- | --- |
 | `src/main.tsx`, `src/app.tsx` | App entry point, HID session lifecycle, and page composition |
+| `src/routing.ts` | Hash routes, URL normalization, history traversal and navigation protection |
 | `src/components/` | React interface; `ui/` contains local shadcn/ui primitives |
 | `src/store/` | Zustand state, actions, device events, and React subscriptions |
 | `src/editor.ts` | Framework-independent editing model, differences, and undo history |
@@ -106,6 +107,8 @@ Calibration invalidates the target's hardware write baseline before a changing c
 The calibration dialog reuses existing UI primitives. It remains interactive only for valid stage actions while the background is inert. Terminal errors release the page operation lock and remain reviewable independently of whether a profile was loaded. WebMCP exposes no calibration action. Hardware qualification remains outstanding; see [research](calibration-research.md) and the [implementation plan](calibration-implementation-plan.md).
 
 ## Interface implementation
+
+`routing.ts` binds browser history to the store at the application entry point, before rendering. Hash routes preserve the original pathname and query, requiring no static-host fallback. Demo selection replaces the current history entry; page changes and opening a model's offline editor add entries. Model IDs come from the production registry. A fresh hardware-editor link without loaded data returns to Devices. History-driven navigation uses the store's existing leave/replace confirmations, restores the prior history cursor on cancellation or while locked, and never authorizes USB or loads a device configuration. The router's own history state records an index, not editor data. For opaque file origins that reject a History API URL argument, it changes only the fragment and tags the entry without supplying a URL. Routing listeners and subscriptions are disposed with the application, independently of React rendering.
 
 - Theme tokens live in `src/styles.css`; `components.json` defines the `@/` alias. Dialogs reuse existing Dialog / AlertDialog dimensions, corners, spacing, and buttons.
 - Devices, the connection guide, and the editor share device naming. Use the device name, adding a page-local number only when names match. Numbers are not persistent identities.

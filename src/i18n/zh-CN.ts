@@ -394,6 +394,7 @@ export const zhCN = {
   'status.writeComplete': '写入完成：所有按键组回读一致，写入前配置已备份。',
   'confirm.replaceTitle': '{action}会替换编辑内容',
   'confirm.leaveEditorTitle': '返回设备管理？',
+  'confirm.leavePageTitle': '离开配置工作台？',
   'confirm.leaveEditorBody': '编辑内容会保留，尚未写入键盘。\n\n关闭或刷新页面会丢失这些编辑。',
   'confirm.leaveEditorAction': '保留编辑并返回',
   'confirm.disconnectTitle': '断开 {name}？',

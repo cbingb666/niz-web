@@ -143,7 +143,7 @@ export interface AppState {
   actions: AppActions;
 }
 export interface AppActions {
-  navigate(page: AppPage): Promise<void>;
+  navigate(page: AppPage, options?: { fromHistory?: boolean }): Promise<void>;
   configureDevice(id?: string): Promise<void>;
   resumeEditor(id: string): void;
   setLocale(locale: Locale): void;
@@ -633,11 +633,12 @@ export function createAppStore(dependencies: AppDependencies) {
         if (disposed || isLocked(get()) || get().dialog || !editingSessions.get(id)?.editor.profile) return;
         if (session.selectDevice(id, true)) set({ page: 'editor' });
       },
-      async navigate(page) {
+      async navigate(page, options) {
         if (disposed || isLocked(get()) || get().dialog || page === get().page) return;
         if (page === 'editor' && !get().profile && !get().session.connected) return;
-        if (get().page === 'editor' && page === 'devices' && (editor.dirty || get().draftIndices.length)) {
-          if (!(await confirm(msg('confirm.leaveEditorTitle'), msg('confirm.leaveEditorBody'), msg('confirm.leaveEditorAction')))) return;
+        const pendingChanges = options?.fromHistory ? get().hasUnsavedChanges : editor.dirty || get().draftIndices.length > 0;
+        if (get().page === 'editor' && (page === 'devices' || options?.fromHistory && page !== 'editor') && pendingChanges) {
+          if (!(await confirm(msg(options?.fromHistory ? 'confirm.leavePageTitle' : 'confirm.leaveEditorTitle'), msg('confirm.leaveEditorBody'), msg('confirm.leaveEditorAction')))) return;
           if (disposed || isLocked(get()) || get().dialog || get().page !== 'editor') return;
         }
         if (page === 'demo') set({ page, demoReturnPage: get().page === 'connect' ? 'connect' : 'devices' });
