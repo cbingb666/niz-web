@@ -76,7 +76,7 @@ export const en = {
   'devices.resume': 'Resume editing',
   'devices.keyboardIllustration': 'Retouched product image of the NIZ ATOM66 electrocapacitive keyboard',
   'devices.modelIllustration': '{model} keyboard illustration',
-  'devices.atom68Illustration': 'Official product photo of the NIZ ATOM68 electrocapacitive keyboard',
+  'devices.atom68Illustration': 'Retouched product image of the NIZ ATOM68 electrocapacitive keyboard',
   'guide.title': 'Connection guide',
   'guide.modelHelp': 'Model not listed?',
   'guide.connectionHelp': 'Having trouble connecting?',

@@ -1119,7 +1119,6 @@ main {
 }
 .device-illustration { display: block; width: 100%; height: auto; object-fit: contain; user-select: none; }
 .device-illustration-symbol { max-height: 180px; color: var(--muted-foreground); }
-.device-illustration-atom68 { aspect-ratio: 16 / 6; object-fit: cover; }
 .device-card-art .device-illustration {
   max-height: 330px;
 }

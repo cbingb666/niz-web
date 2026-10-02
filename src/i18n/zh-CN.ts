@@ -74,7 +74,7 @@ export const zhCN = {
   'devices.resume': '继续编辑',
   'devices.keyboardIllustration': 'NIZ ATOM66 静电容键盘精修产品图',
   'devices.modelIllustration': '{model} 键盘示意图',
-  'devices.atom68Illustration': 'NIZ ATOM68 静电容键盘官方产品图',
+  'devices.atom68Illustration': 'NIZ ATOM68 静电容键盘精修产品图',
   'guide.title': '设备连接引导',
   'guide.modelHelp': '型号不在列表中？',
   'guide.connectionHelp': '连接遇到问题？',

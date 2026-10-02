@@ -44,7 +44,7 @@ test('ATOM68 cards, three editable layers and write warnings use the production 
   expect(device.sent.map(packet => packet[1])).toEqual([0xf9]);
   expect(store.getState().dialog).toBeNull();
   const card = within(screen.getByRole('article', { name: 'ATOM68 fixture' }));
-  expect(card.getByRole('img', { name: 'NIZ ATOM68 静电容键盘官方产品图' })).toBeVisible();
+  expect(card.getByRole('img', { name: 'NIZ ATOM68 静电容键盘精修产品图' })).toBeVisible();
   expect(card.getByText('68 键 · 3 个编辑层')).toBeVisible();
   expect(card.queryByRole('button', { name: '校准按键' })).not.toBeInTheDocument();
   await act(() => acceptRead(store));
