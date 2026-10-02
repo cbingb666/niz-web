@@ -75,6 +75,8 @@ export const zhCN = {
   'devices.keyboardIllustration': 'NIZ ATOM66 静电容键盘精修产品图',
   'devices.modelIllustration': '{model} 键盘示意图',
   'devices.atom68Illustration': 'NIZ ATOM68 静电容键盘精修产品图',
+  'devices.micro82Illustration': 'NIZ MICRO82 静电容键盘精修产品图',
+  'devices.micro84Illustration': 'NIZ MICRO84 静电容键盘精修产品图',
   'guide.title': '设备连接引导',
   'guide.modelHelp': '型号不在列表中？',
   'guide.connectionHelp': '连接遇到问题？',
@@ -338,8 +340,8 @@ export const zhCN = {
   'help.reconnect':
     '重连时会保留未写入修改、未保存输入及离线导入。点击“重新读取配置”并确认后可替换编辑内容。',
   'help.features':
-    '支持组合键、连发、三种宏、逐步延迟、RGB 逐键颜色，以及 JSON / ATOM66 和 ATOM68 Windows .pro 导入。扩展组记录完整保留，可编辑层以当前型号为准。',
-  'help.validation': 'ATOM68 实机写入与所有型号的校准效果尚待验证。不提供固件升级或全局宏录制。',
+    '支持组合键、连发、三种宏、逐步延迟、RGB 逐键颜色，以及 JSON 和已支持型号的 Windows .pro 导入。扩展组记录完整保留，可编辑层以当前型号为准。',
+  'help.validation': 'ATOM68、MICRO82、MICRO84 实机写入与所有型号的校准效果尚待验证。不提供固件升级或全局宏录制。',
   'help.privacy': '配置与按键计数不会上传。读取诊断不能直接作为恢复配置使用。',
   'help.webhid': '浏览器 WebHID 说明 ↗',
   'environment.secure': 'USB 连接需要 HTTPS 安全页面。离线查看和编辑仍可使用。',

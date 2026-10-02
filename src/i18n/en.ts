@@ -77,6 +77,8 @@ export const en = {
   'devices.keyboardIllustration': 'Retouched product image of the NIZ ATOM66 electrocapacitive keyboard',
   'devices.modelIllustration': '{model} keyboard illustration',
   'devices.atom68Illustration': 'Retouched product image of the NIZ ATOM68 electrocapacitive keyboard',
+  'devices.micro82Illustration': 'Retouched product image of the NIZ MICRO82 electrocapacitive keyboard',
+  'devices.micro84Illustration': 'Retouched product image of the NIZ MICRO84 electrocapacitive keyboard',
   'guide.title': 'Connection guide',
   'guide.modelHelp': 'Model not listed?',
   'guide.connectionHelp': 'Having trouble connecting?',
@@ -346,9 +348,9 @@ export const en = {
   'help.reconnect':
     'Reconnecting preserves pending edits, unsaved input and offline imports. Read the configuration again and confirm to replace the editor contents.',
   'help.features':
-    'Supports chords, repeat, three macro modes, per-step delays, per-key RGB, JSON imports and Windows .pro imports for ATOM66 and ATOM68. Extended groups are preserved; editable layers depend on the current model.',
+    'Supports chords, repeat, three macro modes, per-step delays, per-key RGB, JSON imports and Windows .pro imports for supported models. Extended groups are preserved; editable layers depend on the current model.',
   'help.validation':
-    'ATOM68 writes and calibration on all models still need hardware validation. Firmware upgrades and global macro recording are not included.',
+    'ATOM68, MICRO82 and MICRO84 writes and calibration on all models still need hardware validation. Firmware upgrades and global macro recording are not included.',
   'help.privacy':
     'Configurations and key counts are never uploaded. Read diagnostics cannot be imported as recovery configurations.',
   'help.webhid': 'Browser WebHID documentation ↗',

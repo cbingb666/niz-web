@@ -706,7 +706,11 @@ main {
   display: flex;
   gap: var(--key-gap);
   margin: 0;
+  --row-key-unit: calc((100cqi - var(--row-gaps) * var(--key-gap)) / var(--row-units));
   height: max(76px, calc((100cqi - var(--row-gaps) * var(--key-gap)) / var(--row-units) + 4px));
+}
+.key-row > .key {
+  margin-inline-start: calc(var(--gap-before, 0) * var(--row-key-unit));
 }
 .key, .keycap-sample {
   --side-width: 9px;

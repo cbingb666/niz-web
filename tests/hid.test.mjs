@@ -132,7 +132,7 @@ test('requestDevice runs synchronously in authorize, preserving a button user ge
   hid.selection = [device];
   const promise = session.authorize();
   assert.equal(hid.requestCount, 1);
-  assert.equal(hid.filters.length, 7);
+  assert.equal(hid.filters.length, 14);
   assert.equal(
     hid.filters.every((f) => f.vendorId === 0x0483 && f.usagePage === 0x8c && f.usage === 1),
     true,

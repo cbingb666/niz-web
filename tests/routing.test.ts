@@ -55,13 +55,14 @@ test('routes accept only known pages and production demo models', () => {
   expect(routeHash({ page: 'demo', modelId: 'atom68', returnPage: 'connect' })).toBe('#/demo?model=atom68&from=connect');
 });
 
-test.each(['atom66', 'atom68'])('a fresh demo link restores the %s offline editor without hardware access', async modelId => {
+test.each([{ modelId: 'atom66', records: 198 }, { modelId: 'atom68', records: 204 },
+  { modelId: 'micro82', records: 246 }, { modelId: 'micro84', records: 252 }])('a fresh demo link restores the $modelId offline editor without hardware access', async ({ modelId, records }) => {
   const hid = new FakeHID(), { store } = application(hid);
   const browser = new HistoryBrowser(`#/demo/${modelId}`), routing = bindRouting(store, browser);
   onTestFinished(routing.dispose);
   await routing.ready;
   expect(store.getState()).toMatchObject({ page: 'editor', source: 'demo', canWrite: false, model: { id: modelId } });
-  expect(store.getState().profile?.records.length).toBe(modelId === 'atom68' ? 204 : 198);
+  expect(store.getState().profile?.records.length).toBe(records);
   expect(hid.requestCount).toBe(0);
   expect(hid.getCount).toBe(0);
 });

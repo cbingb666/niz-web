@@ -31,11 +31,12 @@ function Keyboard({ onEdit }: { onEdit?: () => void }) {
   let position = 0;
   const rows = model.rows.map((row) => {
     let left = 0;
-    const total = row.reduce((sum, key) => sum + key.width, 0);
-    return row.map(({ width }) => {
+    const total = row.reduce((sum, key) => sum + key.width + (key.gapBefore ?? 0), 0);
+    return row.map(({ width, gapBefore = 0 }) => {
+      left += gapBefore;
       const center = (left + width / 2) / total;
       left += width;
-      return { weight: width, key: position++, center };
+      return { weight: width, gapBefore, key: position++, center };
     });
   });
   function navigate(event: KeyboardEvent<HTMLButtonElement>, key: number, keyLayer: number) {
@@ -67,10 +68,10 @@ function Keyboard({ onEdit }: { onEdit?: () => void }) {
       <div className="keyboard" data-layer-count={model.layers.length} data-counts={counts} aria-label={t('keyboard.physical', { model: model.name })}>
         {rows.map((row, rowIndex) => (
           <div className="key-row" key={rowIndex} style={{
-            '--row-units': row.reduce((sum, item) => sum + item.weight, 0),
+            '--row-units': row.reduce((sum, item) => sum + item.weight + item.gapBefore, 0),
             '--row-gaps': row.length - 1,
           } as CSSProperties}>
-            {row.map(({ key, weight }) => {
+            {row.map(({ key, weight, gapBefore }) => {
               const keyCount = profile?.counters[key];
               const heat = maxCount > 0 && keyCount !== undefined ? Math.sqrt(keyCount / maxCount) : 0;
               const fullCount = keyCount?.toLocaleString('en') ?? '—';
@@ -115,7 +116,7 @@ function Keyboard({ onEdit }: { onEdit?: () => void }) {
                 aria-label={t('keyboard.position', { position: key + 1 })}
                 data-selected={key === selected}
                 data-unit-key={weight === 1}
-                style={{ '--weight': weight, ...(counts ? {
+                style={{ '--weight': weight, '--gap-before': gapBefore, ...(counts ? {
                   '--count-face': `rgb(${44 + heat * 68} ${44 + heat * 68} ${44 + heat * 68})`,
                   '--count-body': `rgb(${34 + heat * 53} ${34 + heat * 53} ${34 + heat * 53})`,
                 } : {}) } as CSSProperties}

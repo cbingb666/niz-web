@@ -28,3 +28,10 @@
 - `68EC(XRGB)Ble User Manual.doc`
 
 客户端显示软件版本 1.1.4，三个程序的 PE 时间戳为 2022-08-17；时间戳不等于发布日。来源链接、大小、SHA-256 和静态协议核对见 [ATOM68 研究记录（英文）](../docs/atom68-research.md)。仅静态检查，没有执行程序、修改文件或刷新固件。文件与图片仍归原权利人所有，不包含在代码 MIT 许可内；这些原厂资料不随网页构建发布。本次适配为 ATOM68 普通 68EC 系列，未实机验证，不包含使用独立客户端的 ATOM68 Pro。
+
+`MICRO82/` 和 `MICRO84/`：2026-10-02 从上述官网入口所链接的 [MICRO82 原有系列 Software 目录](https://drive.google.com/drive/folders/1M2kOd-e4gNo3FU-jh9dlqEb-lv82EDZI)和 [MICRO84 Software 目录](https://drive.google.com/drive/folders/106W4xfbITvpnk1Wy2_gJTIn4xEAGWkQI)下载，原样保留各自的三个配套文件：
+
+- `82EC(XRGB)Ble.exe`、`82EC(XRGB)BleHWI.dll`、`82EC(XRGB)BleRES.dll`
+- `84EC(XRGB)Ble.exe`、`84EC(XRGB)BleHWI.dll`、`84EC(XRGB)BleRES.dll`
+
+MICRO82 客户端显示软件版本 1.2.3，MICRO84 为 1.1.4；EXE 的 PE 时间戳为 2022-08-17，DLL 为 2022-06-23，不能据此推断发布日期。文件大小、SHA-256、USB / 固件、键位与三组报文证据见 [MICRO 核对记录（英文）](../docs/micro-research.md)。只做静态检查，没有执行程序、刷新固件或读取硬件；两款均未实机验证，不包含 MICRO82 Pro、MINI84 或其他 84 键系列。文件版权归原权利人，不包含在 MIT 许可内，也不随网页构建发布。

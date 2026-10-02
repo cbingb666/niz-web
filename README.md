@@ -9,7 +9,7 @@ Remap keys, set up macros, and back up your NIZ keyboard configuration in a brow
 **[Open NIZ Web](https://cbingb666.github.io/niz-web/)** · [User guide](docs/usage.md) · [Report a bug](https://github.com/cbingb666/niz-web/issues/new?template=bug-report.yml)
 
 > [!WARNING]
-> ATOM68 support is experimental and has not been tested on a real keyboard. Calibration still needs hardware validation on all models.
+> ATOM68, MICRO82 and MICRO84 support is experimental and has not been tested on real keyboards. Calibration still needs hardware validation on all models.
 > Start by reading the configuration and downloading a backup. Check its contents before trying a write. [Validation history (Chinese)](VALIDATION.md)
 
 ## Supported models
@@ -18,8 +18,12 @@ Remap keys, set up macros, and back up your NIZ keyboard configuration in a brow
 | --- | --- |
 | ATOM66 | Verified on a real keyboard |
 | ATOM68 | Not yet tested on a real keyboard |
+| MICRO82 | Not yet tested on a real keyboard |
+| MICRO84 | Not yet tested on a real keyboard |
 
 ATOM68 support covers the original 68EC family and is based on [NiZ's official software](docs/atom68-research.md). ATOM68 Pro is not included.
+
+MICRO82 and MICRO84 cover the original 82EC and 84EC families, based on [NiZ's official software](docs/micro-research.md). MICRO82 Pro, MINI84 and other 84-key families are not included.
 
 ## Get started
 
@@ -33,12 +37,12 @@ You need a supported keyboard, a USB data cable, and desktop Chrome or Edge. Clo
 
 **The keyboard is temporarily locked during reads and writes. You cannot type during this time.** Keep the USB cable connected until the operation finishes.
 
-To try the interface without a keyboard, click **Offline demo** on the empty Devices page or the **Connect a device** page. Choose ATOM66 or ATOM68 on the next page, then click **Start demo**. Editing and importing change only the configuration in the page. Writing a configuration and starting calibration each require confirmation.
+To try the interface without a keyboard, click **Offline demo** on the empty Devices page or the **Connect a device** page. Choose a model on the next page, then click **Start demo**. Editing and importing change only the configuration in the page. Writing a configuration and starting calibration each require confirmation.
 
 ## Features
 
 - **Keys and macros:** Edit the normal, right Fn, and left Fn layers. Set shortcuts, rapid fire, and macros, with undo and redo.
-- **Configuration files:** Import JSON and ATOM66 and ATOM68 Windows `.pro` files, export JSON, and manage local browser backups.
+- **Configuration files:** Import JSON and Windows `.pro` files for supported models, export JSON, and manage local browser backups.
 - **Devices:** Manage multiple keyboards and read key counts. Set per-key colors on RGB models.
 - **Key calibration:** Use the guided release/held-key workflow on the [enabled model and firmware](docs/usage.md#key-calibration).
 - **Offline editing:** Try the app, import files, and edit without a connected keyboard. The interface supports Simplified Chinese and English.

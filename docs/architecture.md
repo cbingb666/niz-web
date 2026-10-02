@@ -4,7 +4,7 @@
 
 [Back to contributing](../CONTRIBUTING.md) · [Agent instructions (Chinese)](../AGENTS.md)
 
-NIZ Web runs entirely in the browser and accesses the keyboard's USB configuration interface through WebHID. There is no local device proxy, backend service, or cloud configuration storage. The protocol implementation is based on the original DLL, the existing native port, and real read captures. ATOM66 configuration use has been verified on a real keyboard (reported by the user). ATOM68 and calibration still need hardware validation.
+NIZ Web runs entirely in the browser and accesses the keyboard's USB configuration interface through WebHID. There is no local device proxy, backend service, or cloud configuration storage. The protocol implementation is based on the original DLL, the existing native port, and real read captures. ATOM66 configuration use has been verified on a real keyboard (reported by the user). ATOM68, MICRO82, MICRO84 and calibration still need hardware validation.
 
 ## Module map
 
@@ -31,15 +31,15 @@ The project root is the only active web source directory. The package, build plu
 
 ## Model identification and configuration ownership
 
-`src/devices/atom66/model.ts` and `src/devices/atom68/model.ts` define USB filters, firmware matching, physical layout, editable layers, group counts, Fn rules, count and RGB capabilities, and demo content.
+The `model.ts` files in `src/devices/atom66/`, `atom68/`, `micro82/` and `micro84/` define USB filters, firmware matching, physical layout, editable layers, group counts, Fn rules, count and RGB capabilities, and demo content.
 
-`src/devices/model.ts` defines the interface and derives key counts and editable record ranges from the layout and layers. `src/devices/index.ts` is the only production model registry. It registers ATOM66 and ATOM68; ATOM68 remains hardware-unverified.
+`src/devices/model.ts` defines the interface and derives key counts and editable record ranges from the layout and layers. Physical keys may include `gapBefore` in key units; rendering and vertical arrow-key navigation both account for these spaces. `src/devices/index.ts` is the only production model registry. It registers ATOM66, ATOM68, MICRO82 and MICRO84; the last three remain hardware-unverified.
 
 Connection first filters USB configuration interfaces, then reads firmware and requires exactly one matching model. Unknown or ambiguous devices do not proceed to read key configurations. A shared USB ID does not establish model identity, and report counts must not be used to guess a model.
 
 `HIDSession` holds the device model; `Profile` holds the configuration model. The editor, layout, arrow-key navigation, confirmation summary, and page tools use the configuration's model. Before loading a configuration, the default is ATOM66.
 
-The two offline demo entries reuse `src/components/demo-launcher.tsx` to open the `demo` page. `src/components/demo-picker.tsx` presents the production registry's models with existing product images and native radio inputs, followed by one Start demo action. The selection and return entry are separate from the editor; selection survives page and language changes. The connection guide remains mounted and hidden during this detour, retaining its step and input until the user returns. Starting a demo loads the selected model after the existing replacement confirmation; cancellation preserves the configuration and drafts. A changed editor, generation, or connection invalidates pending replacement approval. Demo selection and loading send no hardware commands.
+The two offline demo entries reuse `src/components/demo-launcher.tsx` to open the `demo` page. `src/components/demo-picker.tsx` presents the production registry's models with local product images and native radio inputs, followed by one Start demo action. The selection and return entry are separate from the editor; selection survives page and language changes. The connection guide remains mounted and hidden during this detour, retaining its step and input until the user returns. Starting a demo loads the selected model after the existing replacement confirmation; cancellation preserves the configuration and drafts. A changed editor, generation, or connection invalidates pending replacement approval. Demo selection and loading send no hardware commands.
 
 Import merging, configuration comparison, and hardware writes all check model ownership. Different models cannot share configurations even when firmware strings and record counts match.
 
@@ -69,6 +69,8 @@ Windows `.pro` conversion in `src/devices/legacy.ts` uses each model's explicitl
 ATOM66 supports complete configurations with three or nine groups. V1.4.4 has 594 records across nine groups. The interface edits only the first three; the other six retain their original reports, and readback compares extended groups byte for byte. Merging a three-group file into a previously read nine-group configuration keeps the device's existing extended groups.
 
 ATOM68 uses 68 keys and three editable layers. Its official client reads and writes six groups (408 records), and its `.pro` files also contain six groups. The last three groups retain their original reports. Three-group JSON imports preserve these groups when merged with a six-group device baseline. Identification excludes the distinct ATOM68 Pro USB interfaces. See [official software evidence and remaining hardware checks](atom68-research.md).
+
+MICRO82 and MICRO84 use 82 and 84 keys respectively, with three editable layers and three groups (246 and 252 records) in the inspected official clients and `.pro` files. Their six-row layouts retain the separate function row; MICRO82 has a long spacebar, while MICRO84 has Left Fn, a shorter spacebar, Right Fn and Menu. Each has independent USB and firmware matching, JSON ownership and `.pro` roots. Unknown group counts are rejected. MICRO82 Pro, MINI84 and other 84-key families are excluded, and neither MICRO model enables calibration. See [official software evidence and remaining hardware checks](micro-research.md).
 
 ## Devices, editing, and writing
 

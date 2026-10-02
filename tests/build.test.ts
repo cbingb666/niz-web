@@ -63,7 +63,11 @@ test('production is one offline HTML with hash CSP and HID permissions', async (
       Array.from(document.querySelectorAll('button')).find(button => button.textContent === 'Offline demo')!.click();
       await vi.waitFor(() => expect(document.querySelector('.demo-picker')).not.toBeNull());
       expect(document.getElementById('page-title')?.textContent).toBe('Choose a demo keyboard');
-      expect(document.querySelectorAll('.demo-picker input[type="radio"]')).toHaveLength(2);
+      expect(document.querySelectorAll('.demo-picker input[type="radio"]')).toHaveLength(4);
+      const productImages = Array.from(document.querySelectorAll<HTMLImageElement>('.demo-model-art img'));
+      expect(productImages).toHaveLength(4);
+      expect(new Set(productImages.map(image => image.src)).size).toBe(4);
+      expect(productImages.every(image => image.src.startsWith('data:image/webp;base64,'))).toBe(true);
       document.querySelector<HTMLInputElement>('input[name="demo-keyboard"][value="atom68"]')!.click();
       Array.from(document.querySelectorAll('button')).find(button => button.textContent === 'Start demo')!.click();
       await vi.waitFor(() => expect(document.querySelectorAll('.key')).toHaveLength(68));

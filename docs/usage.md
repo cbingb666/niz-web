@@ -4,7 +4,7 @@
 
 [Back to README](../README.md) · [Report a bug](https://github.com/cbingb666/niz-web/issues/new?template=bug-report.yml)
 
-ATOM66 and ATOM68 are supported. ATOM66 has been verified on a real keyboard; ATOM68 is based on official software analysis and has not been tested on hardware. Start by reading, checking, and downloading a backup. See the [validation history (Chinese)](../VALIDATION.md) for details.
+ATOM66, ATOM68, MICRO82 and MICRO84 are supported. ATOM66 has been verified on a real keyboard; the other three are based on official software analysis and have not been tested on hardware. Start by reading, checking, and downloading a backup. See the [validation history (Chinese)](../VALIDATION.md) for details.
 
 ## Connect and read
 
@@ -94,11 +94,13 @@ To restore a saved configuration:
 2. Import a saved JSON file or choose a configuration from **Local backups**.
 3. Check the imported content, then click **Review and write** and confirm.
 
-You can import compatible JSON from the original native port, plus Windows `.pro` files for ATOM66 and ATOM68. Exports contain the full configuration as JSON. Configurations from different models or firmware versions cannot be mixed directly.
+You can import compatible JSON from the original native port, plus Windows `.pro` files for ATOM66, ATOM68, MICRO82 and MICRO84. Exports contain the full configuration as JSON. Configurations from different models or firmware versions cannot be mixed directly.
 
 ATOM66 supports configurations with three or nine groups. The interface edits only the first three. The other six groups in a nine-group configuration are preserved unchanged. Importing a three-group file after reading a nine-group keyboard also preserves the device's existing extended groups.
 
 ATOM68's official configuration contains six groups, including its Windows `.pro` files. The editor changes the first three and preserves the other three. A three-group JSON import after reading the keyboard preserves its existing extended groups. ATOM68 Pro is not included in this adaptation.
+
+MICRO82 and MICRO84 use the original 82EC and 84EC software families, with three groups in the inspected official clients and `.pro` files. Their long-spacebar and dual-Fn layouts are separate models. MICRO82 Pro, MINI84 and other 84-key families are not included. These two MICRO models do not offer calibration.
 
 Offline demos and imported files do not represent the current keyboard state. To write offline edits, export them first, connect and read the target keyboard, then import the file again.
 
@@ -117,6 +119,8 @@ Pages use the fragment after `#`, so the same links work under a repository subp
 | `#/demo` | Demo keyboard selection |
 | `#/demo/atom66` | ATOM66 offline editor |
 | `#/demo/atom68` | ATOM68 offline editor |
+| `#/demo/micro82` | MICRO82 offline editor |
+| `#/demo/micro84` | MICRO84 offline editor |
 | `#/editor` | The configuration already loaded in this page |
 
 The selection page records the model and return entry in its URL, for example `#/demo?model=atom68&from=connect`. Changing the model updates that entry without adding another history step. Browser Back and Forward keep loaded configurations and unapplied input; leaving an edited workbench asks for confirmation. Cancelling returns to the original URL and preserves the history entries. During read/write confirmations, reads, writes, or calibration, history navigation keeps the current operation locked.
@@ -125,7 +129,7 @@ You can reopen a connection or demo selection link. A fresh connection guide sta
 
 Use the control at the top right to switch between Simplified Chinese and English. Switching keeps your input and does not reconnect the keyboard. The app first uses your saved language, then your browser preference, and falls back to Simplified Chinese if neither matches.
 
-Without a keyboard, click **Offline demo** on the empty Devices page or in the connection guide. On the next page, select the ATOM66 or ATOM68 product card and click **Start demo**. Use the back button to return to the entry page; the connection guide keeps its current step. The selected model stays selected when you change pages or languages. Selecting a model keeps your current configuration unchanged; starting a demo asks for confirmation before replacing pending edits or unapplied input. Cancelling keeps both your edits and the selected demo model. Demos do not request USB access or read or write a keyboard.
+Without a keyboard, click **Offline demo** on the empty Devices page or in the connection guide. On the next page, select a model card and click **Start demo**. Use the back button to return to the entry page; the connection guide keeps its current step. The selected model stays selected when you change pages or languages. Selecting a model keeps your current configuration unchanged; starting a demo asks for confirmation before replacing pending edits or unapplied input. Cancelling keeps both your edits and the selected demo model. Demos do not request USB access or read or write a keyboard.
 
 The built `dist/index.html` contains all runtime resources and translations, so it supports offline import, editing, and export. When opening the file directly, USB and backup permissions depend on the browser and have not been validated on real hardware.
 

@@ -2,10 +2,12 @@ import type { ConfigDevice } from '../types/hid';
 import type { KeyboardModel } from './model';
 import { atom66 } from './atom66/model.ts';
 import { atom68 } from './atom68/model.ts';
+import { micro82 } from './micro82/model.ts';
+import { micro84 } from './micro84/model.ts';
 
 // Register only models backed by official protocol information. Test fixtures
 // are injected into sessions and never added to this production allowlist.
-export const supportedModels: readonly KeyboardModel[] = [atom66, atom68];
+export const supportedModels: readonly KeyboardModel[] = [atom66, atom68, micro82, micro84];
 export const defaultModel = atom66;
 export type { KeyboardModel } from './model';
 

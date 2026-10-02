@@ -29,7 +29,7 @@ test.each([
   expect(store.getState().page).toBe('demo');
   expect(screen.getByRole('heading', { name: translate(locale, 'demo.title') })).toHaveFocus();
   expect(screen.getByRole('radio', { name: 'ATOM66' })).toBeChecked();
-  expect(screen.getAllByRole('radio').map(option => option.getAttribute('value'))).toEqual(['atom66', 'atom68']);
+  expect(screen.getAllByRole('radio').map(option => option.getAttribute('value'))).toEqual(['atom66', 'atom68', 'micro82', 'micro84']);
   expect(screen.queryByRole('combobox', { name: translate(locale, 'keyboard.demoModel') })).not.toBeInTheDocument();
   chooseModel('ATOM68');
   expect(store.getState().profile).toBeNull();

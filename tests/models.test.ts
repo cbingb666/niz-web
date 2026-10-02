@@ -9,7 +9,7 @@ import { FakeDevice, FakeHID, fixture } from './helpers';
 import { modelFixture, test68 } from './model-fixtures';
 
 test('official models are registered; existing Atom66 files and backups retain their exact format', () => {
-  expect(supportedModels.map((model) => model.id)).toEqual(['atom66', 'atom68']);
+  expect(supportedModels.map((model) => model.id)).toEqual(['atom66', 'atom68', 'micro82', 'micro84']);
   const original = fixture(9, true).toJSON();
   expect(original.format).toBe('atom66-macos');
   expect(original).not.toHaveProperty('model');
@@ -35,6 +35,8 @@ test('shared USB IDs require an unambiguous firmware match; unknown devices rema
 test('model definitions reject geometries outside the EC packet address range', () => {
   expect(() => defineModel({ ...test68, rows: [Array(256).fill({ label: 'X', width: 1 })] })).toThrow();
   expect(() => defineModel({ ...test68, groupCounts: [1] })).toThrow();
+  for (const gapBefore of [-1, NaN, Infinity])
+    expect(() => defineModel({ ...test68, rows: [[{ label: 'X', width: 1, gapBefore }]] })).toThrow();
 });
 
 test('another geometry round-trips all groups, validates addresses and synchronizes its Fn layers', () => {

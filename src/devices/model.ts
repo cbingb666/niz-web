@@ -4,6 +4,7 @@ import type { HIDAccess } from '../types/hid';
 export interface PhysicalKey {
   readonly label: string;
   readonly width: number;
+  readonly gapBefore?: number;
 }
 export interface KeyboardCapabilities {
   readonly counters: boolean;
@@ -55,7 +56,8 @@ export function defineModel(definition: ModelDefinition): KeyboardModel {
     (definition.legacyGroupCount !== undefined && !definition.groupCounts.includes(definition.legacyGroupCount)) ||
     definition.groupCounts.some((count) => !Number.isInteger(count) || count < layers || count > 255) ||
     definition.rows.some((row) => !row.length) ||
-    keys.some((key) => !key.label || !Number.isFinite(key.width) || key.width <= 0) ||
+    keys.some((key) => !key.label || !Number.isFinite(key.width) || key.width <= 0 ||
+      (key.gapBefore !== undefined && (!Number.isFinite(key.gapBefore) || key.gapBefore < 0))) ||
     definition.fn.codes.some((code) => !Number.isInteger(code) || code < 0 || code > 255) ||
     (definition.fn.required && !definition.fn.codes.length) ||
     definition.demoKeys.length > layers ||
