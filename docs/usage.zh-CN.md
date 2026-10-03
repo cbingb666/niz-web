@@ -6,6 +6,8 @@
 
 目前支持 ATOM66、ATOM68、MICRO82 和 MICRO84。ATOM66 已实机验证；其余三款依据官方软件分析适配，未实机验证。首次使用先读取、核对并下载备份；详细范围见[验证记录](../VALIDATION.md)。
 
+内置快捷键、蓝牙配对和实体布局见[原厂说明书索引](manuals.zh-CN.md)，可按型号打开原始中英文资料。
+
 ## 连接与读取
 
 使用桌面版 Chrome 或 Edge，在独立标签页打开 [NIZ Web](https://cbingb666.github.io/niz-web/)。通过 USB 数据线连接键盘，退出其他键盘配置工具。浏览器要求见 [Chrome 的 WebHID 说明](https://developer.chrome.com/docs/capabilities/hid)。

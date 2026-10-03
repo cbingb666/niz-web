@@ -25,6 +25,8 @@ ATOM68 support covers the original 68EC family and is based on [NiZ's official s
 
 MICRO82 and MICRO84 cover the original 82EC and 84EC families, based on [NiZ's official software](docs/micro-research.md). MICRO82 Pro, MINI84 and other 84-key families are not included.
 
+For built-in shortcuts and keyboard layouts, see the [manufacturer manuals in English and Chinese](docs/manuals.md).
+
 ## Get started
 
 You need a supported keyboard, a USB data cable, and desktop Chrome or Edge. Close other keyboard configuration tools first.

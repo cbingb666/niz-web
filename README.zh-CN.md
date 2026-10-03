@@ -25,6 +25,8 @@ ATOM68 适配原有 68EC 系列，依据 [NiZ 官方软件核对记录（英文�
 
 MICRO82 和 MICRO84 适配原有 82EC / 84EC 系列，依据 [NiZ 官方软件核对记录（英文）](docs/micro-research.md)。本次不包含 MICRO82 Pro、MINI84 或其他 84 键系列。
 
+内置快捷键与键盘布局见[原厂中英文说明书](docs/manuals.zh-CN.md)。
+
 ## 开始使用
 
 准备一台支持的键盘、一根 USB 数据线，以及桌面版 Chrome 或 Edge。先退出其他键盘配置工具。

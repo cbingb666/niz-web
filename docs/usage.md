@@ -6,6 +6,8 @@
 
 ATOM66, ATOM68, MICRO82 and MICRO84 are supported. ATOM66 has been verified on a real keyboard; the other three are based on official software analysis and have not been tested on hardware. Start by reading, checking, and downloading a backup. See the [validation history (Chinese)](../VALIDATION.md) for details.
 
+For built-in shortcuts, Bluetooth pairing and physical layouts, choose your model in the [manufacturer manual index](manuals.md), which links the original English and Chinese documents.
+
 ## Connect and read
 
 Open [NIZ Web](https://cbingb666.github.io/niz-web/) in its own tab in desktop Chrome or Edge. Connect the keyboard with a USB data cable and close other keyboard configuration tools. See [Chrome's WebHID documentation](https://developer.chrome.com/docs/capabilities/hid) for browser requirements.
