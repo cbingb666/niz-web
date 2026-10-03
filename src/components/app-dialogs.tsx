@@ -8,6 +8,7 @@ import { CalibrationDialog } from './calibration-dialog';
 import { ChangeReview } from './change-review';
 import { ActivityLog } from './activity-log';
 import { DeviceDetails } from './connected-device';
+import { ManualPicker } from './manual-picker';
 import { Button } from './ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from './ui/dialog';
 
@@ -34,14 +35,14 @@ export function AppDialogs() {
     >
       <DialogContent closeLabel={t('common.close')} className={dialog.kind === 'changes' ? 'review-dialog' : dialog.kind === 'activity' ? 'activity-dialog' : undefined}
         onCloseAutoFocus={event => {
-          const trigger = dialog.kind === 'activity' ? 'activity-trigger' : dialog.kind === 'device' ? dialog.triggerId : null;
+          const trigger = dialog.kind === 'manuals' ? 'manuals-trigger' : dialog.kind === 'activity' ? 'activity-trigger' : dialog.kind === 'device' ? dialog.triggerId : null;
           if (trigger) {
             event.preventDefault();
             const fallback = dialog.kind === 'device' ? 'page-title' : 'activity-trigger';
             (document.getElementById(trigger) ?? document.getElementById(fallback))?.focus({ preventScroll: true });
           }
         }}>
-        {dialog.kind === 'changes' ? <>
+        {dialog.kind === 'manuals' ? <ManualPicker /> : dialog.kind === 'changes' ? <>
           <DialogHeader><DialogTitle>{t('mapping.reviewTitle')}</DialogTitle><DialogDescription>{t('mapping.reviewHint')}</DialogDescription></DialogHeader>
           <ChangeReview review={dialog.review} />
         </> : dialog.kind === 'activity' ? <>

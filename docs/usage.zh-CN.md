@@ -8,6 +8,10 @@
 
 内置快捷键、蓝牙配对和实体布局见[原厂说明书索引](manuals.zh-CN.md)，可按型号打开原始中英文资料。
 
+点击顶栏的书本图标「键盘手册」打开手册弹窗，再选择 ATOM66、ATOM68、MICRO82 或 MICRO84。各型号按版本列出中文布局与功能 PDF，以及资料包提供的中英文 Word 手册。PDF 在新标签页查看，Word 下载后打开。选择型号和查看手册不会切换当前编辑的设备，也不会清空编辑内容。
+
+手册需联网查阅，独立 HTML 也一样。PDF 与 Word 可能对应不同版本，请核对键盘铭牌；缺少某种语言或格式时，不使用其他版本代替。
+
 ## 连接与读取
 
 使用桌面版 Chrome 或 Edge，在独立标签页打开 [NIZ Web](https://cbingb666.github.io/niz-web/)。通过 USB 数据线连接键盘，退出其他键盘配置工具。浏览器要求见 [Chrome 的 WebHID 说明](https://developer.chrome.com/docs/capabilities/hid)。

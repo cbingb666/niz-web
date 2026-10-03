@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState, type RefObject } from 'react';
-import { ArrowRight, Cable, ChevronRight, CircleHelp, Undo2, Redo2 } from 'lucide-react';
+import { ArrowRight, BookOpen, Cable, ChevronRight, CircleHelp, Undo2, Redo2 } from 'lucide-react';
 import { ConnectionPanel } from './components/connection-panel';
 import { DeviceManager } from './components/device-manager';
 import { ConnectionGuide } from './components/connection-guide';
@@ -81,6 +81,7 @@ function Header() {
   const { t, text } = useI18n();
   const locked = useAppStore(isLocked);
   const showHelp = useAppStore((state) => state.actions.showHelp);
+  const showManuals = useAppStore((state) => state.actions.showManuals);
   const page = useAppStore(state => state.page);
   const navigate = useAppStore(state => state.actions.navigate);
   const session = useAppStore(state => state.session);
@@ -108,6 +109,10 @@ function Header() {
         </ol>
       </nav>}
       <div className="header-detail">
+        <Button id="manuals-trigger" variant="ghost" size="icon" className="text-muted-foreground"
+          aria-label={t('manual.open')} title={t('manual.open')} disabled={locked} onClick={showManuals}>
+          <BookOpen aria-hidden="true" />
+        </Button>
         <LanguageSwitcher />
         <Button variant="ghost" size="icon" aria-label={t('help.open')} disabled={locked} onClick={showHelp}>
           <CircleHelp />

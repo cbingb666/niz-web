@@ -8,6 +8,10 @@ ATOM66, ATOM68, MICRO82 and MICRO84 are supported. ATOM66 has been verified on a
 
 For built-in shortcuts, Bluetooth pairing and physical layouts, choose your model in the [manufacturer manual index](manuals.md), which links the original English and Chinese documents.
 
+Choose the **Manuals** book icon in the top bar to open the manual picker, then select ATOM66, ATOM68, MICRO82 or MICRO84. Each model lists its variants with Chinese layout and function PDFs and the English or Chinese Word manuals supplied in the archive. PDFs open in a new tab; Word files download for viewing. Choosing a model or opening a manual keeps your current device and edits in place.
+
+The manuals require internet access, including when using the standalone HTML. PDF and Word files may cover different revisions; check the label on your keyboard. Missing languages or formats are not replaced with a different variant’s manual.
+
 ## Connect and read
 
 Open [NIZ Web](https://cbingb666.github.io/niz-web/) in its own tab in desktop Chrome or Edge. Connect the keyboard with a USB data cable and close other keyboard configuration tools. See [Chrome's WebHID documentation](https://developer.chrome.com/docs/capabilities/hid) for browser requirements.

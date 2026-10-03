@@ -56,7 +56,7 @@ interface ConfirmationDetails {
 export type AppDialog =
   | ({ kind: 'confirm'; title: Message; body: Message; label: Message } & ConfirmationDetails)
   | { kind: 'message'; title: Message; body: Message }
-  | { kind: 'backups' | 'help' | 'activity' | 'calibration' }
+  | { kind: 'backups' | 'help' | 'manuals' | 'activity' | 'calibration' }
   | { kind: 'device'; deviceId: string; triggerId: string }
   | { kind: 'changes'; review: ChangeReview };
 export interface SessionView {
@@ -174,6 +174,7 @@ export interface AppActions {
   importBackup(id: string): Promise<void>;
   downloadBackup(id: string): Promise<void>;
   showHelp(): void;
+  showManuals(): void;
   showActivity(): void;
   showDeviceDetails(id?: string): void;
   closeDialog(): void;
@@ -874,6 +875,10 @@ export function createAppStore(dependencies: AppDependencies) {
       showHelp() {
         if (isLocked(get())) return;
         set({ dialog: { kind: 'help' } });
+      },
+      showManuals() {
+        if (isLocked(get()) || get().dialog) return;
+        set({ dialog: { kind: 'manuals' } });
       },
       showActivity() {
         if (isLocked(get())) return;

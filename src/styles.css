@@ -799,6 +799,16 @@ main {
 .count-scale i { width: 80px; height: 6px; border-radius: 3px; background: linear-gradient(to right, #2c2c2c, #707070); }
 /* The diagram follows a real 1u key's dimensions, including responsive layout changes. */
 .keycap-guide { flex: none; margin: 0; padding: 0; }
+.manual-models { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); width: 100%; height: auto; }
+.manual-models > button { min-height: 44px; padding-inline: 6px; }
+.manual-variants { margin-top: 8px; }
+.manual-variant + .manual-variant { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border); }
+.manual-variant h3 { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; font-size: .9375rem; font-weight: 600; }
+.manual-variant h3 > span { color: var(--muted-foreground); font-size: .8125rem; font-weight: 400; }
+.manual-files { display: flex; flex-wrap: wrap; gap: 0 16px; margin-top: 4px; }
+.manual-file { min-height: 44px; height: auto; max-width: 100%; padding: 8px 0; justify-content: flex-start; white-space: normal; text-align: left; line-height: 1.5; }
+.manual-file:first-child { flex-basis: 100%; }
+@media (max-width: 480px) { .manual-models { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 .keycap-guide .keycap-sample { min-width: 68px; }
 .keycap-sample { flex: none; width: var(--sample-width, 68px); max-width: 100%; height: var(--sample-height, 76px); pointer-events: none; }
 .keycap-sample[data-preview-selected='true'] { border-color: var(--primary); background: #373737; }
