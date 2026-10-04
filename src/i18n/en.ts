@@ -373,7 +373,7 @@ export const en = {
   'changes.progress': 'Operation progress',
   'changes.write': 'Review and write',
   'backup.title': 'Local backups',
-  'backup.description': 'Stored in this browser. Download a copy for safekeeping.',
+  'backup.description': 'Identical configurations share one entry. Stored in this browser; download a copy for safekeeping.',
   'backup.empty': 'No backups yet. A successful read automatically creates one.',
   'backup.read': 'Read backup',
   'backup.autoRead': 'Automatic read backup',

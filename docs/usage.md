@@ -96,6 +96,8 @@ An interrupted write may leave partial changes. Unplugging, sleep, or a device e
 
 **Download a JSON copy in addition to keeping browser backups.** Local backups belong to the current browser and site address. Clearing site data, browser storage eviction, or changing the address can make them unavailable.
 
+Repeated reads and backups before configuration or firmware writes share one entry when the model, firmware, saved device information, complete key configuration and lighting match. The entry keeps the latest backup time, source and available key counts; count changes alone do not create another version. If a later read omits counts, the previously saved counts are kept. Changed configurations remain separate. Existing duplicates also show only the most recent snapshot, without deleting the older stored records.
+
 To restore a saved configuration:
 
 1. Connect the target keyboard and confirm a read of its current configuration.

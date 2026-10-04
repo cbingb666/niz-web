@@ -369,7 +369,7 @@ export const zhCN = {
   'changes.progress': '操作进度',
   'changes.write': '核对并写入',
   'backup.title': '本地备份',
-  'backup.description': '保存在当前浏览器中，建议另行下载保存。',
+  'backup.description': '相同配置只显示一条。保存在当前浏览器中，请另行下载留存。',
   'backup.empty': '还没有备份。成功读取键盘后会自动保存。',
   'backup.read': '读取备份',
   'backup.autoRead': '自动读取备份',
