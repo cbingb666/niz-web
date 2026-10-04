@@ -2,7 +2,7 @@ import { useI18n } from '@/i18n/use-i18n';
 import { localizedSummary, keycapSummary } from '@/i18n/profile';
 import { renderMessage } from '@/i18n/core';
 import { useRef, type CSSProperties, type KeyboardEvent } from 'react';
-import { PanelLeftOpen, RotateCw } from 'lucide-react';
+import { ListChecks, RotateCw } from 'lucide-react';
 import { isLocked } from '@/store/app-store';
 import { useAppStore } from '@/store/context';
 import { Button } from './ui/button';
@@ -183,8 +183,8 @@ export function KeyboardPanel({ onEdit, onShowChanges, changesExpanded = false }
         <div className="workspace-actions">
           {onShowChanges && <Button id="changes-trigger" variant="outline" aria-label={t('mapping.expandChanges')}
             title={[t('mapping.changeItems', { count: pendingCount }), ...(draftCount ? [t('mapping.drafts', { count: draftCount })] : [])].join(' · ')}
-            aria-controls="pending-changes" aria-expanded={changesExpanded} onClick={onShowChanges}>
-            <PanelLeftOpen />{t('mapping.reviewTitle')}
+            aria-controls="pending-changes" aria-haspopup="dialog" aria-expanded={changesExpanded} disabled={locked} onClick={onShowChanges}>
+            <ListChecks />{t('mapping.reviewTitle')}
             <span className="pending-count" aria-label={t('mapping.changeItems', { count: pendingCount })} aria-live="polite">{pendingCount}</span>
             {draftCount > 0 && <span className="pending-draft-label">{t('mapping.unappliedCount', { count: draftCount })}</span>}
           </Button>}

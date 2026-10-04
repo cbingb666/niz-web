@@ -149,60 +149,127 @@ test('switching keys resets editor scrolling while preserving the previous draft
   expect(screen.getByLabelText(/按键序列/)).toHaveValue('unfinished');
 });
 
-test('the separate changes sidebar lists every change, jumps to a mapping and stays collapsed while editing', async () => {
-  const { store, actions } = application();
-  const view = render(<App store={store} />);
-  await act(() => actions.demo());
-  const sidebar = screen.getByRole('complementary', { name: '待写入改动' });
-  expect(sidebar).toHaveTextContent('选择键位和目标功能后，改动会显示在这里。');
-  expect(within(screen.getByRole('region', { name: '按键布局' })).queryByText('待写入改动')).not.toBeInTheDocument();
-  act(() => {
-    for (let key = 0; key < 6; key++) {
-      actions.selectKey(key, 0);
-      actions.assignKey(58);
-    }
-  });
-  expect(within(sidebar).getByLabelText('6 项待写入改动')).toBeInTheDocument();
-  fireEvent.click(within(sidebar).getByRole('button', { name: /普通层 · 键位 #1 / }));
-  expect(store.getState()).toMatchObject({ key: 0, layer: 0 });
-  expect(within(sidebar).getByRole('button', { name: /普通层 · 键位 #6 / })).toBeInTheDocument();
-  const collapse = within(sidebar).getByRole('button', { name: '收起改动侧栏' });
-  fireEvent.click(collapse);
-  expect(collapse).toHaveAttribute('aria-expanded', 'false');
-  expect(document.getElementById(collapse.getAttribute('aria-controls')!)).not.toBeVisible();
-  expect(within(sidebar).queryByRole('button', { name: /普通层 · 键位/ })).not.toBeInTheDocument();
-  expect(view.container.querySelector('.app-shell')).toHaveAttribute('data-changes-collapsed', 'true');
-  act(() => { actions.selectKey(6, 0); actions.assignKey(58); });
-  expect(sidebar).not.toBeVisible();
-  const expand = screen.getByRole('button', { name: '展开改动侧栏' });
-  expect(within(expand).getByLabelText('7 项待写入改动')).toBeVisible();
-  expect(expand).toHaveAttribute('aria-expanded', 'false');
-  fireEvent.click(expand);
-  expect(within(sidebar).getByRole('button', { name: /普通层 · 键位 #7 / })).toHaveAttribute('aria-current', 'true');
-});
-
-test('compact desktop keeps changes in a drawer and returns to the selected mapping', async () => {
-  vi.stubGlobal('matchMedia', vi.fn(query => ({ matches: query.includes('1599'), addEventListener: vi.fn(), removeEventListener: vi.fn() })));
+test.each([false, true])('pending changes use a dialog on desktop (compact: %s) and return to the selected mapping', async compact => {
+  vi.stubGlobal('matchMedia', vi.fn(query => ({ matches: compact && query.includes('1599'), addEventListener: vi.fn(), removeEventListener: vi.fn() })));
   try {
     const { store, actions } = application();
     render(<App store={store} />);
     await act(() => actions.demo());
-    act(() => { actions.selectKey(1, 0); actions.assignKey(58); actions.selectKey(0, 0); });
     expect(screen.queryByRole('complementary', { name: '待写入改动' })).not.toBeInTheDocument();
-    const trigger = screen.getByRole('button', { name: '展开改动侧栏' });
-    expect(trigger).toHaveTextContent('待写入改动');
-    expect(within(trigger).getByLabelText('1 项待写入改动')).toBeInTheDocument();
+    const trigger = screen.getByRole('button', { name: '查看待写入改动' });
+    expect(trigger).toHaveAttribute('aria-haspopup', 'dialog');
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
     fireEvent.click(trigger);
-    const drawer = screen.getByRole('dialog', { name: '待写入改动' });
-    await act(async () => { fireEvent.click(within(drawer).getByRole('button', { name: /普通层 · 键位 #2 / })); });
+    expect(screen.getByRole('dialog', { name: '待写入改动' })).toHaveTextContent('选择键位和目标功能后，改动会显示在这里。');
+    await act(async () => { fireEvent.click(screen.getByRole('button', { name: '关闭' })); });
+    await vi.waitFor(() => expect(trigger).toHaveFocus());
+    act(() => {
+      for (let key = 0; key < 6; key++) {
+        actions.selectKey(key, 0);
+        actions.assignKey(58);
+      }
+    });
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(within(trigger).getByLabelText('6 项待写入改动')).toBeInTheDocument();
+    fireEvent.click(trigger);
+    const dialog = screen.getByRole('dialog', { name: '待写入改动' });
+    expect(within(dialog).getByText('6 个键位 · 6 处映射')).toBeVisible();
+    expect(within(dialog).getByRole('heading', { name: '待写入改动' })).toHaveFocus();
+    expect(within(dialog).getAllByText('载入时')).toHaveLength(6);
+    expect(within(dialog).getAllByText('修改后')).toHaveLength(6);
+    expect(within(dialog).getByRole('button', { name: /编辑 普通层 · 键位 #6/ })).toBeVisible();
+    await act(async () => { fireEvent.click(within(dialog).getByRole('button', { name: /普通层 · 键位 #2/ })); });
     expect(store.getState()).toMatchObject({ key: 1, layer: 0 });
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
-    await vi.waitFor(() => expect(trigger).toHaveFocus());
+    await vi.waitFor(() => expect(screen.getByRole('group', { name: '映射编辑' })).toHaveFocus());
     expect(screen.getByRole('complementary', { name: '选中按键设置' })).toBeInTheDocument();
     fireEvent.click(trigger);
-    fireEvent.click(within(screen.getByRole('dialog', { name: '待写入改动' })).getByRole('button', { name: '查看全部改动' }));
     expect(screen.getAllByRole('dialog')).toHaveLength(1);
-    expect(screen.getByRole('dialog')).toHaveTextContent('载入时');
+    expect(screen.queryByRole('button', { name: '查看全部改动' })).not.toBeInTheDocument();
+    await act(async () => { fireEvent.click(screen.getByRole('button', { name: '返回编辑' })); });
+    await vi.waitFor(() => expect(trigger).toHaveFocus());
+  } finally {
+    cleanup();
+    vi.unstubAllGlobals();
+  }
+});
+
+test.each<Locale>(['zh-CN', 'en'])('pending changes show grouped comparisons and inline macro details in %s', async locale => {
+  vi.stubGlobal('ResizeObserver', class { observe() {} unobserve() {} disconnect() {} });
+  try {
+    const { store, actions } = application(null, undefined, { locale });
+    render(<App store={store} />);
+    await act(() => actions.demo());
+    act(() => {
+      actions.updateForm({ type: '2', sequence: 'A\nB', interval: '50', cycles: '3' });
+      expect(actions.saveForm()).toBe(true);
+      actions.selectKey(1, 1);
+      actions.assignKey(58);
+    });
+    fireEvent.click(screen.getByRole('button', { name: translate(locale, 'mapping.expandChanges') }));
+    const dialog = screen.getByRole('dialog', { name: translate(locale, 'mapping.reviewTitle') });
+    const normal = within(dialog).getByRole('region', { name: new RegExp(translate(locale, 'layer.normal')) });
+    const fn = within(dialog).getByRole('region', { name: new RegExp(translate(locale, 'layer.rightFn')) });
+    expect(within(normal).getByText('Esc', { selector: 'kbd' })).toBeVisible();
+    expect(within(fn).getByText('1', { selector: 'kbd' })).toBeVisible();
+    expect(within(normal).getAllByText(/50/)[0]).toBeVisible();
+    expect(within(normal).getAllByText(/3/)[0]).toBeVisible();
+    const details = normal.querySelector('details')!;
+    expect(details).not.toHaveAttribute('open');
+    fireEvent.click(within(normal).getByText(translate(locale, 'mapping.actionDetails')));
+    expect(details).toHaveAttribute('open');
+    expect(details).toHaveTextContent('A');
+    expect(details).toHaveTextContent('B');
+    expect(screen.getAllByRole('dialog')).toHaveLength(1);
+  } finally {
+    cleanup();
+    vi.unstubAllGlobals();
+  }
+});
+
+test('writing from pending changes opens the existing lock confirmation without sending configuration commands', async () => {
+  const device = new FakeDevice();
+  const { store, actions } = application(new FakeHID([device]));
+  render(<App store={store} usbAvailable />);
+  await act(async () => { await actions.start(); await acceptRead(store); });
+  await openDeviceEditor();
+  act(() => actions.assignKey(58));
+  const sent = device.sent.slice();
+  fireEvent.click(screen.getByRole('button', { name: '查看待写入改动' }));
+  fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: '核对并写入' }));
+  const confirmation = await screen.findByRole('alertdialog');
+  expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  expect(confirmation).toHaveTextContent('期间无法输入');
+  expect(within(confirmation).getByRole('button', { name: '取消' })).toHaveFocus();
+  expect(device.sent).toEqual(sent);
+  await act(async () => { fireEvent.click(within(confirmation).getByRole('button', { name: '取消' })); });
+  expect(store.getState().changes).toEqual([0]);
+  expect(device.sent).toEqual(sent);
+});
+
+test('selecting unapplied input in the changes dialog opens the narrow editor and preserves the draft', async () => {
+  vi.stubGlobal('ResizeObserver', class { observe() {} unobserve() {} disconnect() {} });
+  vi.stubGlobal('matchMedia', vi.fn(() => ({ matches: true, addEventListener: vi.fn(), removeEventListener: vi.fn() })));
+  try {
+    const { store, actions } = application();
+    render(<App store={store} />);
+    await act(() => actions.demo());
+    act(() => {
+      actions.updateForm({ type: '2', sequence: 'unfinished' });
+      actions.selectKey(1, 0);
+    });
+    const trigger = screen.getByRole('button', { name: '查看待写入改动' });
+    expect(trigger).toHaveTextContent('1 处未应用');
+    fireEvent.click(trigger);
+    const dialog = screen.getByRole('dialog', { name: '待写入改动' });
+    expect(within(dialog).getByText('完成或放弃未应用的编辑后，再导出或写入。')).toBeVisible();
+    expect(within(dialog).queryByRole('button', { name: '核对并写入' })).not.toBeInTheDocument();
+    await act(async () => { fireEvent.click(within(dialog).getByRole('button', { name: /继续编辑 普通层 · 键位 #1/ })); });
+    expect(screen.getAllByRole('dialog')).toHaveLength(1);
+    const editor = screen.getByRole('dialog', { name: '选中按键设置' });
+    expect(within(editor).getByLabelText(/按键序列/)).toHaveValue('unfinished');
+    expect(store.getState().draftIndices).toEqual([0]);
+    expect(editor).toContainElement(document.activeElement as HTMLElement);
   } finally {
     cleanup();
     vi.unstubAllGlobals();

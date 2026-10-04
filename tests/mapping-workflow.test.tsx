@@ -473,10 +473,10 @@ test('Caps to Esc stages in two selections, can be undone and previews the real 
   fireEvent.click(screen.getByRole('button', { name: '撤销' }));
   expect(store.getState().changes).toEqual([]);
   fireEvent.click(screen.getByRole('button', { name: '重做' }));
-  fireEvent.click(screen.getByRole('button', { name: '查看全部改动' }));
+  fireEvent.click(screen.getByRole('button', { name: '查看待写入改动' }));
   const dialog = screen.getByRole('dialog', { name: '待写入改动' });
-  const row = within(dialog).getAllByRole('row')[1];
-  expect(within(row).getAllByRole('cell').map(cell => cell.textContent)).toEqual(['Caps Lock', 'Esc']);
+  const row = within(dialog).getByRole('listitem');
+  expect(Array.from(row.querySelectorAll('dd'), cell => cell.textContent)).toEqual(['Caps Lock', 'Esc']);
   expect(store.getState().canWrite).toBe(false);
 });
 

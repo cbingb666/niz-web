@@ -137,18 +137,18 @@ interface AppContentProps {
 function AppContent({ notices = [], usbAvailable = false }: AppContentProps) {
   const { t, text, locale } = useI18n();
   const [narrow, setNarrow] = useState(() => window.matchMedia?.('(max-width: 900px)').matches ?? false);
-  const [compactChanges, setCompactChanges] = useState(() => window.matchMedia?.('(max-width: 1599px)').matches ?? false);
   const [editorOpen, setEditorOpen] = useState(false);
-  const [changesPreference, setChangesPreference] = useState<boolean | null>(null);
+  const [changesOpen, setChangesOpen] = useState(false);
+  const returnToEditor = useRef(false);
   const page = useAppStore(state => state.page);
   const demoReturnPage = useAppStore(state => state.demoReturnPage);
   const main = useRef<HTMLElement>(null);
   const previousPage = useRef(page);
-  const changesCollapsed = changesPreference ?? compactChanges;
   const operating = useAppStore((state) => state.hardwareOperation !== null);
   const dialogOpen = useAppStore(state => state.dialog !== null);
   const editorKey = useAppStore(state => `${state.session.id}:${state.generation}:${state.layer}:${state.key}`);
   const unsaved = useAppStore(state => state.hasUnsavedChanges);
+  const storeWrite = useAppStore(state => state.actions.write);
   useEffect(() => {
     if (previousPage.current === page) return;
     previousPage.current = page;
@@ -158,14 +158,10 @@ function AppContent({ notices = [], usbAvailable = false }: AppContentProps) {
   }, [page]);
   useEffect(() => {
     const media = window.matchMedia?.('(max-width: 900px)');
-    const changesMedia = window.matchMedia?.('(max-width: 1599px)');
     const update = () => { setNarrow(media?.matches ?? false); setEditorOpen(false); };
-    const updateChanges = () => setCompactChanges(changesMedia?.matches ?? false);
     media?.addEventListener('change', update);
-    changesMedia?.addEventListener('change', updateChanges);
     return () => {
       media?.removeEventListener('change', update);
-      changesMedia?.removeEventListener('change', updateChanges);
     };
   }, []);
   useEffect(() => {
@@ -179,10 +175,9 @@ function AppContent({ notices = [], usbAvailable = false }: AppContentProps) {
   }, [unsaved, operating]);
   return (
     <>
-      <div className="app-shell" data-page={page} data-changes-collapsed={changesCollapsed || compactChanges} inert={operating} aria-busy={operating}>
+      <div className="app-shell" data-page={page} inert={operating} aria-busy={operating}>
         <Header />
         <main ref={main} tabIndex={-1}>
-          {page === 'editor' && !compactChanges && <PendingChanges collapsed={changesCollapsed} onToggle={() => setChangesPreference(true)} />}
           {page === 'editor' && <ConnectionPanel />}
           {notices.length > 0 && (
             <div className="notice" role="status">
@@ -195,23 +190,32 @@ function AppContent({ notices = [], usbAvailable = false }: AppContentProps) {
           {page === 'demo' && <DemoPicker />}
           {page === 'editor' && <section className="workspace" aria-label={t('app.editor')}>
             <KeyboardPanel onEdit={() => { if (narrow) setEditorOpen(true); }}
-              changesExpanded={!changesCollapsed}
-              onShowChanges={changesCollapsed || compactChanges ? () => setChangesPreference(false) : undefined} />
+              changesExpanded={changesOpen}
+              onShowChanges={() => { returnToEditor.current = false; setChangesOpen(true); }} />
           </section>}
         </main>
         {page === 'editor' && !narrow && <div className="editor-pane"><KeyEditor key={editorKey} /></div>}
         {page === 'editor' && <CommitBar />}
       </div>
-      {page === 'editor' && compactChanges && <Dialog open={!changesCollapsed && !operating} onOpenChange={open => setChangesPreference(!open)}>
-        <DialogContent className="changes-drawer" closeLabel={t('common.close')} aria-describedby={undefined}
+      {page === 'editor' && <Dialog open={changesOpen && !operating} onOpenChange={setChangesOpen}>
+        <DialogContent id="pending-changes" className="pending-changes-dialog" closeLabel={t('common.close')}
+          onOpenAutoFocus={event => {
+            event.preventDefault();
+            document.getElementById('pending-changes')?.querySelector<HTMLElement>('h2')?.focus({ preventScroll: true });
+          }}
           onCloseAutoFocus={event => {
             event.preventDefault();
-            if (!editorOpen && !dialogOpen) document.getElementById('changes-trigger')?.focus({ preventScroll: true });
+            if (!editorOpen && !dialogOpen) {
+              const target = returnToEditor.current
+                ? document.querySelector<HTMLElement>('.editor-pane .inspector-header')
+                : document.getElementById('changes-trigger');
+              target?.focus({ preventScroll: true });
+            }
           }}>
-          <DialogTitle className="sr-only">{t('mapping.reviewTitle')}</DialogTitle>
-          <PendingChanges collapsed={false} onToggle={() => setChangesPreference(true)}
-            onEdit={() => { setChangesPreference(true); if (narrow) setEditorOpen(true); }}
-            onReview={() => setChangesPreference(true)} />
+          <PendingChanges
+            onEdit={() => { returnToEditor.current = true; setChangesOpen(false); if (narrow) setEditorOpen(true); }}
+            onClose={() => setChangesOpen(false)}
+            onWrite={() => { setChangesOpen(false); void storeWrite(); }} />
         </DialogContent>
       </Dialog>}
       {page === 'editor' && narrow && <Dialog open={editorOpen && !operating} onOpenChange={setEditorOpen}>

@@ -56,7 +56,7 @@ The editor summary shows the selected key position, layer, and current action. I
 | Set a shortcut | Choose modifiers and a main key, then click **Use this shortcut** |
 | Set a macro or repeat action | Edit the sequence and parameters, then click **Apply this edit** |
 | Restore a key's loaded value | Click **Restore** |
-| Review pending changes | Open **View all changes**; click an entry to return to that key |
+| Review pending changes | Open **Changes to write** in the keyboard toolbar. Compare **When loaded** and **Changed to**, grouped by layer. Choose **Edit** beside a key to return to it; expand **Action details** for macro sequences |
 
 Shortcut recording starts only when you enable it. Escape cancels, and Tab stops recording while letting you move to the next control. Recording also stops when the button or window loses focus. To include Tab or Escape in a shortcut, choose it from the action list. You can also choose shortcuts reserved by the operating system from the list. Macros can repeat a set number of times, play while held, or stop on another press. They support a uniform interval or per-step delays.
 
@@ -84,7 +84,7 @@ This compatibility path has not been tested on a real ATOM66 with macOS. Externa
 
 Edits stay in the page until you confirm a write to the keyboard.
 
-1. Click **Review and write**.
+1. Click **Review and write** in the bottom bar, or in **Changes to write** when writing is available.
 2. Check the change count. Expand **Review changes** for details if needed.
 3. Confirm **Start writing** and wait for the whole operation to finish.
 

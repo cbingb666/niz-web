@@ -39,7 +39,7 @@ export function AppDialogs() {
     >
       <DialogContent closeLabel={t('common.close')} className={dialog.kind === 'changes' ? 'review-dialog' : dialog.kind === 'activity' ? 'activity-dialog' : undefined}
         onCloseAutoFocus={event => {
-          const trigger = dialog.kind === 'manuals' ? 'manuals-trigger' : dialog.kind === 'activity' ? 'activity-trigger' : dialog.kind === 'device' ? dialog.triggerId : null;
+          const trigger = dialog.kind === 'changes' ? 'changes-trigger' : dialog.kind === 'manuals' ? 'manuals-trigger' : dialog.kind === 'activity' ? 'activity-trigger' : dialog.kind === 'device' ? dialog.triggerId : null;
           if (trigger) {
             event.preventDefault();
             const fallback = dialog.kind === 'device' ? 'page-title' : 'activity-trigger';
