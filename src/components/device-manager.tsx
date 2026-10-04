@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { ArrowRight, FileCheck2, FileInput, Info, PencilLine, Plus, SlidersHorizontal, Unplug, ScanLine, TriangleAlert } from 'lucide-react';
+import { ArrowRight, Cpu, FileCheck2, FileInput, Info, PencilLine, Plus, SlidersHorizontal, Unplug, ScanLine, TriangleAlert } from 'lucide-react';
 import { supportedModels } from '@/devices';
 import { deviceName } from '@/i18n/device';
 import { useI18n } from '@/i18n/use-i18n';
@@ -23,6 +23,7 @@ export function DeviceManager() {
   const dialogOpen = useAppStore(state => state.dialog !== null);
   const actions = useAppStore(state => state.actions);
   const calibrationResults = useAppStore(state => state.calibrationResults);
+  const firmwareResults = useAppStore(state => state.firmwareResults);
   const localProfile = profile && (!session.connected || !session.hasLiveBaseline || source === 'demo' || stale);
   const localName = source === 'demo' ? profile?.model.name || ''
     : text(editorName);
@@ -78,6 +79,8 @@ export function DeviceManager() {
             {device.calibration === 'available' &&
               <Button id={`calibration-${device.id}`} variant="outline" className="device-calibration" disabled={locked}
                 onClick={() => actions.openCalibration(device.id)}><ScanLine />{t('calibration.entry')}</Button>}
+            {device.firmwareFlash && <Button id={`firmware-${device.id}`} variant="outline" disabled={locked}
+              onClick={() => actions.openFirmware(device.id)}><Cpu />{t('firmware.entry')}</Button>}
           </div>
         </div>
       </article>;
@@ -102,6 +105,12 @@ export function DeviceManager() {
         <Button id={`calibration-result-${result.target.id}`} variant="outline" disabled={locked}
           onClick={() => actions.reviewCalibration(result.target.id)}>{t('calibration.reviewResult')}</Button>
       </section>)}
+    {Object.values(firmwareResults).map(result => <section key={result.target.id} className="resume-profile">
+      <Cpu aria-hidden="true" />
+      <div><h3>{t('firmware.resultTitle', { name: result.name })}</h3><p>{t(`firmware.phase.${result.state.phase}`)}</p></div>
+      <Button id={`firmware-result-${result.target.id}`} variant="outline" disabled={locked}
+        onClick={() => actions.reviewFirmware(result.target.id)}>{t('firmware.review')}</Button>
+    </section>)}
 
     {hasSavedEditors && <section className="saved-editors" aria-labelledby="saved-editors-title">
       <h3 id="saved-editors-title">{t('devices.savedEditors')}</h3>

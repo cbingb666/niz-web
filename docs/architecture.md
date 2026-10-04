@@ -4,7 +4,7 @@
 
 [Back to contributing](../CONTRIBUTING.md) · [Agent instructions (Chinese)](../AGENTS.md)
 
-NIZ Web runs entirely in the browser and accesses the keyboard's USB configuration interface through WebHID. There is no local device proxy, backend service, or cloud configuration storage. The protocol implementation is based on the original DLL, the existing native port, and real read captures. ATOM66 configuration use has been verified on a real keyboard (reported by the user). ATOM68, MICRO82, MICRO84 and calibration still need hardware validation.
+NIZ Web runs entirely in the browser and accesses the keyboard's USB configuration interface through WebHID. There is no local device proxy, backend service, or cloud configuration storage. The protocol implementation is based on the original DLL, the existing native port, and real read captures. ATOM66 configuration use has been verified on a real keyboard (reported by the user). ATOM68, MICRO82, MICRO84, calibration and firmware flashing still need hardware validation.
 
 ## Module map
 
@@ -17,6 +17,7 @@ NIZ Web runs entirely in the browser and accesses the keyboard's USB configurati
 | `src/editor.ts` | Framework-independent editing model, differences, and undo history |
 | `src/hid.ts` | Device communication, connection state, read baselines, and write protection |
 | `src/calibration.ts` | Independent calibration stages, completion validation, outcomes, and bounded diagnostics |
+| `src/firmware.ts` | Exact stock-package allowlist, local SHA-256 validation, immutable firmware reports, and flash result types |
 | `src/protocol.ts` | NIZ EC report parsing, model ownership, and configuration conversion |
 | `src/devices/` | Model definitions and identification registry; `atom66/` includes layout and `.pro` conversion |
 | `src/storage.ts` | IndexedDB backup transactions |
@@ -82,7 +83,7 @@ Communication channels, models, read baselines, and connection generations are i
 
 Connecting only identifies the device. Key configuration reads require a user action through **Configure device** or **Read configuration again**, followed by confirmation. Cancellation and failure do not trigger repeated reads.
 
-Writing follows this order: validate configuration ownership and baseline, reread the device for external changes, complete the backup transaction, send the configuration, and compare the readback. One user confirmation covers the whole operation. Writes are not atomic at the device level; interruption can leave partial changes. There is no automatic retry or rollback.
+Configuration writing follows this order: validate configuration ownership and baseline, reread the device for external changes, complete the backup transaction, send the configuration, and compare the readback. One user confirmation covers the whole operation. Writes are not atomic at the device level; interruption can leave partial changes. There is no automatic retry or rollback.
 
 The editor retains up to 50 applied operations, including linked Fn edits, batch remaps, and RGB changes. Loading a new configuration or completing a successful write clears this history. Unapplied input stays with its layer and key and does not enter the applied-operation history.
 
@@ -109,6 +110,18 @@ Low-level events record actual transfer counts. The interface does not display s
 Calibration invalidates the target's hardware write baseline before a changing command and preserves local editing state. Its snapshots and per-device results are separate from `Profile`. The optional `niz-calibration-capture` trace holds at most 256 observations, marks truncation, distinguishes attempted/sent/rejected/timed-out output and input, and retains complete observed report bytes. It contains no typed test text, is explicitly downloaded, and does not replace existing configuration formats or backups. The current 10-second response deadline is experimental, not measured firmware timing.
 
 The calibration dialog reuses existing UI primitives. It remains interactive only for valid stage actions while the background is inert. Terminal errors release the page operation lock and remain reviewable independently of whether a profile was loaded. WebMCP exposes no calibration action. Hardware qualification remains outstanding; see [research](calibration-research.md) and the [implementation plan](calibration-implementation-plan.md).
+
+## Firmware flashing
+
+`firmware.ts` accepts only the 177,576-byte stock 66EC RGB BLE V1.5.1 wrapper with SHA-256 `b5dca0a3de1f36778c4ce5deb41d019d95221f654ef783ff6b837553092397fa`. The digest pins all encrypted record contents; the parser additionally checks framing, lengths and the 3,352-record total. Validated packages have private, copied report storage and cannot be forged by constructing a metadata object. The firmware binary and research sources are not imported into the runtime bundle.
+
+`HIDSession` separately requires model `atom66`, VID/PID `0483:542A`, exact running version `66EC(RGB)BLe;V1.5.1;V1.0;`, and matching input/output descriptors. It does not inherit eligibility from general ATOM66 configuration support. A single-use target binds confirmation to the original device object and connection epoch. No previously loaded configuration baseline is required. After **Start writing**, the transaction rechecks the running version, automatically reads the full keys, lighting and key counts, completes a durable backup of that freshly read state, invalidates any previous baseline for the target, and sends Report ID 0 / 64-byte `0x3A` records serially. Read or backup failure blocks transmission. The fresh snapshot is used only for backup and does not replace loaded editors, drafts or histories. The store blocks the target's unapplied input. Configuration writes retain their separate baseline and external-change checks.
+
+The receiver exposes error replies `00 3A A0/A1`, but no positive flash completion reply. Unexpected replies and transfer failures stop transmission without retry, rollback or calibration-style unlock cleanup. Timed-out physical sends receive no competing cleanup command or close. Normal restoration excludes the retired original device object. Progress counts only successfully sent records; after EOF it is replaced by an unknown-duration restart phase. The 25 ms packet spacing derives conservatively from the recovered 8 ms EEPROM-page delay and possible page splits; it and the 15-second restart observation deadline are provisional, not measured device guarantees.
+
+After an observed disconnect, version checking uses an explicitly initiated, filtered device picker, queries only `F9`, rejects other devices already connected before flashing, and never resends firmware. Newly enumerated objects cannot be reliably paired by model/version, so the user selects the physical keyboard and the result says **Selected device version checked**, not byte-for-byte flash verification. Without an observed disconnect the outcome stays unconfirmed, even for a same-version reinstall. A late disconnect can enable checking. Results and backup IDs remain reviewable in page memory. No flash operation is exposed through WebMCP.
+
+Static protocol evidence is in `niz-firmware/recovered/PROTOCOL.md` and `niz-firmware/firmware/mac_updater_compatibility.json` (Chinese research repository). No real USB flashing, bootloader APROM write, power-cycle qualification or recovery validation has been performed. See the [user flow](usage.md#firmware-flashing) and [validation history (Chinese)](../VALIDATION.md).
 
 ## Interface implementation
 

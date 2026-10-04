@@ -13,6 +13,8 @@ import {
   type CalibrationAvailability, type CalibrationTarget, type CalibrationRun,
   type CalibrationSnapshot, type CalibrationCapture,
 } from './calibration';
+import { firmwarePackets, firmwareDelay, initialFirmware, stockFirmware,
+  type FirmwarePackage, type FirmwareTarget, type FirmwareSnapshot } from './firmware';
 import type {
   ConfigDevice,
   HIDAccess,
@@ -31,6 +33,7 @@ import {
   assert,
   command,
   equalBytes,
+  hex,
   makeCapture,
 } from './protocol';
 
@@ -341,6 +344,7 @@ export interface ConnectedHIDDevice {
   version: string;
   hasLiveBaseline: boolean;
   calibration: CalibrationAvailability;
+  firmwareFlash: boolean;
 }
 export class HIDSession extends EventTarget {
   activeDeviceId: string | null = null;
@@ -360,6 +364,14 @@ export class HIDSession extends EventTarget {
     run: CalibrationRun;
   } | null = null;
   private calibrationTimeout: number;
+  private firmwareTargets = new WeakMap<FirmwareTarget, DeviceConnection>();
+  private firmwareChecks = new Map<FirmwareTarget, {
+    device: ConfigDevice; file: FirmwarePackage; existing: Set<ConfigDevice>; disconnected: boolean; complete: boolean;
+  }>();
+  private firmwareOwner: { record: DeviceConnection; controller: AbortController; eofStarted: boolean;
+    disconnected: boolean; wake: (() => void) | null } | null = null;
+  private firmwarePacketDelay: number;
+  private firmwareRestartTimeout: number;
   private sendTimeout: number;
   readonly models: readonly KeyboardModel[];
   model: KeyboardModel | null = null;
@@ -390,7 +402,7 @@ export class HIDSession extends EventTarget {
   private started = false;
   constructor(hid: HIDAccess | null, {
     timeout = 2500, retryMs = 2500, models = supportedModels,
-    calibrationTimeout = 10000, sendTimeout = 5000,
+    calibrationTimeout = 10000, sendTimeout = 5000, firmwarePacketDelay = 25, firmwareRestartTimeout = 15000,
   } = {}) {
     super();
     this.models = models;
@@ -398,6 +410,10 @@ export class HIDSession extends EventTarget {
     this.timeout = timeout;
     this.retryMs = retryMs;
     this.calibrationTimeout = calibrationTimeout;
+    // Two EEPROM page writes can each delay 8 ms (recovered eeprom_write_page).
+    // 25 ms pacing and the reboot deadline remain provisional until hardware qualification.
+    this.firmwarePacketDelay = firmwarePacketDelay;
+    this.firmwareRestartTimeout = firmwareRestartTimeout;
     this.sendTimeout = sendTimeout;
     this.device = null;
     this.channel = null;
@@ -417,6 +433,12 @@ export class HIDSession extends EventTarget {
     };
     this.disconnectedListener = (event) => {
       const device = (event as HIDConnectionEvent).device;
+      for (const check of this.firmwareChecks.values()) if (check.device === device) check.disconnected = true;
+      if (this.firmwareOwner?.record.device === device) {
+        this.firmwareOwner.disconnected = true;
+        if (!this.firmwareOwner.eofStarted) this.firmwareOwner.controller.abort();
+        this.firmwareOwner.wake?.();
+      }
       if (this.calibrationOwner?.record.device === device) this.calibrationOwner.engine.interrupt();
       if (device === this.device) this.drop(msg('hid.unplugged'));
       else {
@@ -450,6 +472,7 @@ export class HIDSession extends EventTarget {
       version: record.version,
       hasLiveBaseline: record.lastRead?.epoch === record.epoch && record.lastRead.device === record.device,
       calibration: this.calibrationAvailability(record),
+      firmwareFlash: this.firmwareAvailability(record),
     }));
   }
   private calibrationAvailability(record: DeviceConnection): CalibrationAvailability {
@@ -460,6 +483,165 @@ export class HIDSession extends EventTarget {
     try { validateDescriptor(record.device, [record.model]); }
     catch { return 'unsupported'; }
     return 'available';
+  }
+  private firmwareAvailability(record: DeviceConnection) {
+    if (record.model.id !== stockFirmware.model || record.device.vendorId !== stockFirmware.vendorId ||
+      record.device.productId !== stockFirmware.productId || record.version !== stockFirmware.version) return false;
+    try { validateDescriptor(record.device, [record.model]); return true; }
+    catch { return false; }
+  }
+  firmwareTarget(id: string): FirmwareTarget {
+    const record = this.connections.get(id);
+    assert(record?.device.opened && !this.stopped && this.firmwareAvailability(record), msg('firmware.unsupported'));
+    const target = Object.freeze({ id, epoch: record.epoch, version: record.version });
+    this.firmwareTargets.set(target, record);
+    return target;
+  }
+  firmwareCanVerify(target: FirmwareTarget) {
+    const check = this.firmwareChecks.get(target);
+    return !!check?.complete && check.disconnected;
+  }
+  flashFirmware(target: FirmwareTarget, file: FirmwarePackage,
+    saveBackup: (profile: Profile, reason: string) => Promise<string>, onUpdate: (state: FirmwareSnapshot) => void,
+  ): Promise<FirmwareSnapshot> {
+    assert(!this.pending && !this.authorizing && !this.calibrationOwner && !this.firmwareOwner && !this.stopped, msg('firmware.busy'));
+    const record = this.firmwareTargets.get(target);
+    const packets = firmwarePackets(file);
+    assert(record, msg('firmware.changed'));
+    const checkTarget = () => {
+      assert(!this.stopped && this.connections.get(target.id) === record && record.device.opened &&
+        record.epoch === target.epoch && record.version === target.version && this.firmwareAvailability(record), msg('firmware.changed'));
+    };
+    checkTarget();
+    this.firmwareTargets.delete(target);
+    const check = { device: record.device, file, existing: new Set([...this.connections.values()].map(r => r.device)),
+      disconnected: false, complete: false };
+    this.firmwareChecks.set(target, check);
+    const owner = { record, controller: new AbortController(), eofStarted: false, disconnected: false, wake: null as (() => void) | null };
+    this.firmwareOwner = owner;
+    let state: FirmwareSnapshot = { ...initialFirmware(), phase: 'identifying', total: packets.length };
+    const publish = (next: Partial<FirmwareSnapshot>) => { state = { ...state, ...next }; onUpdate({ ...state }); };
+    return this.exclusive(async () => {
+      const channel = record.channel;
+      let unwatch = () => {};
+      let responseError: Message | undefined;
+      const checkTransfer = () => {
+        assert(!owner.controller.signal.aborted, responseError ?? msg('firmware.interrupted'));
+        checkTarget();
+        assert(!channel.failure && !channel.queue.length && !channel.waiter, msg('firmware.unexpectedReply'));
+      };
+      try {
+        publish({ phase: 'identifying' });
+        checkTarget();
+        const version = await readVersion(channel);
+        checkTarget();
+        assert(version === target.version, msg('firmware.changed'));
+        publish({ phase: 'verifying' });
+        const current = Profile.fromReports(await readKeyReports(channel, () => {}, record.model), record.model);
+        current.version = version; current.identity = { ...record.identity };
+        checkTarget();
+        current.lights = await readBytes(channel, 0xe2, 0xe0, record.model.keyCount * 3);
+        checkTarget();
+        current.counters = await readCounters(channel, record.model);
+        checkTarget();
+        publish({ phase: 'backup' });
+        const backupId = await saveBackup(current, '固件刷写前');
+        assert(backupId, msg('error.backupRequired'));
+        checkTarget();
+        publish({ backupId });
+        unwatch = channel.watch(event => {
+          if (event.event !== 'rx') return;
+          responseError = event.reportId === 0 && event.bytes.length === 64 && event.bytes[0] === 0 &&
+            event.bytes[1] === 0x3a && [0xa0, 0xa1].includes(event.bytes[2])
+            ? msg('firmware.rejected', { code: hex(event.bytes.slice(2, 3)).toUpperCase() }) : msg('firmware.unexpectedReply');
+          owner.controller.abort();
+          owner.wake?.();
+        });
+        checkTransfer();
+        record.lastRead = null;
+        if (this.activeDeviceId === target.id && this.device === record.device) this.lastRead = null;
+        this.notify();
+        publish({ phase: 'sending' });
+        for (let index = 0; index < packets.length; index++) {
+          checkTransfer();
+          owner.eofStarted = index === packets.length - 1;
+          publish({ attempted: true });
+          checkTransfer();
+          await channel.send(packets[index]);
+          publish({ completed: index + 1 });
+          assert(!owner.controller.signal.aborted, responseError ?? msg('firmware.interrupted'));
+          if (!owner.eofStarted && this.firmwarePacketDelay > 0) await firmwareDelay(this.firmwarePacketDelay, owner.controller.signal);
+        }
+        check.complete = true;
+        publish({ phase: 'awaiting-restart' });
+        if (!owner.disconnected) await new Promise<void>((resolve) => {
+          const finish = () => { clearTimeout(timer); owner.controller.signal.removeEventListener('abort', finish); owner.wake = null; resolve(); };
+          const timer = setTimeout(finish, this.firmwareRestartTimeout);
+          owner.wake = finish;
+          owner.controller.signal.addEventListener('abort', finish, { once: true });
+          if (owner.disconnected || owner.controller.signal.aborted) finish();
+        });
+        assert(!owner.controller.signal.aborted && !this.stopped, responseError ?? msg('firmware.interrupted'));
+        publish({ phase: owner.disconnected ? 'awaiting-reconnect' : 'unconfirmed' });
+      } catch (error) {
+        check.complete = false;
+        publish({ phase: 'failed', error: responseError ?? protocolError(error).description });
+      } finally {
+        unwatch();
+        if (state.attempted) this.retireFirmwareConnection(target, record);
+        if (this.firmwareOwner === owner) this.firmwareOwner = null;
+      }
+      return { ...state };
+    });
+  }
+  private retireFirmwareConnection(target: FirmwareTarget, record: DeviceConnection) {
+    this.ignoredDevices.add(record.device);
+    record.lastRead = null;
+    if (this.connections.get(target.id) === record) {
+      if (this.activeDeviceId === target.id && this.device === record.device) this.drop(msg('firmware.connectionRetired'));
+      else { this.connections.delete(target.id); record.channel.close(); this.notify(); }
+    }
+    // A timed-out physical send may still be in flight. No cleanup command or competing close is sent.
+    if (!record.channel.sending && record.device.opened) void record.device.close().catch(() => {});
+  }
+  async verifyFirmware(target: FirmwareTarget): Promise<void> {
+    const check = this.firmwareChecks.get(target);
+    assert(check && this.firmwareCanVerify(target), msg('firmware.restartRequired'));
+    assert(this.hid && !this.stopped && !this.pending && !this.authorizing && !this.firmwareOwner, msg('firmware.busy'));
+    const hid = this.hid;
+    this.authorizing = true;
+    this.notify();
+    try {
+      // Keep the picker in the click's user activation. Pairing after reboot is explicitly manual.
+      const selected = await hid.requestDevice({ filters: [{ vendorId: stockFirmware.vendorId,
+        productId: stockFirmware.productId, usagePage: 0x8c, usage: 1 }] });
+      assert(!this.stopped, msg('firmware.interrupted'));
+      assert(selected.length === 1, msg('firmware.chooseDevice'));
+      const device = selected[0];
+      assert(device.vendorId === stockFirmware.vendorId && device.productId === stockFirmware.productId &&
+        (!check.existing.has(device) || device === check.device), msg('firmware.wrongDevice'));
+      validateDescriptor(device, this.models);
+      await this.exclusive(async () => {
+        let channel: PacketChannel | null = null;
+        const alreadyOpen = device.opened;
+        const id = this.deviceIds.get(device);
+        const existingChannel = id ? this.connections.get(id)?.channel : undefined;
+        try {
+          if (!device.opened) await device.open();
+          assert(!this.stopped, msg('firmware.interrupted'));
+          channel = existingChannel ?? new PacketChannel(device, { timeout: this.timeout, sendTimeout: this.sendTimeout });
+          const version = await readVersion(channel);
+          assert(!this.stopped && device.opened && version === check.file.version &&
+            identifyModel(device, version, this.models)?.id === stockFirmware.model, msg('firmware.versionMismatch'));
+        } finally {
+          if (!existingChannel) channel?.close();
+          if (!alreadyOpen && device.opened) await device.close().catch(() => {});
+        }
+      });
+    } finally {
+      this.authorizing = false;
+      this.notify();
+    }
   }
   calibrationTarget(id: string): CalibrationTarget {
     const record = this.connections.get(id);
@@ -481,7 +663,7 @@ export class HIDSession extends EventTarget {
     onUpdate: (state: CalibrationSnapshot) => void,
     { recordTrace = false } = {},
   ): CalibrationRun {
-    assert(!this.pending && !this.authorizing && !this.calibrationOwner && !this.stopped, msg('calibration.busy'));
+    assert(!this.pending && !this.authorizing && !this.calibrationOwner && !this.firmwareOwner && !this.stopped, msg('calibration.busy'));
     const record = this.calibrationTargets.get(target);
     assert(record && this.connections.get(target.id) === record, msg('calibration.changed'));
     const checkTarget = () => {
@@ -633,6 +815,11 @@ export class HIDSession extends EventTarget {
   async stop() {
     this.stopped = true;
     clearInterval(this.timer);
+    if (this.firmwareOwner) {
+      this.firmwareOwner.controller.abort();
+      this.firmwareOwner.wake?.();
+      await this.tail;
+    }
     const calibration = this.calibrationOwner;
     if (calibration) {
       calibration.engine.interrupt();
@@ -713,6 +900,7 @@ export class HIDSession extends EventTarget {
     }
   }
   async open(device: ConfigDevice, source: 'automatic' | 'manual' = 'manual'): Promise<string> {
+    assert(!this.firmwareOwner, msg('firmware.busy'));
     assert(!this.calibrationOwner, msg('calibration.busy'));
     validateDescriptor(device, this.models);
     let id = this.deviceIds.get(device);
@@ -777,6 +965,7 @@ export class HIDSession extends EventTarget {
     this.setState('waiting', message);
   }
   async disconnect(manual = true, expectedEpoch?: number) {
+    assert(!this.firmwareOwner, msg('firmware.busy'));
     assert(!this.calibrationOwner, msg('calibration.busy'));
     const device = this.device;
     await this.exclusive(async () => {
@@ -790,6 +979,7 @@ export class HIDSession extends EventTarget {
     });
   }
   async disconnectDevice(id: string, expectedEpoch?: number) {
+    assert(!this.firmwareOwner, msg('firmware.busy'));
     assert(!this.calibrationOwner, msg('calibration.busy'));
     if (id === this.activeDeviceId) return this.disconnect(true, expectedEpoch);
     const record = this.connections.get(id);
@@ -817,6 +1007,7 @@ export class HIDSession extends EventTarget {
     assert(this.connected && this.channel && this.model && this.epoch === epoch, msg('error.readRequired'));
   }
   async read(onProgress: (progress: OperationProgress) => void = () => {}) {
+    assert(!this.firmwareOwner, msg('firmware.busy'));
     assert(!this.calibrationOwner, msg('calibration.busy'));
     const epoch = this.epoch;
     return this.exclusive(async () => {
@@ -874,6 +1065,7 @@ export class HIDSession extends EventTarget {
     saveBackup: (profile: Profile, reason: string) => Promise<string>,
     onProgress: (progress: OperationProgress) => void = () => {},
   ) {
+    assert(!this.firmwareOwner, msg('firmware.busy'));
     assert(!this.calibrationOwner, msg('calibration.busy'));
     assert(this.hasLiveBaseline && this.lastRead, msg('error.readBeforeWrite'));
     assert(desired.model.id === this.model?.id, msg('error.modelMismatch'));

@@ -166,6 +166,19 @@ If the operation fails, the page unlocks and a reviewable error remains on the D
 
 When recording was enabled before starting, **Export calibration diagnostics** downloads this run's bounded report trace. It is neither a calibration backup nor a configuration import. No diagnostics are uploaded, and no ordinary typed text is recorded.
 
+## Firmware flashing
+
+**Experimental; not yet tested on hardware.** The device card offers **Flash firmware (experimental)** only for ATOM66 / 66EC RGB BLE with USB `0483:542A`, firmware `66EC(RGB)BLe;V1.5.1;V1.0;`, and the matching 64-byte configuration interface. This reinstalls the same stock V1.5.1 firmware; it does not enable upgrades from other versions or flashing other ATOM66 variants.
+
+1. On **Devices**, open **Flash firmware (experimental)** and choose the original `66EC(RGB)BLe_V1.5.1_20230520.bin` package, or its byte-identical stock rebuild. The tool checks the exact SHA-256. It rejects raw images, ordinary HEX, modified packages, and experimental `c_scan` builds. Packages stay local and are not bundled with the app. No prior configuration read is needed. Apply or discard any unapplied input for this keyboard first.
+2. Prepare the vendor updater and a recovery method for your exact keyboard. **Configuration backups cannot restore firmware.** Review the notice that typing will be locked, then click **Start writing**. This confirms the whole transaction: recheck the device, automatically read its current keys, lighting and key counts, complete the local backup, and send firmware. A failed read or backup blocks firmware transmission. The backup uses the newly read device state, even if an older configuration is already loaded; staged edits stay in the page.
+3. Keep USB connected and the page open. The percentage measures reports sent, not firmware installation. After transmission, the app waits for a disconnect; without one, the result remains **Restart not confirmed**. Do not assume that a timeout makes it safe to unplug.
+4. After an observed disconnect and restart, use **Select keyboard and check version** to select the keyboard you just flashed. This only queries its version. The browser cannot distinguish identical physical keyboards by USB model and version; choose the correct one. A matching version does not prove that every firmware byte matches. Test all keys, RGB, USB/BLE, and configuration persistence after power cycling.
+
+Device rejection, unexpected replies, interrupted transport, or a send timeout stop further reports. There is no automatic retry, rollback, or unlock command. Once firmware transmission is attempted, the old configuration baseline is invalidated. Preserve local edits and explicitly reread before writing configuration again. Result panels and their backup download remain available on **Devices** for the current page session; they are not restored after a reload.
+
+If flashing fails, follow the vendor's instructions to inspect the device and its recovery options. USB update timing, the bootloader's EEPROM-to-APROM copy, real reboot behavior, and failure recovery remain unverified. A device whose application or bootloader no longer exposes the expected interface may require a recovery method outside this web tool.
+
 ## Troubleshooting
 
 ### The keyboard does not appear in the browser
@@ -192,4 +205,4 @@ Export your current configuration, then check browser storage space and privacy 
 
 ### Mouse, media, or lighting actions do not work
 
-The app offers vendor function codes; their effect depends on the keyboard model and firmware. Per-key RGB is available only on RGB models. Firmware updates, global macro recording, and unverified global device settings are outside this version's scope. Key calibration is available for the combinations listed above; its real-hardware behavior still needs validation.
+The app offers vendor function codes; their effect depends on the keyboard model and firmware. Per-key RGB is available only on RGB models. General firmware upgrades, global macro recording, and unverified global device settings are outside this version's scope. The limited experimental reflashing tool is described above. Key calibration is available for the combinations listed above; its real-hardware behavior still needs validation.

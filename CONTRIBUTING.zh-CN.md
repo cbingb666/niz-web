@@ -25,6 +25,18 @@
 
 项目使用 React、TypeScript strict、Vite、Zustand 和 shadcn/ui。模块入口及硬件协议约束见[架构说明](docs/architecture.zh-CN.md)。
 
+### 固件子模块
+
+[niz-firmware](https://github.com/cbingb666/niz-firmware) 以 Git 子模块的形式放在 `niz-firmware/`，包含由独立仓库维护的固件研究与重建源码。运行和构建 Web 应用不需要初始化它。
+
+克隆或拉取项目后，执行以下命令获取本仓库记录的子模块版本：
+
+```sh
+git submodule update --init --recursive
+```
+
+首次克隆也可使用 `git clone --recurse-submodules https://github.com/cbingb666/niz-web.git`。固件开发请遵循子模块自身的 README。
+
 ## 常用命令
 
 | 命令 | 用途 |

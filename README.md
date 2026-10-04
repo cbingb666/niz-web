@@ -9,7 +9,7 @@ Remap keys, set up macros, and back up your NIZ keyboard configuration in a brow
 **[Open NIZ Web](https://cbingb666.github.io/niz-web/)** · [User guide](docs/usage.md) · [Report a bug](https://github.com/cbingb666/niz-web/issues/new?template=bug-report.yml)
 
 > [!WARNING]
-> ATOM68, MICRO82 and MICRO84 support is experimental and has not been tested on real keyboards. Calibration still needs hardware validation on all models.
+> ATOM68, MICRO82 and MICRO84 support is experimental and has not been tested on real keyboards. Calibration and firmware flashing still need hardware validation.
 > Start by reading the configuration and downloading a backup. Check its contents before trying a write. [Validation history (Chinese)](VALIDATION.md)
 
 ## Supported models
@@ -47,6 +47,7 @@ To try the interface without a keyboard, click **Offline demo** on the empty Dev
 - **Configuration files:** Import JSON and Windows `.pro` files for supported models, export JSON, and manage local browser backups.
 - **Devices:** Manage multiple keyboards and read key counts. Set per-key colors on RGB models.
 - **Key calibration:** Use the guided release/held-key workflow on the [enabled model and firmware](docs/usage.md#key-calibration).
+- **Experimental firmware flashing:** Reinstall the known stock V1.5.1 package on the [exact 66EC RGB BLE combination](docs/usage.md#firmware-flashing).
 - **Offline editing:** Try the app, import files, and edit without a connected keyboard. The interface supports Simplified Chinese and English.
 
 ## Where your configuration is saved
@@ -57,7 +58,7 @@ Once loaded, the app does not upload your keyboard configuration or key counts. 
 
 ## Current limitations
 
-- No firmware updates or global macro recording. Calibration on real hardware still needs validation.
+- Firmware flashing is limited to the exact 66EC RGB BLE V1.5.1 combination and known stock package. Other versions, custom firmware, and global macro recording are unsupported.
 - An interrupted write may leave partial changes. There is no automatic rollback. Read the keyboard again, check its state, and restore a backup from before the write if needed.
 - Connecting requires a browser with WebHID support. Other browsers can use offline features only.
 

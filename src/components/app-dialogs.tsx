@@ -5,6 +5,7 @@ import { useAppStore } from '@/store/context';
 import { OperationOverlay } from './operation-overlay';
 import { ConfirmationDialog } from './confirmation-dialog';
 import { CalibrationDialog } from './calibration-dialog';
+import { FirmwareDialog } from './firmware-dialog';
 import { ChangeReview } from './change-review';
 import { ActivityLog } from './activity-log';
 import { DeviceDetails } from './connected-device';
@@ -20,9 +21,12 @@ export function AppDialogs() {
   const backups = useAppStore((state) => state.backupRows);
   const actions = useAppStore((state) => state.actions);
   const calibration = useAppStore(state => state.calibration);
+  const firmware = useAppStore(state => state.firmware);
   const detailDevice = dialog?.kind === 'device' ? devices.find(device => device.id === dialog.deviceId) : undefined;
   if (calibration && (operation === 'calibrate' || dialog?.kind === 'calibration'))
     return <CalibrationDialog key={`${calibration.target.id}:${calibration.target.epoch}`} view={calibration} />;
+  if (firmware && (operation === 'firmware' || dialog?.kind === 'firmware'))
+    return <FirmwareDialog key={`${firmware.target.id}:${firmware.target.epoch}`} view={firmware} />;
   if (operation === 'read' || operation === 'write') return <OperationOverlay operation={operation} />;
   if (!dialog) return null;
   if (dialog.kind === 'confirm') return <ConfirmationDialog dialog={dialog} onConfirm={actions.confirm} />;

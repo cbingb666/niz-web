@@ -11,6 +11,7 @@ import {
 import { localizedKeyName } from '../i18n/key-names';
 import { deviceName } from '../i18n/device';
 import { initialCalibration, type CalibrationTarget, type CalibrationSnapshot, type CalibrationRun } from '../calibration';
+import { initialFirmware, readFirmwareFile, type FirmwareTarget, type FirmwareSnapshot, type FirmwarePackage } from '../firmware';
 import { createStore } from 'zustand/vanilla';
 import { EditorState, type EditorSource } from '../editor';
 import { HIDSession, protocolError, type ConnectedHIDDevice } from '../hid';
@@ -56,7 +57,7 @@ interface ConfirmationDetails {
 export type AppDialog =
   | ({ kind: 'confirm'; title: Message; body: Message; label: Message } & ConfirmationDetails)
   | { kind: 'message'; title: Message; body: Message }
-  | { kind: 'backups' | 'help' | 'manuals' | 'activity' | 'calibration' }
+  | { kind: 'backups' | 'help' | 'manuals' | 'activity' | 'calibration' | 'firmware' }
   | { kind: 'device'; deviceId: string; triggerId: string }
   | { kind: 'changes'; review: ChangeReview };
 export interface SessionView {
@@ -99,6 +100,14 @@ export interface CalibrationView {
   recordTrace: boolean;
   hasCapture: boolean;
 }
+export interface FirmwareView {
+  target: FirmwareTarget;
+  name: Message;
+  state: FirmwareSnapshot;
+  file: FirmwarePackage | null;
+  canVerify: boolean;
+  pendingInput: boolean;
+}
 export interface AppState {
   page: AppPage;
   model: KeyboardModel;
@@ -130,9 +139,11 @@ export interface AppState {
   disconnectedEditors: { id: string; number: number; model: string; name: Message }[];
   hasUnsavedChanges: boolean;
   busy: Message;
-  hardwareOperation: 'read' | 'write' | 'calibrate' | null;
+  hardwareOperation: 'read' | 'write' | 'calibrate' | 'firmware' | null;
   calibration: CalibrationView | null;
   calibrationResults: Record<string, CalibrationView>;
+  firmware: FirmwareView | null;
+  firmwareResults: Record<string, FirmwareView>;
   reading: boolean;
   status: Message;
   progress: OperationProgress | null;
@@ -188,6 +199,13 @@ export interface AppActions {
   closeCalibration(): void;
   reviewCalibration(id: string): void;
   exportCalibration(): void;
+  openFirmware(id: string): void;
+  selectFirmwareFile(file: Pick<File, 'name' | 'size' | 'arrayBuffer'>): Promise<void>;
+  startFirmware(): Promise<void>;
+  verifyFirmware(): Promise<void>;
+  closeFirmware(): void;
+  reviewFirmware(id: string): void;
+  downloadFirmwareBackup(): Promise<void>;
 }
 export interface AppDependencies {
   locale?: Locale;
@@ -207,7 +225,7 @@ const emptyForm = (): EditorForm => ({
 });
 export const isLocked = (state: AppState) =>
   !!state.busy || state.session.pending > 0 || state.session.authorizing || state.dialog?.kind === 'confirm' ||
-    (state.dialog?.kind === 'calibration' && state.calibration?.state.phase === 'preparing');
+    (state.dialog?.kind === 'calibration' && state.calibration?.state.phase === 'preparing') || state.dialog?.kind === 'firmware';
 
 export function createAppStore(dependencies: AppDependencies) {
   const session: HIDSession = dependencies.session;
@@ -221,6 +239,7 @@ export function createAppStore(dependencies: AppDependencies) {
   let started = false;
   let disposed = false;
   let calibrationRun: CalibrationRun | null = null;
+  let firmwareFileGeneration = 0;
   let resolveConfirmation: ((accepted: boolean) => void) | null = null;
   let unregisterTools = () => {};
   let modelContext: ModelContext | undefined;
@@ -478,6 +497,14 @@ export function createAppStore(dependencies: AppDependencies) {
       }
       syncEditor();
       const dialog = get().dialog;
+      const firmware = get().firmware;
+      const refreshFirmware = (view: FirmwareView): FirmwareView => {
+        const canVerify = session.firmwareCanVerify(view.target);
+        return { ...view, canVerify, state: canVerify && view.state.phase === 'unconfirmed'
+          ? { ...view.state, phase: 'awaiting-reconnect' } : view.state };
+      };
+      const firmwareResults = Object.fromEntries(Object.entries(get().firmwareResults).map(([id, result]) => [id, refreshFirmware(result)]));
+      set({ firmwareResults, firmware: firmware ? refreshFirmware(firmware) : null });
       const disconnectTarget = dialog?.kind === 'confirm' ? dialog.disconnectTarget : undefined;
       if (disconnectTarget && !get().connectedDevices.some(device => device.id === disconnectTarget.id && device.epoch === disconnectTarget.epoch))
         actions.confirm(false);
@@ -565,6 +592,86 @@ export function createAppStore(dependencies: AppDependencies) {
       );
     }
     const actions: AppActions = {
+      openFirmware(id) {
+        if (disposed || isLocked(get()) || get().dialog) return;
+        try {
+          const target = session.firmwareTarget(id);
+          const devices = session.connectedDevices;
+          const device = devices.find(device => device.id === id)!;
+          const drafts = id === editorDeviceId ? get().drafts : editingSessions.get(id)?.drafts ?? {};
+          set({ firmware: { target, name: deviceName(device, devices), state: initialFirmware(), file: null,
+            canVerify: false, pendingInput: Object.keys(drafts).length > 0 }, dialog: { kind: 'firmware' } });
+        } catch (error) { fail(error); }
+      },
+      async selectFirmwareFile(file) {
+        const view = get().firmware;
+        if (disposed || !view || get().dialog?.kind !== 'firmware' || get().hardwareOperation || view.state.attempted) return;
+        const generation = ++firmwareFileGeneration;
+        set({ firmware: { ...view, file: null, state: { ...initialFirmware(), phase: 'checking-file' } } });
+        try {
+          const parsed = await readFirmwareFile(file);
+          if (disposed || generation !== firmwareFileGeneration || get().firmware?.target !== view.target || get().dialog?.kind !== 'firmware') return;
+          set({ firmware: { ...view, file: parsed, state: { ...initialFirmware(), phase: 'ready', total: parsed.records } } });
+        } catch (error) {
+          if (disposed || generation !== firmwareFileGeneration || get().firmware?.target !== view.target || get().dialog?.kind !== 'firmware') return;
+          set({ firmware: { ...view, file: null, state: { ...initialFirmware(), error: protocolError(error).description } } });
+        }
+      },
+      async startFirmware() {
+        const view = get().firmware;
+        if (disposed || !view?.file || view.state.phase !== 'ready' || view.pendingInput || get().hardwareOperation ||
+          !get().connectedDevices.some(device => device.id === view.target.id && device.epoch === view.target.epoch && device.firmwareFlash)) return;
+        // The dialog's Start writing action confirms the entire backup + firmware transaction.
+        let outcome: FirmwareSnapshot = { ...view.state, phase: 'identifying' };
+        set({ busy: msg('firmware.phase.identifying'), hardwareOperation: 'firmware', firmware: { ...view, state: outcome } });
+        try {
+          outcome = await session.flashFirmware(view.target, view.file, saveBackup, state => {
+            outcome = state;
+            if (!disposed) set({ firmware: { ...view, state, canVerify: session.firmwareCanVerify(view.target) } });
+          });
+        } catch (error) { outcome = { ...outcome, phase: 'failed', error: protocolError(error).description }; }
+        finally {
+          const result = { ...view, state: outcome, canVerify: session.firmwareCanVerify(view.target) };
+          set(state => ({ busy: '', hardwareOperation: null, firmware: result,
+            firmwareResults: { ...state.firmwareResults, [view.target.id]: result } }));
+          if (!disposed) {
+            log(joinMessages(view.name, ' · ', outcome.error ?? msg(`firmware.phase.${outcome.phase}`)), !!outcome.error);
+            syncEditor();
+          }
+        }
+      },
+      async verifyFirmware() {
+        const view = get().firmware;
+        if (disposed || !view?.canVerify || get().hardwareOperation || !['awaiting-reconnect', 'unconfirmed'].includes(view.state.phase)) return;
+        set({ busy: msg('firmware.phase.checking-version'), hardwareOperation: 'firmware',
+          firmware: { ...view, state: { ...view.state, phase: 'checking-version', error: undefined } } });
+        let outcome = view.state;
+        try {
+          // session.verifyFirmware calls requestDevice before its first await.
+          await session.verifyFirmware(view.target);
+          outcome = { ...view.state, phase: 'version-confirmed', error: undefined };
+        } catch (error) { outcome = { ...view.state, error: protocolError(error).description }; }
+        finally {
+          const result = { ...view, state: outcome, canVerify: session.firmwareCanVerify(view.target) };
+          set(state => ({ busy: '', hardwareOperation: null, firmware: result,
+            firmwareResults: { ...state.firmwareResults, [view.target.id]: result } }));
+          if (!disposed) log(joinMessages(view.name, ' · ', outcome.error ?? msg('firmware.phase.version-confirmed')), !!outcome.error);
+        }
+      },
+      closeFirmware() {
+        if (get().hardwareOperation === 'firmware') return;
+        firmwareFileGeneration++;
+        set({ firmware: null, dialog: null });
+      },
+      reviewFirmware(id) {
+        if (disposed || isLocked(get()) || get().dialog) return;
+        const result = get().firmwareResults[id];
+        if (result) set({ firmware: result, dialog: { kind: 'firmware' } });
+      },
+      async downloadFirmwareBackup() {
+        const id = get().firmware?.state.backupId;
+        if (id && !get().hardwareOperation) await actions.downloadBackup(id);
+      },
       openCalibration(id) {
         if (disposed || isLocked(get()) || get().dialog) return;
         try {
@@ -891,7 +998,8 @@ export function createAppStore(dependencies: AppDependencies) {
         set({ dialog: { kind: 'device', deviceId, triggerId: id ? `device-details-${id}` : 'device-details-trigger' } });
       },
       closeDialog() {
-        if (get().dialog?.kind === 'calibration') actions.closeCalibration();
+        if (get().dialog?.kind === 'firmware') actions.closeFirmware();
+        else if (get().dialog?.kind === 'calibration') actions.closeCalibration();
         else if (resolveConfirmation) actions.confirm(false);
         else set({ dialog: null });
       },
@@ -976,6 +1084,8 @@ export function createAppStore(dependencies: AppDependencies) {
       hardwareOperation: null,
       calibration: null,
       calibrationResults: {},
+      firmware: null,
+      firmwareResults: {},
       reading: false,
       status: msg('status.initial'),
       progress: null,

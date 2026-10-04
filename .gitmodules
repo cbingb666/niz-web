@@ -1,0 +1,3 @@
+[submodule "niz-firmware"]
+	path = niz-firmware
+	url = https://github.com/cbingb666/niz-firmware.git

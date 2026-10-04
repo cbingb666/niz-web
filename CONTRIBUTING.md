@@ -25,6 +25,18 @@ The development server runs at <http://127.0.0.1:5173>. It serves the page and h
 
 The project uses React, strict TypeScript, Vite, Zustand, and shadcn/ui. See [Architecture and compatibility](docs/architecture.md) for module responsibilities and hardware protocol constraints.
 
+### Firmware submodule
+
+[niz-firmware](https://github.com/cbingb666/niz-firmware) is checked out at `niz-firmware/` as a Git submodule. It contains firmware research and rebuild sources maintained in a separate repository. It is optional for running and building the web app.
+
+To fetch the version recorded by this repository after cloning or pulling:
+
+```sh
+git submodule update --init --recursive
+```
+
+You can also use `git clone --recurse-submodules https://github.com/cbingb666/niz-web.git` for a new checkout. Follow the submodule's own README (Chinese) for firmware work.
+
 ## Commands
 
 | Command | Purpose |

@@ -57,5 +57,6 @@ export function backupReason(reason: string): Message {
   if (reason === zhCN['backup.read']) return msg('backup.read');
   if (reason === zhCN['backup.autoRead']) return msg('backup.autoRead');
   if (reason === zhCN['backup.beforeWrite']) return msg('backup.beforeWrite');
+  if (reason === zhCN['backup.beforeFirmware']) return msg('backup.beforeFirmware');
   return reason;
 }
