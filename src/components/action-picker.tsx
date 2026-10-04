@@ -1,6 +1,6 @@
 import { useId, useRef, useState, type KeyboardEvent } from 'react';
 import { Check, Search, X } from 'lucide-react';
-import { KEY_NAMES, ENGLISH_KEY_NAMES, KEY_DESCRIPTIONS, keyDescription, localizedKeyName } from '@/i18n/key-names';
+import { KEY_NAMES, ENGLISH_KEY_NAMES, KEY_ALIASES, KEY_DESCRIPTIONS, keyDescription, localizedKeyName } from '@/i18n/key-names';
 import { keyAbbreviation, keycapName } from '@/i18n/key-labels';
 import { useI18n } from '@/i18n/use-i18n';
 import { useAppStore } from '@/store/context';
@@ -10,7 +10,7 @@ import { Label } from './ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 
 const common = [0, 1, 67, 42, 27, 54, 70, 84, 28, 58, 59];
-const groups = ['common', 'all', 'letters', 'navigation', 'function', 'media', 'mouse', 'lighting', 'device', 'reserved'] as const;
+const groups = ['all', 'common', 'letters', 'navigation', 'function', 'media', 'mouse', 'lighting', 'device', 'reserved'] as const;
 type Group = (typeof groups)[number];
 const normalizeSearch = (value: string) => value.toLowerCase().replaceAll('−', '-');
 function groupFor(code: number): Group {
@@ -38,12 +38,12 @@ export function ActionPicker({ value, disabled, selectionDisabled = false, showF
   const matches = KEY_NAMES.map((_, code) => code).filter((code) => {
     if (code === 200) return false;
     if (/^#\d+$/.test(search)) return code === Number(search.slice(1));
-    if (search) return normalizeSearch(`${localizedKeyName(code, locale)} ${keycapName(code)} ${KEY_NAMES[code]} ${ENGLISH_KEY_NAMES[code]} ${Object.values(KEY_DESCRIPTIONS[code] ?? {}).join(' ')} ${code === 70 ? '空格' : ''} ${code === 67 || code === 74 ? 'ctrl' : ''}`).includes(search);
+    if (search) return normalizeSearch(`${localizedKeyName(code, locale)} ${keycapName(code)} ${KEY_NAMES[code]} ${ENGLISH_KEY_NAMES[code]} ${(KEY_ALIASES[code] ?? []).join(' ')} ${Object.values(KEY_DESCRIPTIONS[code] ?? {}).join(' ')} ${code === 70 ? '空格' : ''} ${code === 67 || code === 74 ? 'ctrl' : ''}`).includes(search);
     return group === 'common' ? common.includes(code) : group === 'all' || groupFor(code) === group;
   });
   if (!search && group === 'common') matches.sort((a, b) => common.indexOf(a) - common.indexOf(b));
   if (search) {
-    const exact = (code: number) => [localizedKeyName(code, locale), keycapName(code), KEY_NAMES[code], ENGLISH_KEY_NAMES[code]].some(name => normalizeSearch(name) === search);
+    const exact = (code: number) => [localizedKeyName(code, locale), keycapName(code), KEY_NAMES[code], ENGLISH_KEY_NAMES[code], ...(KEY_ALIASES[code] ?? [])].some(name => normalizeSearch(name) === search);
     matches.sort((a, b) => Number(exact(b)) - Number(exact(a)));
   }
   const activeIndex = Math.min(highlight, Math.max(0, matches.length - 1));

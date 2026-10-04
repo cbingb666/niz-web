@@ -1,4 +1,4 @@
-import { KEY_NAMES, ENGLISH_KEY_NAMES, SIDED_KEY_NAMES } from './i18n/key-names.ts';
+import { KEY_NAMES, ENGLISH_KEY_NAMES, SIDED_KEY_NAMES, KEY_ALIASES } from './i18n/key-names.ts';
 import { msg, renderMessage, joinMessages, type Message } from './i18n/core.ts';
 import { defaultModel, supportedModels, type KeyboardModel } from './devices/index.ts';
 export interface KeyDefinition {
@@ -86,28 +86,8 @@ export function parseKey(text: string) {
   if (english >= 0) return english;
   const sided = Object.entries(SIDED_KEY_NAMES).find(([, name]) => name.toLowerCase() === value.toLowerCase());
   if (sided) return Number(sided[0]);
-  const aliases: Record<string, number> = {
-    cmd: 68,
-    command: 68,
-    lcmd: 68,
-    rcmd: 72,
-    ctrl: 67,
-    control: 67,
-    alt: 69,
-    option: 69,
-    shift: 55,
-    enter: 54,
-    lfn: 166,
-    rfn: 156,
-    none: 0,
-    '无功能': 0,
-    'no action': 0,
-    up: 87,
-    left: 88,
-    down: 89,
-    right: 90,
-  };
-  if (Object.hasOwn(aliases, value.toLowerCase())) return aliases[value.toLowerCase()];
+  const alias = Object.entries(KEY_ALIASES).find(([, names]) => names.some(name => name.toLowerCase() === value.toLowerCase()));
+  if (alias) return Number(alias[0]);
   if (/^#\d+$/.test(value)) return integer(Number(value.slice(1)), 255, msg('field.keyCode'));
   if (/^0x[0-9a-f]+$/i.test(value)) return integer(parseInt(value.slice(2), 16), 255, msg('field.keyCode'));
   throw new ProtocolError(msg('error.keyName', { value }));

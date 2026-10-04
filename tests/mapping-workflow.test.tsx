@@ -125,6 +125,31 @@ test.each(['zh-CN', 'en'] as const)('%s editors share sided names while preservi
   expect(store.getState().form.sequence).toBe('R Ctrl\nL Cmd\nC\nR Shift');
 });
 
+test.each(['zh-CN', 'en'] as const)('%s arrow keys can be searched by English and Chinese directions', async locale => {
+  const { store, actions } = application(null, undefined, { locale });
+  const view = render(<App store={store} />);
+  await act(() => actions.demo());
+  const search = screen.getByRole('searchbox');
+  for (const [direction, chineseDirection, eventName, code] of [
+    ['left', '左', 'ArrowLeft', 88], ['right', '右', 'ArrowRight', 90],
+    ['up', '上', 'ArrowUp', 87], ['down', '下', 'ArrowDown', 89],
+  ] as const) {
+    for (const query of [`arrow ${direction}`, `${direction} arrow`, eventName, `向${chineseDirection}`, `${chineseDirection}箭头`, `${chineseDirection}方向键`, localizedKeyName(code, locale)]) {
+      fireEvent.change(search, { target: { value: query } });
+      expect(within(view.container.querySelector('.action-options')!).getByRole('button', { name: name => name.startsWith(localizedKeyName(code, locale)) })).toBeVisible();
+    }
+    for (const query of [direction, chineseDirection]) {
+      fireEvent.change(search, { target: { value: query } });
+      fireEvent.keyDown(search, { key: 'Enter' });
+      expect(store.getState().profile!.definition(0).keys).toEqual([code]);
+    }
+  }
+  for (const query of ['arrow', '箭头', '方向键']) {
+    fireEvent.change(search, { target: { value: query } });
+    expect(view.container.querySelectorAll('.action-option')).toHaveLength(4);
+  }
+});
+
 test('mapping type select switches all editors while preserving unapplied input', async () => {
   const { store, actions } = application();
   render(<App store={store} />);
@@ -583,6 +608,9 @@ test.each(['zh-CN', 'en'] as const)('%s search crosses categories and clearing r
   const categoryName = translate(locale, 'mapping.group');
   expect(screen.getByRole('combobox', { name: categoryName })).toHaveTextContent(translate(locale, 'mapping.all'));
   fireEvent.keyDown(screen.getByRole('combobox', { name: categoryName }), { key: 'ArrowDown' });
+  expect(screen.getAllByRole('option').slice(0, 2).map(option => option.textContent)).toEqual([
+    translate(locale, 'mapping.all'), translate(locale, 'mapping.common'),
+  ]);
   fireEvent.keyDown(await screen.findByRole('option', { name: translate(locale, 'mapping.media') }), { key: 'Enter' });
   expect(screen.getByRole('combobox', { name: categoryName })).toHaveTextContent(translate(locale, 'mapping.media'));
   fireEvent.change(search, { target: { value: 'Esc' } });

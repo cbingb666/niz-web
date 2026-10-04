@@ -9,7 +9,7 @@ import {
   type MessageKey,
 } from '../src/i18n/core';
 import { detectLocale, preferredLocale, persistLocale, localeStorageKey } from '../src/i18n/preferences';
-import { KEY_NAMES, ENGLISH_KEY_NAMES, localizedKeyName } from '../src/i18n/key-names';
+import { KEY_NAMES, ENGLISH_KEY_NAMES, KEY_ALIASES, localizedKeyName } from '../src/i18n/key-names';
 import { keyAbbreviation, keycapName } from '../src/i18n/key-labels';
 import { keycapSummary, localizedSummary } from '../src/i18n/profile';
 import {
@@ -120,6 +120,9 @@ test('every English and Chinese key name maps back to the same wire code', () =>
   expect(parseKey('Key scan period')).toBe(177);
   expect(parseKey('无功能')).toBe(0);
   expect(parseKey('No action')).toBe(0);
+  for (const [code, aliases] of Object.entries(KEY_ALIASES)) {
+    for (const alias of aliases) expect(parseKey(alias.toUpperCase())).toBe(Number(code));
+  }
 });
 test('localized macro text and mixed-language input preserve the encoded reports', () => {
   const definition = {

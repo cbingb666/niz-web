@@ -43,7 +43,9 @@ Clicking **Disconnect** opens a confirmation naming the keyboard, with **Cancel*
 
 Each key shows its Normal, Right Fn, and Left Fn mappings. Click the mapping you want to edit, then choose an action. Search by Chinese or English names, or by abbreviations. Enable **Show key numbers** to see key positions.
 
-Action categories default to **All**. Search covers all categories and shows the result count. **Clear search** returns to the category you were browsing. From the search field, press Down to focus the first result, then use arrow keys to browse and Enter to choose. Escape returns to search; pressing it again clears the query.
+Arrow keys also match `arrow`, `left`, `right`, `up`, and `down`, or names such as `arrow left`, `left arrow`, and `ArrowLeft`. Chinese searches include `箭头`, `方向键`, `左`, `右`, `上`, `下`, and names such as `向左`, `左箭头`, or `左方向键`.
+
+Action categories start with **All**, followed by **Common**; **All** is selected by default. Search covers all categories and shows the result count. **Clear search** returns to the category you were browsing. From the search field, press Down to focus the first result, then use arrow keys to browse and Enter to choose. Escape returns to search; pressing it again clears the query.
 
 The editor summary shows the selected key position, layer, and current action. It also marks unapplied input and locally staged changes. Use **Devices** in the top bar to return to the device list; your edits are kept. **Import** and **Export** are visible buttons on the right of the bottom bar. When editing offline, use the bottom bar to connect a keyboard or choose one that is already connected.
 

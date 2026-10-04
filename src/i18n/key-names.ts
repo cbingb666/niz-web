@@ -123,6 +123,23 @@ export const SIDED_KEY_NAMES: Readonly<Record<number, string>> = {
   156: 'R Fn', 166: 'L Fn',
 };
 
+// Share accepted input aliases with action search, including names for symbolic arrow keys.
+export const KEY_ALIASES: Readonly<Record<number, readonly string[]>> = {
+  0: ['none', '无功能', 'no action'],
+  54: ['enter'],
+  55: ['shift'],
+  67: ['ctrl', 'control'],
+  68: ['cmd', 'command', 'lcmd'],
+  69: ['alt', 'option'],
+  72: ['rcmd'],
+  87: ['up', 'arrow up', 'up arrow', 'ArrowUp', '上', '向上', '上箭头', '向上箭头', '箭头上', '上方向键', '方向键上'],
+  88: ['left', 'arrow left', 'left arrow', 'ArrowLeft', '左', '向左', '左箭头', '向左箭头', '箭头左', '左方向键', '方向键左'],
+  89: ['down', 'arrow down', 'down arrow', 'ArrowDown', '下', '向下', '下箭头', '向下箭头', '箭头下', '下方向键', '方向键下'],
+  90: ['right', 'arrow right', 'right arrow', 'ArrowRight', '右', '向右', '右箭头', '向右箭头', '箭头右', '右方向键', '方向键右'],
+  156: ['rfn'],
+  166: ['lfn'],
+};
+
 // Document macOS behavior without changing key names or wire codes.
 // https://docs.qmk.fm/keycodes_basic#lock-keys
 // https://docs.qmk.fm/keycodes_basic#commands
