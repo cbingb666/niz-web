@@ -533,7 +533,7 @@ export const zhCN = {
   'error.lightingRead': '灯光未读取：{error}',
   'error.readBeforeWrite': '写入前需要先读取当前键盘配置。',
   'error.firmwareChanged': '固件版本已变化，请重新读取键盘。',
-  'error.externalChanges': '设备配置已发生变化。请先导出编辑内容，再重新读取键盘。',
+  'error.externalChanges': '设备配置已发生变化。请检查键盘是否已进入编程模式。先导出编辑内容，再重新读取键盘。',
   'error.unsupportedLights': '设备不支持这份灯光配置。',
   'error.backupRequired': '备份未保存，写入已停止。',
   'error.missingRGB': '缺少 RGB 配置。',

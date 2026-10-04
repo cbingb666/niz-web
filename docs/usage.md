@@ -182,6 +182,10 @@ Click **Configure device** or **Read configuration again** to retry. The app doe
 
 The connection has changed. Read the configuration again to confirm the keyboard's current state. If you have pending edits, export them first, read the device, then import the file again.
 
+### The device configuration changed
+
+If this error appears when you try to write, check whether the keyboard is in programming mode. Export your edits, then read the keyboard again and reimport the file.
+
 ### A local backup failed
 
 Export your current configuration, then check browser storage space and privacy settings. A local backup must succeed before writing. Downloading a file does not bypass this check.

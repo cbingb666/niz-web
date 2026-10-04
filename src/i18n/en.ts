@@ -557,7 +557,7 @@ export const en = {
   'error.readBeforeWrite': 'Read the current keyboard configuration before writing.',
   'error.firmwareChanged': 'The firmware version changed. Read the keyboard again.',
   'error.externalChanges':
-    'The device configuration changed externally. Export your edits, then read the keyboard again.',
+    'The device configuration changed externally. Check whether the keyboard is in programming mode. Export your edits, then read the keyboard again.',
   'error.unsupportedLights': 'The device does not support this lighting configuration.',
   'error.backupRequired': 'No backup was saved. Writing was stopped.',
   'error.missingRGB': 'RGB configuration is missing.',
