@@ -17,7 +17,8 @@ export const atom66 = defineModel({
   hardwareValidation: 'verified',
   legacyRoots: ['66EC(XRGB)Ble', '66EC(XRGB)BLe', '66EC(S)Ble', '66EC(S)BLe', '66EC(S)'],
   protocol: 'niz-ec',
-  filters: [0x502a, 0x512a, 0x522a].map((productId) => ({
+  // The official 2023-06 client also recognizes the RGB interface 0x542a.
+  filters: [0x502a, 0x512a, 0x522a, 0x542a].map((productId) => ({
     vendorId: 0x0483, productId, usagePage: 0x8c, usage: 1,
   })),
   matchesFirmware: (version) => version.startsWith('66EC'),

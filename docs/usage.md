@@ -23,6 +23,8 @@ Click **Connect a device** and follow the four steps:
 3. Click **Connect keyboard**, then select the device and grant access in the browser dialog.
 4. Click **Next**, then **View devices** to return to the Devices page.
 
+For ATOM66, use the keyboard's **Win mode** for configuration, including on macOS. Hold either **Fn** key together with **left Alt** for 3 seconds: one indicator flash means Win mode; two flashes mean Mac mode. Wait for the USB connection to return, then open the browser dialog again. See the [ATOM66 manufacturer manuals](manuals.md#atom66). The connection guide includes this reminder under **Having trouble connecting?**.
+
 **Connecting does not read the configuration automatically.** Click **Configure device** on the keyboard's card, then confirm **Start reading**. The app reads the configuration and tries to save a local backup. After a successful read, export a JSON copy.
 
 The keyboard is temporarily locked during reads and writes. You cannot type or use other controls in the app until the operation ends. Cancelling the read confirmation sends no configuration read commands.

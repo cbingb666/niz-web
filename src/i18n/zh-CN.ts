@@ -80,6 +80,7 @@ export const zhCN = {
   'guide.title': '设备连接引导',
   'guide.modelHelp': '型号不在列表中？',
   'guide.connectionHelp': '连接遇到问题？',
+  'guide.checkAtom66Mode': 'ATOM66 配置时需要 Win 模式，Mac 电脑也一样。按住 Fn＋左 Alt 3 秒，状态灯闪 1 次后重新连接。',
   'guide.checkCable': '换一根 USB 数据线，重新插入电脑。',
   'guide.closeOtherTools': '关闭其他键盘配置工具后重试。',
   'guide.retryHint': '再次点击连接按钮，选择键盘并确认。',

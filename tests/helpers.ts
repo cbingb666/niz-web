@@ -52,7 +52,9 @@ export class FakeDevice extends EventTarget implements ConfigDevice {
   constructor(profile = fixture()) {
     super();
     this.profile = profile.clone();
-    const filter = profile.model.filters.at(-1)!;
+    const filter = profile.model.filters.find(candidate =>
+      candidate.vendorId === profile.identity.VendorID && candidate.productId === profile.identity.ProductID,
+    ) ?? profile.model.filters[0];
     this.vendorId = filter.vendorId;
     this.productId = filter.productId;
     this.productName = `${profile.model.name} fixture`;

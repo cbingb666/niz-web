@@ -1,4 +1,4 @@
-import { expect, test, vi } from 'vitest';
+import { expect, onTestFinished, test, vi } from 'vitest';
 import { defaultModel, supportedModels, deviceFilters, identifyModel } from '../src/devices';
 import { defineModel } from '../src/devices/model';
 import { EditorState } from '../src/editor';
@@ -17,6 +17,25 @@ test('official models are registered; existing Atom66 files and backups retain t
   expect(restored.model).toBe(defaultModel);
   expect(restored.toJSON()).toEqual(original);
   expect(() => Profile.fromJSON({ ...original, model: 'test-68' })).toThrow(/型号/);
+});
+
+test('the 2023 ATOM66 RGB interface is offered by authorization and connects without reading configuration', async (t) => {
+  const device = new FakeDevice(fixture(9, true)), hid = new FakeHID();
+  device.productName = '66EC-RGB';
+  device.productId = 0x542a;
+  hid.selection = [device];
+  const session = new HIDSession(hid, { retryMs: 60_000 });
+  t.onTestFinished(() => session.stop());
+  const authorization = session.authorize();
+  expect(hid.filters).toContainEqual({ vendorId: 0x0483, productId: 0x542a, usagePage: 0x8c, usage: 1 });
+  expect(await authorization).not.toBeNull();
+  expect(session.model).toBe(defaultModel);
+  expect(session.connectedDevices[0].calibration).toBe('unsupported');
+  expect(device.sent.map(packet => packet[1])).toEqual([0xf9]);
+  expect(session.hasLiveBaseline).toBe(false);
+  expect(identifyModel(device, '68EC(S);V1.4.1;V1.0;')).toBeNull();
+  device.collections[0].usagePage = 1;
+  expect(isConfigDevice(device)).toBe(false);
 });
 
 test('shared USB IDs require an unambiguous firmware match; unknown devices remain excluded', () => {
@@ -156,10 +175,11 @@ test('capability flags suppress unsupported reads, regardless of firmware text',
   expect(profile.lights).toBeNull();
 });
 
-test('a matching USB device with unknown firmware never reaches configuration commands', async (t) => {
+test.each([0x522a, 0x542a])('a matching USB device with unknown firmware never reaches configuration commands (PID %i)', async (productId) => {
   const device = new FakeDevice(modelFixture());
+  device.productId = productId;
   const session = new HIDSession(new FakeHID([device]), { retryMs: 60_000 });
-  t.onTestFinished(() => session.stop());
+  onTestFinished(() => session.stop());
   await session.start();
   expect(session.state).toBe('error');
   expect(session.model).toBeNull();

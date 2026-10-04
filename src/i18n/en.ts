@@ -82,6 +82,7 @@ export const en = {
   'guide.title': 'Connection guide',
   'guide.modelHelp': 'Model not listed?',
   'guide.connectionHelp': 'Having trouble connecting?',
+  'guide.checkAtom66Mode': 'ATOM66 needs Win mode for configuration, including on a Mac. Hold Fn + left Alt for 3 seconds until the indicator flashes once, then reconnect.',
   'guide.checkCable': 'Try another USB data cable and plug it into your computer again.',
   'guide.closeOtherTools': 'Close other keyboard configuration tools, then retry.',
   'guide.retryHint': 'Click the connect button again, select your keyboard, and confirm.',

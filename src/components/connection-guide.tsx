@@ -118,7 +118,7 @@ export function ConnectionGuide({ usbAvailable, active = true }: { usbAvailable:
         </Button>}
         {(step.id === 'cable' || step.id === 'permission') && <details className="guide-help">
           <summary>{t('guide.connectionHelp')}</summary>
-          <ul><li>{t('guide.checkCable')}</li><li>{t('guide.closeOtherTools')}</li></ul>
+          <ul><li>{t('guide.checkAtom66Mode')}</li><li>{t('guide.checkCable')}</li><li>{t('guide.closeOtherTools')}</li></ul>
         </details>}
       </div>
       <div className="guide-step-actions">
