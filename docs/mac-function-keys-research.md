@@ -4,6 +4,8 @@
 
 Research date: 2026-10-05. Target confirmed by the user: ATOM66 / 66EC RGB BLE, firmware `66EC(RGB)BLe;V1.5.1;V1.0;`. These are static findings, not hardware qualification. No configuration or firmware was sent to a keyboard.
 
+Hardware status update (2026-10-05): the user has confirmed that Mac system keys work on a real keyboard. The static investigation below predates that confirmation; its pending system-key checks describe the earlier evidence state. See the [hardware validation follow-up](#hardware-validation-follow-up).
+
 ## Existing stock capabilities
 
 The local decoded APROM SHA-256 was checked against `8ecb2cef8172ca37a5e42a75b2748af6a8c930c174c5ae6c67776207d13fa43a`. Its [USB mapping routine](../niz-firmware/recovered/firmware/decompiled/functions/0000a258_usb_key_event.c), [BLE mapping routine](../niz-firmware/recovered/firmware/decompiled/functions/0000329c_ble_key_event.c) and [ROM tables](../niz-firmware/firmware/src/rom.S) establish these internal-code mappings:
@@ -45,4 +47,8 @@ At the initial investigation, the web [firmware tool](../src/firmware.ts) accept
 
 The user subsequently requested native codes for every function-row action. The independent V1.5.1-F.1 build and exact web package allowlist are now implemented; see [native implementation and qualification limits](../niz-firmware/firmware/MAC_NATIVE.md). The picker now names 207–209 and 222–230 and checks the loaded model/version. Spotlight and Dictation also have first-party [ZSA macOS testing](https://blog.zsa.io/2212-macos-keycodes/) evidence.
 
-Further local inspection established that stock Mac initialization already selects `05AC:0220`, rather than retaining the NIZ USB identity. Installed macOS 27.0 AppleHIDKeyboard metadata matches this identity with TopCase Fn page `0xFF` / usage 3. The new variant preserves that existing identity behavior and emits Apple TopCase illumination usages 9/8 for USB backlight. Actual device enumeration, binding, Fn/Globe and backlight behavior remain unverified. No hardware was accessed.
+Further local inspection established that stock Mac initialization already selects `05AC:0220`, rather than retaining the NIZ USB identity. Installed macOS 27.0 AppleHIDKeyboard metadata matches this identity with TopCase Fn page `0xFF` / usage 3. The new variant preserves that existing identity behavior and emits Apple TopCase illumination usages 9/8 for USB backlight. At the time of this static inspection, actual device enumeration, binding, Fn/Globe and backlight behavior were unverified. No hardware was accessed during the inspection.
+
+## Hardware validation follow-up
+
+On 2026-10-05, the user confirmed real-keyboard validation of Mac system keys. The current documentation records the feature as hardware-verified; the interface shows only firmware requirements and usage limitations. This user-reported result supersedes the earlier unverified status for system-key behavior. Bluetooth support, web firmware flashing and recovery remain separate qualification items. See the [validation record (Chinese)](../VALIDATION.md#2026-10-05mac-系统键用户实机验证).

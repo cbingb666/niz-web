@@ -143,7 +143,7 @@ export function ActionPicker({ value, disabled, selectionDisabled = false, showF
       </p>
     </div>}
     {showMacNotice && <details className="mac-action-notice">
-      <summary>{t(unavailableMacActions ? 'mapping.macUnavailable' : 'mapping.macExperimental')}</summary>
+      <summary>{t(unavailableMacActions ? 'mapping.macUnavailable' : 'mapping.macDetails')}</summary>
       <p>{t('mapping.macRequirements')}</p>
       <p>{t('mapping.macLimitations')}</p>
     </details>}

@@ -84,17 +84,19 @@ Search for “screen brightness” to find `Scroll Lock` and `Pause`, which incl
 
 This compatibility path has not been tested on a real ATOM66 with macOS. External displays must also support system brightness control. See [Apple's keyboard shortcut reference](https://support.apple.com/en-us/102650).
 
-### Native Mac system keys (experimental)
+### Native Mac system keys
+
+Mac system keys have been verified on a real keyboard, as confirmed by the user on 2026-10-05. See the [validation record (Chinese)](../VALIDATION.md#2026-10-05mac-系统键用户实机验证).
 
 For ATOM66 RGB BLE V1.5.1 / V1.5.1-F.1, **Mac system keys** includes native screen brightness actions. The V1.5.1-F.1 build adds Mission Control, Launchpad, Spotlight, Dictation, Do Not Disturb, system keyboard backlight and rewind/fast-forward. Unsupported actions are disabled for other loaded models/versions; advanced raw-code edits also cannot be written to an unsupported target. See [native mappings and firmware instructions](../niz-firmware/firmware/MAC_NATIVE.md).
 
-Choices follow the current Mac F1–F12 order: screen brightness down/up, Mission Control, Spotlight, Dictation, Do Not Disturb, previous track, play/pause, next track, mute, volume down/up. Older and alternate actions follow this row. Single-action keycaps and previews use the corresponding Mac symbols; full names remain available in the editor and accessible labels. One expandable notice collects firmware requirements and experimental limitations.
+Choices follow the current Mac F1–F12 order: screen brightness down/up, Mission Control, Spotlight, Dictation, Do Not Disturb, previous track, play/pause, next track, mute, volume down/up. Older and alternate actions follow this row. Single-action keycaps and previews use the corresponding Mac symbols; full names remain available in the editor and accessible labels. One expandable notice collects firmware requirements and transport limitations; validation status stays in the documentation.
 
 In this category, **Convert F1–F12 to Mac** converts existing single F1–F12 mappings across all editable layers, including the Fn rows on compact models and layers hidden by count view. The full preset requires ATOM66 RGB BLE V1.5.1-F.1; other firmware cannot apply a partial preset. Relocated and duplicate F mappings are included.
 
 Shortcuts, repeats, macros, existing Mac actions and any position linked to NIZ Fn remain unchanged; the hint counts preserved Fn mappings. Unfinished input on a conversion target blocks the entire batch, while unrelated drafts and other devices are preserved. The operation stages local edits only, and one Undo restores the whole batch. It does not change physical key positions, extended groups, lighting or counters. After conversion, repeat clicks have no effect.
 
-Configure and flash in Win mode. After flashing, explicitly read the new configuration before editing. Apple Fn and system backlight use the stock Mac mode and need hardware verification; Bluetooth effects are unverified and DND is USB only. Native HID emission does not certify every macOS system action.
+Configure and flash in Win mode. After flashing, explicitly read the new configuration before editing. Apple Fn and system backlight use the stock Mac mode. Bluetooth effects remain unverified and DND is USB only. The web firmware-flashing flow and recovery retain their separate validation status.
 
 ## Review and write
 

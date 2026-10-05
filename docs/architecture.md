@@ -4,7 +4,7 @@
 
 [Back to contributing](../CONTRIBUTING.md) · [Agent instructions (Chinese)](../AGENTS.md)
 
-NIZ Web runs entirely in the browser and accesses the keyboard's USB configuration interface through WebHID. There is no local device proxy, backend service, or cloud configuration storage. The protocol implementation is based on the original DLL, the existing native port, and real read captures. ATOM66 configuration use has been verified on a real keyboard (reported by the user). ATOM68, MICRO82, MICRO84, calibration and firmware flashing still need hardware validation.
+NIZ Web runs entirely in the browser and accesses the keyboard's USB configuration interface through WebHID. There is no local device proxy, backend service, or cloud configuration storage. The protocol implementation is based on the original DLL, the existing native port, and real read captures. ATOM66 configuration use and Mac system keys have been verified on a real keyboard (reported by the user). ATOM68, MICRO82, MICRO84, calibration and web firmware flashing still need hardware validation.
 
 ## Module map
 

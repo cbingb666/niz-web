@@ -4,6 +4,8 @@
 
 研究日期：2026-10-05。用户确认目标为 ATOM66 / 66EC RGB BLE，固件 `66EC(RGB)BLe;V1.5.1;V1.0;`。以下是静态证据，不代表实机验收。本次没有向键盘发送配置或固件。
 
+实机状态更新（2026-10-05）：用户已确认 Mac 系统键在真实键盘上可用。以下静态研究早于这次确认，其中系统键待验证的表述记录的是当时的证据状态。详见[后续实机验证](#后续实机验证)。
+
 ## 原厂固件已有能力
 
 已核对本地解密 APROM 的 SHA-256 为 `8ecb2cef8172ca37a5e42a75b2748af6a8c930c174c5ae6c67776207d13fa43a`。[USB 映射函数](../niz-firmware/recovered/firmware/decompiled/functions/0000a258_usb_key_event.c)、[BLE 映射函数](../niz-firmware/recovered/firmware/decompiled/functions/0000329c_ble_key_event.c)和 [ROM 表](../niz-firmware/firmware/src/rom.S)给出以下内部码映射：
@@ -45,4 +47,8 @@ APROM 将 BLE 报告转发给独立模块，其内部固件和 HID 描述符不�
 
 用户随后要求整排全部使用原生码。已实现独立 V1.5.1-F.1 构建及网页精确包白名单，详见 [实现与验收边界](../niz-firmware/firmware/MAC_NATIVE.zh-CN.md)。选择器已命名 207–209、222–230，并检查载入的型号和版本。Spotlight、听写的可用性另有 [ZSA 官方 macOS 实测](https://blog.zsa.io/2212-macos-keycodes/)证据。
 
-后续本地检查确认，原厂 Mac 初始化已选择 `05AC:0220` 身份，并非始终保留 NIZ USB 身份。本机 macOS 27.0 的 AppleHIDKeyboard 元数据为此身份设置 TopCase Fn 页 `0xFF` / 用途 3。新变体保留原厂身份行为，并对 USB 背光发送 Apple TopCase 9/8 用途码。实际枚举、驱动绑定、Fn/🌐 和背光行为仍未验证。本次没有访问硬件。
+后续本地检查确认，原厂 Mac 初始化已选择 `05AC:0220` 身份，并非始终保留 NIZ USB 身份。本机 macOS 27.0 的 AppleHIDKeyboard 元数据为此身份设置 TopCase Fn 页 `0xFF` / 用途 3。新变体保留原厂身份行为，并对 USB 背光发送 Apple TopCase 9/8 用途码。此次静态检查时，实际枚举、驱动绑定、Fn/🌐 和背光行为尚未验证；静态检查本身没有访问硬件。
+
+## 后续实机验证
+
+用户于 2026-10-05 确认 Mac 系统键已实机验证。当前文档记录此功能已通过实机验证，界面仅显示固件要求与使用限制；用户反馈取代此前系统键效果未验证的状态。蓝牙支持、网页刷写与恢复继续独立验收。详见[验证记录](../VALIDATION.md#2026-10-05mac-系统键用户实机验证)。

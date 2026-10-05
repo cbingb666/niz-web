@@ -814,7 +814,8 @@ test.each(['zh-CN', 'en'] as const)('%s Mac choices follow the current F1–F12 
   expect(view.container.querySelectorAll('.mac-action-notice')).toHaveLength(1);
   const notice = view.container.querySelector('.mac-action-notice')!;
   expect(notice).not.toHaveAttribute('open');
-  expect(notice.querySelector('summary')).toHaveTextContent(translate(locale, 'mapping.macExperimental'));
+  expect(notice.querySelector('summary')).toHaveTextContent(translate(locale, 'mapping.macDetails'));
+  expect(notice).not.toHaveTextContent(/verified on hardware|实机验证/);
   fireEvent.click(notice.querySelector('summary')!);
   expect(notice).toHaveAttribute('open');
   expect(notice).toHaveTextContent(translate(locale, 'mapping.macLimitations'));
