@@ -25,7 +25,8 @@ export function ConfirmationDialog({ dialog, onConfirm }: {
         event.preventDefault();
         const trigger = document.getElementById(dialog.triggerId);
         const target = trigger instanceof HTMLButtonElement && !trigger.disabled ? trigger
-          : document.getElementById('page-title') ?? document.querySelector('main');
+          : (dialog.returnDialog === 'backups' ? document.getElementById('backup-title') : null)
+            ?? document.getElementById('page-title') ?? document.querySelector('main');
         target?.focus({ preventScroll: true });
       }}>
       <AlertDialogTitle className={dialog.locksKeyboard ? 'text-center' : dialog.disconnectTarget ? 'text-balance' : undefined}>{text(dialog.title)}</AlertDialogTitle>
@@ -42,7 +43,8 @@ export function ConfirmationDialog({ dialog, onConfirm }: {
       </details>}
       <div className={dialog.locksKeyboard ? 'flex justify-end gap-3 pt-2' : 'flex justify-end gap-3'}>
         <AlertDialogCancel onClick={() => onConfirm(false)}>{t('common.cancel')}</AlertDialogCancel>
-        <AlertDialogAction onClick={() => onConfirm(true)}>{text(dialog.label)}</AlertDialogAction>
+        <AlertDialogAction className={dialog.destructive ? 'bg-destructive text-white hover:bg-destructive/90' : undefined}
+          onClick={() => onConfirm(true)}>{text(dialog.label)}</AlertDialogAction>
       </div>
     </AlertDialogContent>
   </AlertDialog>;

@@ -13,6 +13,7 @@ export interface Backups {
   save(profile: Profile, reason?: string): Promise<string>;
   list(): Promise<BackupRow[]>;
   profile(id: string): Promise<Profile>;
+  remove(id: string): Promise<void>;
 }
 
 function orderedIdentity(value: unknown): unknown {
@@ -139,5 +140,19 @@ export class BackupStore implements Backups {
     const row = await this.transaction<BackupRow | undefined>('readonly', (store) => store.get(id));
     if (!row) throw new ProtocolError(msg('error.backupMissing'));
     return Profile.fromJSON(row.profile);
+  }
+  async remove(id: string): Promise<void> {
+    await this.transaction('readwrite', store => {
+      const request = store.getAll() as IDBRequest<BackupRow[]>;
+      request.addEventListener('success', () => {
+        const selected = request.result.find(row => row.id === id);
+        if (!selected) return;
+        const key = configurationKey(selected.profile);
+        // Remove the displayed configuration, including hidden historical duplicates.
+        for (const row of request.result)
+          if (configurationKey(row.profile) === key) store.delete(row.id);
+      });
+      return request;
+    });
   }
 }

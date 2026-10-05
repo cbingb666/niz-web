@@ -19,7 +19,9 @@
 
 ## 开发环境
 
-按 [README](README.zh-CN.md) 克隆并启动项目。使用 Node.js 24 和 npm，与 CI 保持一致；也支持 Node.js 22.13+ 的 22.x 版本，完整范围见 [package.json](package.json)。
+按 [README](README.zh-CN.md) 克隆并启动项目。使用 Node.js 24 和 pnpm 11.0.1，与 CI 保持一致；也支持 Node.js 22.13+ 的 22.x 版本，完整范围见 [package.json](package.json)。
+
+`package.json` 固定 pnpm 版本，只维护 `pnpm-lock.yaml`，不要生成 npm、Yarn 或 Bun 锁文件。包管理器检查会拒绝其他安装器，npm 还会通过 `devEngines` 拒绝安装和运行命令。CI 使用 `pnpm install --frozen-lockfile` 安装依赖。
 
 开发地址为 <http://127.0.0.1:5173>。开发服务只提供网页和热更新，不代理 USB。没有键盘时，可在设备管理空状态或连接引导点击「离线演示」，在下一页选择型号，再点击「开始演示」检查界面。
 
@@ -41,16 +43,16 @@ git submodule update --init --recursive
 
 | 命令 | 用途 |
 | --- | --- |
-| `npm run dev` | 启动本地开发服务 |
-| `npm run typecheck` | 检查 TypeScript 类型 |
-| `npm run lint` | 检查代码和未处理的 Promise |
-| `npm test` | 运行一次全部测试 |
-| `npm run test:watch` | 监听变更并运行测试 |
-| `npm run build` | 类型检查并构建独立网页 |
-| `npm run preview` | 预览已有构建产物 |
-| `npm run check` | 类型检查、lint、测试和构建 |
+| `pnpm run dev` | 启动本地开发服务 |
+| `pnpm run typecheck` | 检查 TypeScript 类型 |
+| `pnpm run lint` | 检查代码和未处理的 Promise |
+| `pnpm test` | 运行一次全部测试 |
+| `pnpm run test:watch` | 监听变更并运行测试 |
+| `pnpm run build` | 类型检查并构建独立网页 |
+| `pnpm run preview` | 预览已有构建产物 |
+| `pnpm run check` | 类型检查、lint、测试和构建 |
 
-提交代码前运行 `npm run check`。仅修改文档时，核对链接、命令与实际行为，并运行 `git diff --check`。
+提交代码前运行 `pnpm run check`。仅修改文档时，核对链接、命令与实际行为，并运行 `git diff --check`。
 
 调整改键滚动行为时，还需验证浏览器布局；jsdom 不计算真实位置。如果已有 Playwright CLI，启动本地服务器后运行：
 
@@ -59,11 +61,11 @@ playwright-cli open http://127.0.0.1:5173
 playwright-cli run-code --filename=tests/browser/mapping-scroll.js
 ```
 
-脚本打开新的离线演示标签页，在中英文、桌面与窄屏下检查连续分配和切换键位/层后的功能选项坐标。成功结果为 28 项、位移为零。该验证独立于 `npm run check`，不授权或写入硬件。
+脚本打开新的离线演示标签页，在中英文、桌面与窄屏下检查连续分配和切换键位/层后的功能选项坐标。成功结果为 28 项、位移为零。该验证独立于 `pnpm run check`，不授权或写入硬件。
 
 ## 校准开发
 
-开发服务器和生产构建均默认提供校准，使用正常的 `npm run dev` 或 `npm run build` 即可，不需要环境开关。
+开发服务器和生产构建均默认提供校准，使用正常的 `pnpm run dev` 或 `pnpm run build` 即可，不需要环境开关。
 
 已开放的 ATOM66 组合为 `0483:522A` 搭配固件 `66EC(S);V1.4.4;V1.0;`，以及 `0483:502A` 搭配固件 `66EC(XRGB)BLe;V1.2.5;V1.0;`。两者均须匹配完整固件及 64 字节配置报文描述，其他组合不能启动校准。默认提供功能不改变验证状态，目前仍没有固件通过实机资格验证。连接只识别设备；校准仍须由用户打开工具并确认「开始校准」。
 
@@ -82,7 +84,7 @@ playwright-cli run-code --filename=tests/browser/mapping-scroll.js
 持有私人读取样本时，可以在本地回放：
 
 ```sh
-npm run replay -- /absolute/path/to/read-capture.json
+pnpm run replay /absolute/path/to/read-capture.json
 ```
 
 样本应保留在项目外，不进入 Git 或构建产物。原厂软件的收集规则见 [drivers/README.md](drivers/README.md)。
@@ -95,7 +97,7 @@ FakeHID 和 jsdom 测试不能代替真实浏览器与硬件验收。不要将�
 
 ## 构建与静态部署
 
-`npm run build` 生成 `dist/index.html` 与 `dist/_headers`。HTML 包含全部运行时脚本、样式、图片和翻译，可独立保存。只将 `dist/` 用于静态托管，不包含源码、测试或 `drivers/`。
+`pnpm run build` 生成 `dist/index.html` 与 `dist/_headers`。HTML 包含全部运行时脚本、样式、图片和翻译，可独立保存。只将 `dist/` 用于静态托管，不包含源码、测试或 `drivers/`。
 
 `dist/_headers` 提供 `Permissions-Policy: hid=(self)` 等响应头，是否生效取决于托管服务。GitHub Pages 不读取该文件；页面本身另有 CSP `<meta>`。连接设备时使用允许 WebHID 的独立 HTTPS 页面，不要关闭浏览器安全限制。
 
@@ -111,6 +113,6 @@ FakeHID 和 jsdom 测试不能代替真实浏览器与硬件验收。不要将�
 2. 推送到 `main`，或在 Actions 中手动运行该工作流并选择 `main`。
 3. 等待 `build` 和 `deploy` 成功，使用部署任务给出的地址。
 
-工作流使用 Node.js 24、`npm ci` 和 `npm run check`，通过后只上传 `dist/`。使用 GitHub 自动提供的令牌，无需配置个人访问令牌、提交构建产物或创建 `gh-pages` 分支。
+工作流使用 Node.js 24、`pnpm install --frozen-lockfile` 和 `pnpm run check`，通过后只上传 `dist/`。使用 GitHub 自动提供的令牌，无需配置个人访问令牌、提交构建产物或创建 `gh-pages` 分支。
 
 更换站点网址后，需要重新授权键盘，本地备份也不会自动迁移。

@@ -31,7 +31,7 @@ export function ProfileUtilities() {
   const locked = useAppStore(isLocked);
   const actions = useAppStore(state => state.actions);
   return <div className="profile-utilities">
-    <Button size="icon" variant="ghost" title={t('backup.title')} disabled={locked} onClick={actions.showBackups}>
+    <Button id="backups-trigger" size="icon" variant="ghost" title={t('backup.title')} disabled={locked} onClick={actions.showBackups}>
       <DatabaseBackup /><span className="sr-only">{t('backup.title')} {backupAvailable ? backupCount : t('common.unavailable')}</span>
     </Button>
     <Button id="activity-trigger" size="icon" variant="ghost" title={t('activity.title')} disabled={locked} aria-haspopup="dialog" onClick={actions.showActivity}><ScrollText /><span className="sr-only">{t('activity.title')}</span></Button>

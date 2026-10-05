@@ -132,6 +132,6 @@ Use `tests/calibration.test.ts`, `tests/calibration-session.test.ts`, and `tests
 
 While a run is waiting for user input, tests must wait for its phase rather than use the existing `settle(session)` helper, which awaits `session.tail` and would wait for the whole calibration session to end.
 
-Run relevant tests with each batch and `npm run check` before delivery of code changes. Inspect the actual browser layout in Chinese/English at a narrow viewport and 1280 × 800; jsdom is not browser validation. Keep the standalone HTML, script-hash CSP and `connect-src 'none'`. Update English/Chinese usage and architecture docs when implementation changes behavior, and record actual hardware outcomes and remaining gaps in `VALIDATION.md`.
+Run relevant tests with each batch and `pnpm run check` before delivery of code changes. Inspect the actual browser layout in Chinese/English at a narrow viewport and 1280 × 800; jsdom is not browser validation. Keep the standalone HTML, script-hash CSP and `connect-src 'none'`. Update English/Chinese usage and architecture docs when implementation changes behavior, and record actual hardware outcomes and remaining gaps in `VALIDATION.md`.
 
 Batches 1–3 have been implemented locally with simulated hardware. Batch 4 still requires an explicitly authorized real-device session and available equipment; no real calibration, persistence, or recovery result is implied. The implementation does not authorize firmware changes, pushing to `main`, or deployment.

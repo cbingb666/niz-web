@@ -461,3 +461,15 @@
 - 原始复现修复后，F7 在修改前、修改后、换键后均为 367px。新增 `tests/browser/mapping-scroll.js` 用真实 DOM 坐标检查英文与中文、1440 × 900 桌面和 390 × 844 抽屉的 28 次连续操作，包含长功能名称、最近使用换行和去重、普通/Fn 层与键位切换；结果 **28 项通过、最大位移 0px**。此前在真实浏览器中已执行失败复现，jsdom 不作为坐标稳定性的证明。
 - `npm run check` 的 TypeScript strict、lint、37 个测试文件 / **447 项通过、2 项跳过**和独立 HTML 构建通过；扩展后的多设备定位状态隔离用例单独通过，差异空白检查通过。中英文使用与开发文档同步更新，并说明浏览器回归脚本的独立运行方式。
 - 本轮未授权或读写真实键盘，未验证 IndexedDB 持久化。仅本地修复和构建，未提交、推送、同步 Sites 或部署。
+
+## 2026-10-05：强制使用 pnpm
+
+- 按用户要求将本地脚本、GitHub Actions、开发文档和项目约定统一为 pnpm 11.0.1。`package.json` 固定包管理器及版本，`devEngines` 和本地 preinstall 检查拒绝其他安装器。删除 `package-lock.json`，保留已有 `pnpm-lock.yaml` 和全部依赖版本；历史验证记录中的 npm 命令不改写。
+- `pnpm install --frozen-lockfile` 通过，锁文件未变化。实际验证 npm 安装（含 `--ignore-scripts`）和 npm 运行脚本均被拒绝，直接使用不匹配的 pnpm 版本也会被拒绝。新增 9 项检查覆盖正确版本、npm/Yarn/Bun、错误版本和 pnpm 11 安装钩子缺少 user agent 的情况。
+- `VITEST_MAX_WORKERS=2 pnpm run check` 通过：TypeScript strict、ESLint、37 个测试文件，449 项通过、2 项跳过，以及独立 HTML 生产构建。`git diff --check` 通过。未执行远端 CI、真实浏览器或硬件验收，未提交、推送、同步或部署。
+
+## 2026-10-05：连续改键与最新主干合并验证
+
+- 连续改键与滚动修复提交为 `4c0a902`，与本地 `main` 的 `5ec88f9` 合并。保留主干的备份删除确认、固定弹窗标题和 pnpm 11.0.1 工具链；仅验证记录追加位置发生文本冲突，保留双方记录，浏览器回归运行说明同步使用 pnpm。
+- `VITEST_MAX_WORKERS=2 pnpm run check` 完整通过：TypeScript strict、ESLint、39 个测试文件，**461 项通过、2 项跳过**，以及独立 HTML 构建。`git diff --check` 通过。
+- 合并后的开发服务器上再次运行 `tests/browser/mapping-scroll.js`，中英文桌面与窄屏 **28 次连续操作通过、最大位移 0px**。本轮未执行真实键盘授权、读写或 IndexedDB 持久化验收；仅本地合并，未推送、同步 Sites 或部署。

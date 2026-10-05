@@ -473,6 +473,9 @@ main {
 .help-content li {
   margin: 9px 0;
 }
+.backups-dialog { display: flex; flex-direction: column; max-height: 85dvh; overflow: hidden; }
+.backup-list { min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
+.backup-list:focus-visible { outline: 2px solid var(--ring); outline-offset: -2px; }
 .backup-item {
   border-top: 1px solid var(--border);
   padding: 16px 0;
@@ -481,6 +484,7 @@ main {
   align-items: center;
   justify-content: space-between;
   flex-wrap: wrap;
+  overflow-wrap: anywhere;
 }
 .backup-item p {
   color: var(--muted-foreground);
