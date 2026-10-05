@@ -112,7 +112,11 @@ To restore a saved configuration:
 2. Import a saved JSON file or choose a configuration from **Local backups**.
 3. Check the imported content, then click **Review and write** and confirm.
 
-You can import compatible JSON from the original native port, plus Windows `.pro` files for ATOM66, ATOM68, MICRO82 and MICRO84. Exports contain the full configuration as JSON. Configurations from different models or firmware versions cannot be mixed directly.
+You can import compatible JSON from the original native port, plus Windows `.pro` files for ATOM66, ATOM68, MICRO82 and MICRO84. Exports contain the full configuration as JSON. Configurations from different models cannot be mixed.
+
+After a firmware upgrade or downgrade, explicitly read the keyboard, then import your old JSON or local backup. For the same model and supported configuration protocol, different firmware version strings do not block import. Editable key mappings, shortcuts and macros are converted onto the current configuration; hidden groups, device information and counts stay with the current keyboard. Per-key lighting is transferred only when both configurations support it. Import only stages edits; use **Review and write** to back up, write and verify them.
+
+Mappings that cannot be converted, contain unrecognized codes or use unsupported Mac actions keep the keyboard's current values. A notice lists each affected position, layer, original mapping and retained mapping. Linked Fn layers are kept together. Continue editing to adjust these positions if needed; the skipped positions also remain in **Activity**. Unknown Mac-only codes are not assumed to work on a newer version. Firmware with a different, unimplemented protocol still needs separate support. Offline imports retain the file's original version until you explicitly read a target keyboard and import again. Migration has automated simulation coverage, but has not been verified on hardware.
 
 ATOM66 supports configurations with three or nine groups. The interface edits only the first three. The other six groups in a nine-group configuration are preserved unchanged. Importing a three-group file after reading a nine-group keyboard also preserves the device's existing extended groups.
 

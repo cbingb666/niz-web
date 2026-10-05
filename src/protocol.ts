@@ -1,6 +1,7 @@
 import { KEY_NAMES, ENGLISH_KEY_NAMES, SIDED_KEY_NAMES, KEY_ALIASES } from './i18n/key-names.ts';
 import { msg, renderMessage, joinMessages, type Message } from './i18n/core.ts';
 import { defaultModel, supportedModels, type KeyboardModel } from './devices/index.ts';
+import { isMacCode, macCodeAvailable } from './mac-keycodes.ts';
 export interface KeyDefinition {
   type: number;
   keys: number[];
@@ -346,12 +347,67 @@ export class Profile {
     return Profile.fromJSON(this.toJSON(), [this.model]);
   }
 }
-export function mergeImported(imported: Profile, baseline: Profile | null) {
+export interface ImportResult {
+  profile: Profile;
+  migrated: boolean;
+  skipped: { index: number; reason: Message }[];
+  lightsSkipped: boolean;
+}
+export function prepareImported(imported: Profile, baseline: Profile | null): ImportResult {
   const p = imported.clone();
-  if (!baseline) return p;
+  const result: ImportResult = { profile: p, migrated: false, skipped: [], lightsSkipped: false };
+  if (!baseline) return result;
   assert(p.model.id === baseline.model.id, msg('error.modelMismatch'));
-  assert(p.version === baseline.version, msg('error.firmwareImport'));
   const editable = p.model.editableRecords;
+  if (p.version !== baseline.version) {
+    // Migrate definitions onto the current device, never old opaque reports.
+    const target = baseline.clone();
+    result.profile = target;
+    result.migrated = true;
+    for (let index = 0; index < editable; index++) {
+      const definition = p.definition(index);
+      if (definition.keys.some(code => KEY_NAMES[code].startsWith('保留代码 '))) {
+        result.skipped.push({ index, reason: msg('importMigration.unknownAction') });
+        continue;
+      }
+      const supported = definition.keys.every(code =>
+        macCodeAvailable(code, p.model.id, p.version) && macCodeAvailable(code, target.model.id, target.version) &&
+        (!isMacCode(code) || baseline.identity.VendorID === 0x0483 && baseline.identity.ProductID === 0x542a));
+      if (!supported) {
+        result.skipped.push({ index, reason: msg('importMigration.unsupportedAction') });
+        continue;
+      }
+      try {
+        target.setDefinition(index, definition, { syncFn: false });
+      } catch (error) {
+        if (!(error instanceof ProtocolError)) throw error;
+        result.skipped.push({ index, reason: msg('importMigration.unsupportedDefinition') });
+      }
+    }
+    // Keeping one Fn assignment requires keeping its other layers as well.
+    const isFn = (profile: Profile, index: number) => {
+      const definition = profile.definition(index);
+      return definition.type === 0 && definition.keys.length === 1 && profile.model.fn.codes.includes(definition.keys[0]);
+    };
+    for (const { index } of [...result.skipped]) {
+      const key = index % p.model.keyCount;
+      const linked = p.model.layers.map((_, layer) => layer * p.model.keyCount + key);
+      if (!linked.some(position => isFn(p, position) || isFn(baseline, position))) continue;
+      for (const position of linked) {
+        target.records[position] = baseline.records[position].map(report => report.slice());
+        if (!result.skipped.some(skipped => skipped.index === position))
+          result.skipped.push({ index: position, reason: msg('importMigration.linkedFn') });
+      }
+    }
+    result.skipped.sort((a, b) => a.index - b.index);
+    if (p.lights) {
+      if (p.model.capabilities(p.version).perKeyRGB && target.model.capabilities(target.version).perKeyRGB)
+        target.lights = p.lights.slice();
+      else result.lightsSkipped = true;
+    }
+    target.validateForWriting();
+    return result;
+  }
   if (p.records.length === editable && baseline.records.length > editable)
     p.records.push(...baseline.records.slice(editable).map((g) => g.map((r) => r.slice())));
   assert(p.records.length === baseline.records.length, msg('error.importGroups'));
@@ -359,7 +415,10 @@ export function mergeImported(imported: Profile, baseline: Profile | null) {
   p.counters = [...baseline.counters];
   if (!p.lights || !baseline.model.capabilities(baseline.version).perKeyRGB)
     p.lights = baseline.lights?.slice() ?? null;
-  return p;
+  return result;
+}
+export function mergeImported(imported: Profile, baseline: Profile | null) {
+  return prepareImported(imported, baseline).profile;
 }
 export function demoProfile(model: KeyboardModel = defaultModel) {
   const records = Array.from({ length: model.editableRecords }, (_, i) =>

@@ -9,6 +9,7 @@ import { FakeDevice, FakeHID, fixture } from './helpers';
 import { renderMessage, translate } from '../src/i18n/core';
 import { keyDescription, localizedKeyName } from '../src/i18n/key-names';
 import type { ModelTool } from '../src/model-tools';
+import { MAC_NATIVE_VERSION, MAC_STOCK_VERSION } from '../src/mac-keycodes';
 
 // Radix measures the checkbox's hidden form input; jsdom does not implement layout observers.
 beforeAll(() => vi.stubGlobal('ResizeObserver', class {
@@ -18,6 +19,36 @@ beforeAll(() => vi.stubGlobal('ResizeObserver', class {
 }));
 afterAll(() => vi.unstubAllGlobals());
 afterEach(cleanup);
+
+test.each(['zh-CN', 'en'] as const)('%s migration notices list skipped positions and let users continue editing', async locale => {
+  const target = fixture(), source = fixture();
+  target.version = MAC_STOCK_VERSION;
+  source.version = MAC_NATIVE_VERSION;
+  source.setDefinition(0, { type: 0, keys: [222] });
+  source.setDefinition(67, { type: 0, keys: [230] });
+  source.setDefinition(1, { type: 0, keys: [43] });
+  const device = new FakeDevice(target);
+  const { store, actions } = application(new FakeHID([device]), undefined, { locale });
+  render(<App store={store} />);
+  await act(() => actions.start());
+  await act(() => acceptRead(store));
+  const packets = device.sent.length;
+  await act(() => actions.importFile(profileFile(source)));
+  const dialog = screen.getByRole('dialog', { name: translate(locale, 'importMigration.title') });
+  expect(within(dialog).getByText(translate(locale, 'importMigration.description'))).toBeVisible();
+  const rows = within(dialog).getAllByRole('row');
+  expect(rows).toHaveLength(3);
+  expect(rows[1]).toHaveTextContent(translate(locale, 'keyboard.position', { position: 1 }));
+  expect(rows[1]).toHaveTextContent(localizedKeyName(222, locale));
+  expect(rows[1]).toHaveTextContent('Esc');
+  expect(rows[2]).toHaveTextContent(translate(locale, 'layer.rightFn'));
+  expect(rows[2]).toHaveTextContent(translate(locale, 'keyboard.position', { position: 2 }));
+  expect(device.sent).toHaveLength(packets);
+  fireEvent.click(within(dialog).getByRole('button', { name: translate(locale, 'importMigration.continue') }));
+  expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  expect(store.getState().canWrite).toBe(true);
+  expect(store.getState().profile?.definition(1).keys).toEqual([43]);
+});
 
 test.each(['zh-CN', 'en'] as const)('%s brightness descriptions keep the original actions and names', async locale => {
   const { store, actions } = application(null, undefined, { locale });

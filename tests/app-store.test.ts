@@ -3,10 +3,79 @@ import { expect, test, vi } from 'vitest';
 import { FakeDevice, FakeHID, fixture } from './helpers';
 import { application, memoryBackups, profileFile, ready, acceptRead } from './store-helpers';
 import type { ModelTool } from '../src/model-tools';
+import { MAC_NATIVE_VERSION, MAC_STOCK_VERSION } from '../src/mac-keycodes';
 
 function writes(device: FakeDevice) {
   return device.sent.filter((packet) => [0xf1, 0xf0, 0xf6, 0xe1, 0xe0, 0xe6].includes(packet[1]));
 }
+
+test.each(['file', 'backup'])('%s imports migrate across arbitrary firmware versions without USB traffic', async entry => {
+  const source = fixture(9), current = fixture(3);
+  current.version = '66EC(S);V2.1.7;V1.0;';
+  source.setDefinition(0, { type: 0, keys: [43] });
+  const device = new FakeDevice(current);
+  const { store, actions, backups } = application(new FakeHID([device]));
+  const backupId = await backups.save(source, 'old firmware');
+  await actions.start();
+  await acceptRead(store);
+  const packets = device.sent.length;
+  if (entry === 'file') await actions.importFile(profileFile(source));
+  else await actions.importBackup(backupId);
+  expect(device.sent).toHaveLength(packets);
+  expect(store.getState().profile?.version).toBe(current.version);
+  expect(store.getState().profile?.definition(0).keys).toEqual([43]);
+  expect(store.getState().canWrite).toBe(true);
+  expect(store.getState().dialog).toBeNull();
+  const pending = actions.write();
+  expect(store.getState().dialog?.kind).toBe('confirm');
+  actions.confirm(true);
+  await pending;
+  expect(device.profile.definition(0).keys).toEqual([43]);
+  expect(store.getState().changes).toEqual([]);
+  expect(backups.save).toHaveBeenLastCalledWith(expect.objectContaining({ version: current.version }), '写入前');
+});
+
+test('skipped mappings are reported while other mappings are staged; changing language keeps the report', async () => {
+  const source = fixture(), target = fixture();
+  source.version = MAC_NATIVE_VERSION;
+  target.version = MAC_STOCK_VERSION;
+  source.setDefinition(0, { type: 0, keys: [222] });
+  source.setDefinition(1, { type: 0, keys: [43] });
+  const device = new FakeDevice(target);
+  const { store, actions } = application(new FakeHID([device]));
+  await actions.start();
+  await acceptRead(store);
+  const packets = device.sent.length;
+  await actions.importFile(profileFile(source));
+  expect(device.sent).toHaveLength(packets);
+  expect(store.getState().profile?.definition(0)).toEqual(target.definition(0));
+  expect(store.getState().profile?.definition(1).keys).toEqual([43]);
+  expect(store.getState().dialog).toMatchObject({ kind: 'importMigration', result: { skipped: [{ index: 0 }] } });
+  actions.setLocale('en');
+  expect(renderMessage(store.getState().status, 'en')).toContain('1 positions kept');
+  expect(store.getState().logs.some(log => renderMessage(log.message, 'en').includes('Position #1 was not migrated'))).toBe(true);
+  actions.closeDialog();
+  actions.selectKey(0);
+  actions.assignKey(44);
+  expect(store.getState().profile?.definition(0).keys).toEqual([44]);
+});
+
+test('a connection change while a JSON file is loading cannot bind it to another connection', async () => {
+  const device = new FakeDevice(), hid = new FakeHID([device]);
+  const { store, actions } = application(hid);
+  await actions.start();
+  await acceptRead(store);
+  const before = store.getState().profile?.toJSON();
+  let finishLoading!: (text: string) => void;
+  const loading = new Promise<string>(resolve => { finishLoading = resolve; });
+  const pending = actions.importFile({ name: 'old.json', size: 100, text: () => loading });
+  await vi.waitFor(() => expect(store.getState().busy).not.toBe(''));
+  hid.disconnect(device);
+  finishLoading(JSON.stringify(fixture().toJSON()));
+  await pending;
+  expect(store.getState().profile?.toJSON()).toEqual(before);
+  expect(store.getState().canWrite).toBe(false);
+});
 
 test('startup only identifies the device; configuring asks before reading and backing up all nine groups', async () => {
   const device = new FakeDevice(fixture(9)),

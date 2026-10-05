@@ -156,7 +156,7 @@ test('three-group import preserves every extension byte from the live nine-group
   assert.deepEqual(merged.reports.slice(198), baseline.reports.slice(198));
   assert.deepEqual(merged.differences(baseline), [0]);
   imported.version = 'other';
-  assert.throws(() => mergeImported(imported, baseline));
+  assert.equal(mergeImported(imported, baseline).version, baseline.version);
   assert.throws(() => mergeImported(fixture(9), fixture(3)));
 });
 test('non-RGB device imports preserve device lighting state', () => {

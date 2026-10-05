@@ -1,5 +1,6 @@
 import { useI18n } from '@/i18n/use-i18n';
 import { backupReason } from '@/i18n/core';
+import { localizedDetail } from '@/i18n/profile';
 import { deviceName } from '@/i18n/device';
 import { useAppStore } from '@/store/context';
 import { OperationOverlay } from './operation-overlay';
@@ -37,7 +38,7 @@ export function AppDialogs() {
         if (!open) actions.closeDialog();
       }}
     >
-      <DialogContent closeLabel={t('common.close')} className={dialog.kind === 'changes' ? 'review-dialog' : dialog.kind === 'activity' ? 'activity-dialog' : undefined}
+      <DialogContent closeLabel={t('common.close')} className={dialog.kind === 'changes' || dialog.kind === 'importMigration' ? 'review-dialog' : dialog.kind === 'activity' ? 'activity-dialog' : undefined}
         onCloseAutoFocus={event => {
           const trigger = dialog.kind === 'changes' ? 'changes-trigger' : dialog.kind === 'manuals' ? 'manuals-trigger' : dialog.kind === 'activity' ? 'activity-trigger' : dialog.kind === 'device' ? dialog.triggerId : null;
           if (trigger) {
@@ -46,7 +47,25 @@ export function AppDialogs() {
             (document.getElementById(trigger) ?? document.getElementById(fallback))?.focus({ preventScroll: true });
           }
         }}>
-        {dialog.kind === 'manuals' ? <ManualPicker /> : dialog.kind === 'changes' ? <>
+        {dialog.kind === 'importMigration' ? <>
+          <DialogHeader>
+            <DialogTitle>{t('importMigration.title')}</DialogTitle>
+            <DialogDescription>{t('importMigration.description')}</DialogDescription>
+          </DialogHeader>
+          <p className="text-sm break-words">{dialog.source.version} → {dialog.result.profile.version}</p>
+          {!!dialog.result.skipped.length && <div className="change-review">
+            <table><thead><tr><th>{t('mapping.position')}</th><th>{t('importMigration.source')}</th><th>{t('importMigration.kept')}</th></tr></thead>
+              <tbody>{dialog.result.skipped.map(({ index, reason }) => <tr key={index}>
+                <th scope="row">{text(dialog.source.model.layers[Math.floor(index / dialog.source.model.keyCount)])}<br />
+                  {t('keyboard.position', { position: index % dialog.source.model.keyCount + 1 })}</th>
+                <td>{localizedDetail(dialog.source, index, locale)}<p className="text-sm text-muted-foreground">{text(reason)}</p></td>
+                <td>{localizedDetail(dialog.result.profile, index, locale)}</td>
+              </tr>)}</tbody>
+            </table>
+          </div>}
+          {dialog.result.lightsSkipped && <p>{t('importMigration.lightsSkipped')}</p>}
+          <Button className="justify-self-end" onClick={actions.closeDialog}>{t('importMigration.continue')}</Button>
+        </> : dialog.kind === 'manuals' ? <ManualPicker /> : dialog.kind === 'changes' ? <>
           <DialogHeader><DialogTitle>{t('mapping.reviewTitle')}</DialogTitle><DialogDescription>{t('mapping.reviewHint')}</DialogDescription></DialogHeader>
           <ChangeReview review={dialog.review} />
         </> : dialog.kind === 'activity' ? <>

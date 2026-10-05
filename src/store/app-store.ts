@@ -26,11 +26,12 @@ import {
   demoProfile,
   hex,
   integer,
-  mergeImported,
+  prepareImported,
   parseKey,
   parseSequence,
   sequenceText,
   type KeyDefinition,
+  type ImportResult,
 } from '../protocol';
 import type { BackupRow, Backups } from '../storage';
 import type { ConnectionState, OperationProgress } from '../types/hid';
@@ -59,7 +60,8 @@ export type AppDialog =
   | { kind: 'message'; title: Message; body: Message }
   | { kind: 'backups' | 'help' | 'manuals' | 'activity' | 'calibration' | 'firmware' }
   | { kind: 'device'; deviceId: string; triggerId: string }
-  | { kind: 'changes'; review: ChangeReview };
+  | { kind: 'changes'; review: ChangeReview }
+  | { kind: 'importMigration'; source: Profile; result: ImportResult };
 export interface SessionView {
   id: string | null;
   model: KeyboardModel | null;
@@ -561,16 +563,27 @@ export function createAppStore(dependencies: AppDependencies) {
     function stageImport(profile: Profile, label: Message) {
       const live = session.hasLiveBaseline;
       const baseline = live ? (session.lastRead?.profile ?? null) : null;
-      const merged = mergeImported(profile, baseline);
+      const result = prepareImported(profile, baseline);
+      const merged = result.profile;
       editor.load(merged, {
         baseline: baseline ?? merged,
         epoch: live ? session.epoch : null,
         source: 'import',
       });
       loadForm(true);
-      const status = live ? msg('status.importLive') : msg('status.importOffline');
+      const status = result.migrated ? msg('importMigration.status', {
+        from: profile.version, to: merged.version, count: result.skipped.length,
+      }) : live ? msg('status.importLive') : msg('status.importOffline');
       set({ status, page: 'editor' });
       log(msg('status.importLabel', { label, status }));
+      if (result.migrated && (result.skipped.length || result.lightsSkipped)) {
+        set({ dialog: { kind: 'importMigration', source: profile, result } });
+        for (const skipped of result.skipped) log(msg('importMigration.skippedKey', {
+          layer: merged.model.layers[Math.floor(skipped.index / merged.model.keyCount)],
+          position: skipped.index % merged.model.keyCount + 1, reason: skipped.reason,
+        }));
+        if (result.lightsSkipped) log(msg('importMigration.lightsSkipped'));
+      }
     }
     function refreshTools() {
       unregisterTools();
@@ -838,10 +851,13 @@ export function createAppStore(dependencies: AppDependencies) {
         set({ demoModelId: modelId });
       },
       async importFile(file) {
+        const targetEditor = editor, generation = editor.generation, epoch = session.epoch;
         if (isLocked(get()) || !(await discardIfNeeded(msg('keyboard.import')))) return;
+        if (disposed || editor !== targetEditor || editor.generation !== generation || session.epoch !== epoch) return;
         await operation(msg('status.importing'), async () => {
           assert(file.size <= MAX_FILE_SIZE, msg('error.importSize'));
           const text = await file.text();
+          if (disposed || editor !== targetEditor || editor.generation !== generation || session.epoch !== epoch) return;
           const live = session.hasLiveBaseline;
           const profile = file.name.toLowerCase().endsWith('.pro')
             ? importWindowsProfile(text, live ? session.version : undefined, live ? session.identity : {}, globalThis.DOMParser, session.models)
@@ -966,10 +982,14 @@ export function createAppStore(dependencies: AppDependencies) {
       },
       async importBackup(id) {
         if (isLocked(get())) return;
+        const targetEditor = editor, generation = editor.generation, epoch = session.epoch;
         set({ dialog: null });
         if (!(await discardIfNeeded(msg('confirm.importBackup')))) return;
+        if (disposed || editor !== targetEditor || editor.generation !== generation || session.epoch !== epoch) return;
         await operation(msg('status.importingBackup'), async () => {
-          stageImport(await backups.profile(id), msg('backup.title'));
+          const profile = await backups.profile(id);
+          if (disposed || editor !== targetEditor || editor.generation !== generation || session.epoch !== epoch) return;
+          stageImport(profile, msg('backup.title'));
         });
       },
       async downloadBackup(id) {
