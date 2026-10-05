@@ -11,7 +11,7 @@ export function AlertDialogContent({
 }: ComponentProps<typeof AlertDialogPrimitive.Content>) {
   return (
     <AlertDialogPrimitive.Portal>
-      <AlertDialogPrimitive.Overlay className="fixed inset-0 z-50 bg-black/70" />
+      <AlertDialogPrimitive.Overlay className="fixed inset-0 z-50 bg-overlay" />
       <AlertDialogPrimitive.Content
         data-slot="alert-dialog-content"
         className={cn(

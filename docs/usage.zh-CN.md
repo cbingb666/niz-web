@@ -12,6 +12,8 @@
 
 手册需联网查阅，独立 HTML 也一样。PDF 与 Word 可能对应不同版本，请核对键盘铭牌；缺少某种语言或格式时，不使用其他版本代替。
 
+点击右上角的外观图标，在下拉菜单中选择「跟随系统」「浅色」或「深色」。选择会保存在当前浏览器中，默认跟随系统外观并自动切换。
+
 ## 连接与读取
 
 使用桌面版 Chrome 或 Edge，在独立标签页打开 [NIZ Web](https://cbingb666.github.io/niz-web/)。通过 USB 数据线连接键盘，退出其他键盘配置工具。浏览器要求见 [Chrome 的 WebHID 说明](https://developer.chrome.com/docs/capabilities/hid)。

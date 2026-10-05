@@ -117,8 +117,7 @@ function Keyboard({ onEdit }: { onEdit?: () => void }) {
                 data-selected={key === selected}
                 data-unit-key={weight === 1}
                 style={{ '--weight': weight, '--gap-before': gapBefore, ...(counts ? {
-                  '--count-face': `rgb(${44 + heat * 68} ${44 + heat * 68} ${44 + heat * 68})`,
-                  '--count-body': `rgb(${34 + heat * 53} ${34 + heat * 53} ${34 + heat * 53})`,
+                  '--count-heat': `${heat * 100}%`,
                 } : {}) } as CSSProperties}
               >
                 {showNumbers && <div className="key-side key-number">

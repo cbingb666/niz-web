@@ -1,4 +1,8 @@
 export const zhCN = {
+  'theme.label': '外观',
+  'theme.light': '浅色',
+  'theme.dark': '深色',
+  'theme.system': '跟随系统',
   'firmware.entry': '刷写固件（实验）',
   'firmware.title': '刷写固件',
   'firmware.scope': '仅限 66EC RGB BLE V1.5.1 / V1.5.1-F.1。可选择原厂固件或 Mac 实验版，尚未实机验证。',
