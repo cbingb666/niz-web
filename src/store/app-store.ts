@@ -54,6 +54,8 @@ interface ConfirmationDetails {
   review?: ChangeReview;
   disconnectTarget?: { id: string; epoch: number };
   triggerId?: string;
+  returnDialog?: 'backups';
+  destructive?: boolean;
 }
 export type AppDialog =
   | ({ kind: 'confirm'; title: Message; body: Message; label: Message } & ConfirmationDetails)
@@ -186,6 +188,7 @@ export interface AppActions {
   showBackups(): Promise<void>;
   importBackup(id: string): Promise<void>;
   downloadBackup(id: string): Promise<void>;
+  deleteBackup(id: string): Promise<void>;
   showHelp(): void;
   showManuals(): void;
   showActivity(): void;
@@ -999,6 +1002,27 @@ export function createAppStore(dependencies: AppDependencies) {
           fail(error);
         }
       },
+      async deleteBackup(id) {
+        if (isLocked(get()) || get().dialog?.kind !== 'backups') return;
+        const row = get().backupRows.find(row => row.id === id);
+        if (!row) return;
+        const accepted = await confirm(msg('backup.deleteTitle'), msg('backup.deleteBody', {
+          reason: backupReason(row.reason),
+          time: new Date(row.createdAt).toLocaleString(get().locale, { hour12: false }),
+          version: row.version,
+        }), msg('backup.delete'), {
+          returnDialog: 'backups', destructive: true, triggerId: `backup-delete-${id}`,
+        });
+        if (!accepted) return;
+        await operation(msg('backup.deleting'), async () => {
+          await backups.remove(id);
+          // The deletion has committed even if refreshing the list subsequently fails.
+          set(state => ({ backupRows: state.backupRows.filter(row => row.id !== id) }));
+          await refreshBackups();
+          set({ status: msg('backup.deleted') });
+          log(msg('backup.deleted'));
+        });
+      },
       showHelp() {
         if (isLocked(get())) return;
         set({ dialog: { kind: 'help' } });
@@ -1025,8 +1049,10 @@ export function createAppStore(dependencies: AppDependencies) {
       },
       confirm(accepted) {
         const resolve = resolveConfirmation;
+        if (!resolve) return;
+        const dialog = get().dialog;
         resolveConfirmation = null;
-        set({ dialog: null });
+        set({ dialog: dialog?.kind === 'confirm' && dialog.returnDialog ? { kind: dialog.returnDialog } : null });
         resolve?.(accepted);
       },
       async write() {

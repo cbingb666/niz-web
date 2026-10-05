@@ -64,6 +64,9 @@ function mockDatabase() {
         get(id) {
           return enqueue(() => structuredClone(transaction.data().get(id)));
         },
+        delete(id) {
+          return enqueue(() => { transaction.data().delete(id); });
+        },
       });
       transactions.push(transaction);
       return transaction;
@@ -190,6 +193,45 @@ test('version change closes cached database handles', async () => {
   database.onversionchange();
   assert.equal(database.closed, true);
   assert.equal(store.database, null);
+});
+
+test.each([false, true])('deleting a backup and its hidden duplicates waits for commit (abort: %s)', async abort => {
+  const context = await openStore();
+  const profile = fixture(9, true);
+  const id = await completeOperation(context, () => context.store.save(profile));
+  const duplicate = structuredClone(context.rows.get(id));
+  duplicate.id = 'old-copy';
+  duplicate.createdAt = 1;
+  duplicate.profile.counters[0]++;
+  context.rows.set(duplicate.id, duplicate);
+  const other = structuredClone(duplicate);
+  other.id = 'other-version';
+  other.profile.version += 'different';
+  context.rows.set(other.id, other);
+
+  let done = false;
+  const pending = context.store.remove(id).then(() => { done = true; });
+  const rejected = abort ? assert.rejects(pending, /失败/) : null;
+  await pendingTick();
+  const transaction = context.transactions.at(-1);
+  assert.equal(transaction.mode, 'readwrite');
+  requestSuccess(transaction);
+  await pendingTick();
+  assert.equal(done, false);
+  assert.equal(context.rows.size, 3);
+  if (abort) {
+    transaction.onabort();
+    await rejected;
+    assert.equal(context.rows.size, 3);
+  } else {
+    completeTransaction(transaction);
+    await pending;
+    assert.deepEqual([...context.rows.keys()], ['other-version']);
+    const listed = await completeOperation(context, () => context.store.list());
+    assert.deepEqual(listed.map(row => row.id), ['other-version']);
+    await completeOperation(context, () => context.store.remove(id));
+    assert.equal(context.rows.size, 1);
+  }
 });
 
 test('repeated reads and pre-write backups reuse an identical saved configuration', async () => {

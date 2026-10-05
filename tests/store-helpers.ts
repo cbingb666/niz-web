@@ -28,6 +28,10 @@ export function memoryBackups(models = supportedModels): Backups {
       if (!row) throw new Error('备份不存在');
       return Profile.fromJSON(row.profile, models);
     }),
+    remove: vi.fn(async (id: string) => {
+      const index = rows.findIndex(row => row.id === id);
+      if (index >= 0) rows.splice(index, 1);
+    }),
   };
 }
 export function application(
