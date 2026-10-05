@@ -19,6 +19,7 @@ export function AppDialogs() {
   const devices = useAppStore(state => state.connectedDevices);
   const operation = useAppStore((state) => state.hardwareOperation);
   const backups = useAppStore((state) => state.backupRows);
+  const busy = useAppStore(state => !!state.busy);
   const actions = useAppStore((state) => state.actions);
   const calibration = useAppStore(state => state.calibration);
   const firmware = useAppStore(state => state.firmware);
@@ -37,9 +38,10 @@ export function AppDialogs() {
         if (!open) actions.closeDialog();
       }}
     >
-      <DialogContent closeLabel={t('common.close')} className={dialog.kind === 'changes' ? 'review-dialog' : dialog.kind === 'activity' ? 'activity-dialog' : undefined}
+      <DialogContent closeLabel={t('common.close')} className={dialog.kind === 'changes' ? 'review-dialog' : dialog.kind === 'activity' ? 'activity-dialog' : dialog.kind === 'backups' ? 'backups-dialog' : undefined}
+        {...(dialog.kind === 'backups' ? { 'aria-labelledby': 'backup-title' } : {})}
         onCloseAutoFocus={event => {
-          const trigger = dialog.kind === 'changes' ? 'changes-trigger' : dialog.kind === 'manuals' ? 'manuals-trigger' : dialog.kind === 'activity' ? 'activity-trigger' : dialog.kind === 'device' ? dialog.triggerId : null;
+          const trigger = dialog.kind === 'changes' ? 'changes-trigger' : dialog.kind === 'manuals' ? 'manuals-trigger' : dialog.kind === 'activity' ? 'activity-trigger' : dialog.kind === 'backups' ? 'backups-trigger' : dialog.kind === 'device' ? dialog.triggerId : null;
           if (trigger) {
             event.preventDefault();
             const fallback = dialog.kind === 'device' ? 'page-title' : 'activity-trigger';
@@ -71,35 +73,41 @@ export function AppDialogs() {
           </>
         ) : dialog.kind === 'backups' ? (
           <>
-            <DialogHeader>
-              <DialogTitle>{t('backup.title')}</DialogTitle>
+            <DialogHeader className="shrink-0">
+              <DialogTitle id="backup-title" tabIndex={-1}>{t('backup.title')}</DialogTitle>
               <DialogDescription>{t('backup.description')}</DialogDescription>
             </DialogHeader>
-            {backups.length ? (
-              backups.map((row) => (
-                <section className="backup-item" key={row.id}>
-                  <div>
-                    <h3>
-                      {text(backupReason(row.reason))} ·{' '}
-                      {new Date(row.createdAt).toLocaleString(locale, { hour12: false })}
-                    </h3>
-                    <p>
-                      {row.version} · {count(row.records, 'keyboard.records.one', 'keyboard.records.other')}
-                    </p>
-                  </div>
-                  <div className="flex gap-2">
-                    <Button variant="outline" size="sm" onClick={() => actions.importBackup(row.id)}>
-                      {t('common.import')}
-                    </Button>
-                    <Button variant="outline" size="sm" onClick={() => actions.downloadBackup(row.id)}>
-                      {t('common.download')}
-                    </Button>
-                  </div>
-                </section>
-              ))
-            ) : (
-              <p className="muted">{t('backup.empty')}</p>
-            )}
+            <div className="backup-list" role="region" aria-labelledby="backup-title" tabIndex={0} aria-busy={busy}>
+              {backups.length ? (
+                backups.map((row) => (
+                  <section className="backup-item" key={row.id}>
+                    <div>
+                      <h3>
+                        {text(backupReason(row.reason))} ·{' '}
+                        {new Date(row.createdAt).toLocaleString(locale, { hour12: false })}
+                      </h3>
+                      <p>
+                        {row.version} · {count(row.records, 'keyboard.records.one', 'keyboard.records.other')}
+                      </p>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      <Button variant="outline" size="sm" disabled={busy} onClick={() => actions.importBackup(row.id)}>
+                        {t('common.import')}
+                      </Button>
+                      <Button variant="outline" size="sm" disabled={busy} onClick={() => actions.downloadBackup(row.id)}>
+                        {t('common.download')}
+                      </Button>
+                      <Button id={`backup-delete-${row.id}`} variant="outline" size="sm" disabled={busy}
+                        onClick={() => actions.deleteBackup(row.id)}>
+                        {t('backup.delete')}
+                      </Button>
+                    </div>
+                  </section>
+                ))
+              ) : (
+                <p className="muted">{t('backup.empty')}</p>
+              )}
+            </div>
           </>
         ) : (
           <>

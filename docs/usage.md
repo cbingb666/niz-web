@@ -106,6 +106,8 @@ An interrupted write may leave partial changes. Unplugging, sleep, or a device e
 
 Repeated reads and backups before configuration or firmware writes share one entry when the model, firmware, saved device information, complete key configuration and lighting match. The entry keeps the latest backup time, source and available key counts; count changes alone do not create another version. If a later read omits counts, the previously saved counts are kept. Changed configurations remain separate. Existing duplicates also show only the most recent snapshot, without deleting the older stored records.
 
+In **Local backups**, the header and close button stay visible while the list scrolls. Choose **Delete** beside a backup, then confirm. **Cancel** is focused by default. Deleting removes that configuration and its older duplicate copies from this browser, and cannot be undone. Download a copy first if needed. Your keyboard configuration and current edits are kept.
+
 To restore a saved configuration:
 
 1. Connect the target keyboard and confirm a read of its current configuration.
