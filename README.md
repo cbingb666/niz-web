@@ -66,18 +66,18 @@ For connection, import, or write problems, see [Troubleshooting](docs/usage.md#t
 
 ## Run locally
 
-Use Node.js 24 and npm. Run these commands in a terminal:
+Use Node.js 24 and [pnpm 11.0.1](https://pnpm.io/installation). pnpm is required. Run these commands in a terminal:
 
 ```sh
 git clone https://github.com/cbingb666/niz-web.git
 cd niz-web
-npm ci
-npm run dev
+pnpm install --frozen-lockfile
+pnpm run dev
 ```
 
 Open <http://127.0.0.1:5173>.
 
-Run `npm run build` to create `dist/index.html`, a standalone page for offline editing or static hosting.
+Run `pnpm run build` to create `dist/index.html`, a standalone page for offline editing or static hosting.
 
 USB and backup permissions have not been validated on real hardware when opening the HTML file directly. Use an HTTPS page or the local development server to connect a keyboard.
 

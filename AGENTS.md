@@ -8,7 +8,7 @@
 
 - 当前在用版本是项目根目录的 Web 应用；不要恢复旧 `web/` 路径、原生 Mac 版、归档或交付 ZIP。
 - 技术栈为 React、TypeScript strict、Vite、Zustand 与本地 shadcn/ui 组件。协议、编辑模型和备份逻辑独立于 React。
-- 本地与 CI 使用 npm、`package-lock.json`。开发环境使用 Node.js 24；完整版本范围见 `package.json`。保留已有依赖和锁文件，不顺手切换包管理器。
+- 本地与 CI 强制使用 pnpm 11.0.1 和 `pnpm-lock.yaml`，禁止使用 npm、Yarn 或 Bun 安装依赖。开发环境使用 Node.js 24；完整版本范围见 `package.json`。保留已有依赖版本，包管理器版本以 `package.json` 为准。
 - 先按任务查看下表中的文档，再读相关实现；不需要为每个任务通读历史验证记录。
 
 | 要做的事 | 先看这里 |
@@ -53,9 +53,9 @@
 
 - 优先复用 `src/components/ui/`，主题使用 `src/styles.css` 的共享令牌。保留 TypeScript strict，不以 `any`、`@ts-ignore` 或 `@ts-nocheck` 绕过应用类型检查。
 - 新增界面文案同时维护 `src/i18n/zh-CN.ts` 和 `src/i18n/en.ts` 的键与插值参数。状态和日志保存消息标识，使已有记录也能随语言切换。
-- 代码变更运行相关测试，并在交付前执行 `npm run check`。仅修改文档时核对链接、命令和事实，运行 `git diff --check` 即可，不为文字变更新增测试。
+- 代码变更运行相关测试，并在交付前执行 `pnpm run check`。仅修改文档时核对链接、命令和事实，运行 `git diff --check` 即可，不为文字变更新增测试。
 - FakeHID 和 jsdom 只能证明模拟环境中的协议与交互行为。没有实际执行的浏览器、WebHID、IndexedDB 持久化或键盘读写验收，不要宣称通过。
-- 私人读取样本放在项目外；需要时使用 `npm run replay -- /absolute/path/to/read-capture.json`。不要加入源码、Git 或发布产物。
+- 私人读取样本放在项目外；需要时使用 `pnpm run replay /absolute/path/to/read-capture.json`。不要加入源码、Git 或发布产物。
 - 本地构建成功不代表获准发布。仓库的 Pages 工作流在推送 `main` 时会部署，不要把提交、推送或部署当作默认交付步骤。
 
 ## 文档维护

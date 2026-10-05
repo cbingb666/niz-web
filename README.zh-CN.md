@@ -66,18 +66,18 @@ MICRO82 和 MICRO84 适配原有 82EC / 84EC 系列，依据 [NiZ 官方软件�
 
 ## 本地运行
 
-使用 Node.js 24 和 npm。在终端执行：
+使用 Node.js 24 和 [pnpm 11.0.1](https://pnpm.io/installation)。项目强制使用 pnpm。在终端执行：
 
 ```sh
 git clone https://github.com/cbingb666/niz-web.git
 cd niz-web
-npm ci
-npm run dev
+pnpm install --frozen-lockfile
+pnpm run dev
 ```
 
 打开 <http://127.0.0.1:5173>。
 
-运行 `npm run build` 可生成独立网页 `dist/index.html`，用于离线编辑或静态托管。
+运行 `pnpm run build` 可生成独立网页 `dist/index.html`，用于离线编辑或静态托管。
 
 直接打开本地 HTML 时，USB 和备份权限尚未经过实机验证；连接键盘请使用 HTTPS 页面或本地开发服务。
 
