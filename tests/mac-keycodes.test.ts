@@ -26,3 +26,11 @@ test('native names, old reserved labels and numeric input encode one internal by
     expect(packets[0][6]).toBe(code);
   }
 });
+
+test('previous experimental names remain accepted after simplifying the labels', () => {
+  for (const [code, names] of [
+    [207, ['Mac Fn（实验）', 'Mac Fn (experimental)']],
+    [227, ['系统键盘背光 −（实验）', 'System keyboard backlight down (experimental)']],
+    [228, ['系统键盘背光 +（实验）', 'System keyboard backlight up (experimental)']],
+  ] as const) for (const name of names) expect(parseKey(name)).toBe(code);
+});

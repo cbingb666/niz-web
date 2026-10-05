@@ -1,5 +1,5 @@
 import { useI18n } from '@/i18n/use-i18n';
-import { localizedSummary, keycapSummary } from '@/i18n/profile';
+import { localizedSummary, keycapSummary, keycapIconCode } from '@/i18n/profile';
 import { renderMessage } from '@/i18n/core';
 import { useRef, type CSSProperties, type KeyboardEvent } from 'react';
 import { ListChecks, RotateCw } from 'lucide-react';
@@ -82,6 +82,7 @@ function Keyboard({ onEdit }: { onEdit?: () => void }) {
                 const index = keyLayer * model.keyCount + key;
                 const summary = profile ? localizedSummary(profile, index, locale) : '—';
                 const legend = profile ? keycapSummary(profile, index) : '—';
+                const iconCode = profile ? keycapIconCode(profile, index) : undefined;
                 const changed = changes.includes(index);
                 const pending = drafts.includes(index);
                 return <button
@@ -91,7 +92,7 @@ function Keyboard({ onEdit }: { onEdit?: () => void }) {
                   className={`key-layer ${changed ? 'changed' : ''} ${pending ? 'has-draft' : ''}`}
                   data-layer={keyLayer}
                   data-empty={!profile || profile.definition(index).keys.length === 0}
-                  data-long-label={legend.length > 3}
+                  data-long-label={iconCode === undefined && legend.length > 3}
                   disabled={locked}
                   aria-pressed={key === selected && keyLayer === layer}
                   tabIndex={key === selected ? 0 : -1}
@@ -105,7 +106,7 @@ function Keyboard({ onEdit }: { onEdit?: () => void }) {
                   onClick={() => { if (actions.selectKey(key, keyLayer)) onEdit?.(); }}
                   onKeyDown={event => navigate(event, key, keyLayer)}
                 >
-                  <KeyLegend text={legend} changed={changed} changeLabel={t('keyboard.changedKeys')} />
+                  <KeyLegend text={legend} iconCode={iconCode} changed={changed} changeLabel={t('keyboard.changedKeys')} />
                   {pending && <span className="key-layer-state" aria-hidden="true">…</span>}
                 </button>;
               });

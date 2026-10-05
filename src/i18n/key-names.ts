@@ -10,7 +10,7 @@ KEY_NAMES[199] = '鼠标左键双击';
 KEY_NAMES[200] = '延迟标记（宏专用）';
 KEY_NAMES[204] = 'ISO \\ / |';
 const macNames: Readonly<Record<number, readonly [string, string]>> = {
-  207: ['Mac Fn（实验）', 'Mac Fn (experimental)'],
+  207: ['Mac Fn', 'Mac Fn'],
   208: ['屏幕亮度 −', 'Screen brightness down'],
   209: ['屏幕亮度 +', 'Screen brightness up'],
   222: ['调度中心', 'Mission Control'],
@@ -18,8 +18,8 @@ const macNames: Readonly<Record<number, readonly [string, string]>> = {
   224: ['Spotlight', 'Spotlight'],
   225: ['听写', 'Dictation'],
   226: ['勿扰', 'Do Not Disturb'],
-  227: ['系统键盘背光 −（实验）', 'System keyboard backlight down (experimental)'],
-  228: ['系统键盘背光 +（实验）', 'System keyboard backlight up (experimental)'],
+  227: ['系统键盘背光 −', 'System keyboard backlight down'],
+  228: ['系统键盘背光 +', 'System keyboard backlight up'],
   229: ['快退', 'Rewind'],
   230: ['快进', 'Fast forward'],
 };
@@ -154,6 +154,9 @@ export const KEY_ALIASES: Readonly<Record<number, readonly string[]>> = {
   156: ['rfn'],
   166: ['lfn'],
   ...Object.fromEntries(Object.keys(macNames).map(code => [code, [`保留代码 ${code}`, `Reserved code ${code}`]])),
+  207: ['保留代码 207', 'Reserved code 207', 'Mac Fn（实验）', 'Mac Fn (experimental)'],
+  227: ['保留代码 227', 'Reserved code 227', '系统键盘背光 −（实验）', 'System keyboard backlight down (experimental)'],
+  228: ['保留代码 228', 'Reserved code 228', '系统键盘背光 +（实验）', 'System keyboard backlight up (experimental)'],
 };
 
 // Document macOS behavior without changing key names or wire codes.
@@ -164,16 +167,6 @@ export const KEY_DESCRIPTIONS: Readonly<Record<number, Readonly<Record<Locale, s
   80: { 'zh-CN': 'macOS：提高屏幕亮度', en: 'macOS: increase screen brightness' },
   144: { 'zh-CN': '降低键盘灯光亮度', en: 'Decrease keyboard backlight brightness' },
   145: { 'zh-CN': '提高键盘灯光亮度', en: 'Increase keyboard backlight brightness' },
-  207: { 'zh-CN': '原生 Fn 报告；需要键盘 Mac 模式，识别待实测；不是 NIZ 层 Fn', en: 'Native Fn report; requires keyboard Mac mode, recognition unverified. Separate from NIZ layer Fn' },
-  208: { 'zh-CN': '原生屏幕亮度码；限 ATOM66 RGB BLE V1.5.1 / V1.5.1-F.1', en: 'Native display brightness; ATOM66 RGB BLE V1.5.1 / V1.5.1-F.1 only' },
-  209: { 'zh-CN': '原生屏幕亮度码；限 ATOM66 RGB BLE V1.5.1 / V1.5.1-F.1', en: 'Native display brightness; ATOM66 RGB BLE V1.5.1 / V1.5.1-F.1 only' },
-  ...Object.fromEntries([222, 223, 224, 225, 229, 230].map(code => [code, {
-    'zh-CN': '原生 HID 码；需要 Mac V1.5.1-F.1 实验固件，实机未验证',
-    en: 'Native HID code; requires experimental Mac V1.5.1-F.1 firmware, hardware unverified',
-  }])),
-  226: { 'zh-CN': '原生 HID 码；需要 Mac V1.5.1-F.1 实验固件，仅 USB，实机未验证', en: 'Native HID code; requires experimental Mac V1.5.1-F.1 firmware. USB only, hardware unverified' },
-  227: { 'zh-CN': 'Apple 原生背光码；需要 V1.5.1-F.1 及键盘 Mac 模式，效果待实测', en: 'Apple native backlight code; requires V1.5.1-F.1 and keyboard Mac mode, effects unverified' },
-  228: { 'zh-CN': 'Apple 原生背光码；需要 V1.5.1-F.1 及键盘 Mac 模式，效果待实测', en: 'Apple native backlight code; requires V1.5.1-F.1 and keyboard Mac mode, effects unverified' },
 };
 export function keyDescription(code: number, locale: Locale): string | undefined {
   return KEY_DESCRIPTIONS[code]?.[locale];

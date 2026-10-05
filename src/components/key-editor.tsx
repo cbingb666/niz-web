@@ -2,7 +2,7 @@ import { useEffect, useId, useLayoutEffect, useRef, useState, type KeyboardEvent
 import { Check, Keyboard, PencilLine, RotateCcw, X } from 'lucide-react';
 import { useI18n } from '@/i18n/use-i18n';
 import { keyDescription, localizedKeyName } from '@/i18n/key-names';
-import { keycapSummary, localizedSummary } from '@/i18n/profile';
+import { keycapSummary, localizedSummary, keycapIconCode } from '@/i18n/profile';
 import { parseKey, parseSequence } from '@/protocol';
 import { useAppStore } from '@/store/context';
 import { isLocked } from '@/store/app-store';
@@ -160,6 +160,7 @@ export function KeyEditor() {
     </div>
     <figure className="mapping-preview" aria-label={t('mapping.previewTitle')}>
       <KeycapSample legends={model.layers.map((_, index) => profile ? keycapSummary(profile, index * model.keyCount + key) : '—')}
+        iconCodes={model.layers.map((_, index) => profile ? keycapIconCode(profile, index * model.keyCount + key) : undefined)}
         position={key} measureKey={key} activeLayer={layer}
         changedLayers={model.layers.map((_, index) => index).filter(index => changes.includes(index * model.keyCount + key))} showNumber={false} />
       <figcaption aria-live="polite">

@@ -15,6 +15,7 @@ NIZ Web runs entirely in the browser and accesses the keyboard's USB configurati
 | `src/components/` | React interface; `ui/` contains local shadcn/ui primitives |
 | `src/store/` | Zustand state, actions, device events, and React subscriptions |
 | `src/editor.ts` | Framework-independent editing model, differences, and undo history |
+| `src/mac-function-keys.ts` | Pure planning for the complete Mac F-row preset, with firmware and linked-Fn checks |
 | `src/hid.ts` | Device communication, connection state, read baselines, and write protection |
 | `src/calibration.ts` | Independent calibration stages, completion validation, outcomes, and bounded diagnostics |
 | `src/firmware.ts` | Exact firmware-package allowlist, local SHA-256 validation, immutable firmware reports, and flash result types |
@@ -90,6 +91,8 @@ Configuration writing follows this order: validate configuration ownership and b
 `BackupStore` compares the model, firmware, saved identity, all raw key reports, lighting and legacy attachments. Identity property order, hexadecimal letter case, backup time, reason and counters do not create new configuration versions. Lookup and `put` run in one IndexedDB read/write transaction, reusing the newest matching ID and refreshing the snapshot, timestamp and reason. When the incoming snapshot omits counters, as configuration pre-write checks do, the most recent available counters among matching backups are retained. A reused backup still resolves only after transaction completion; failure still blocks hardware writing. The database remains `atom66-web-backups` version 1. Listing groups older duplicates by the same comparison and returns the newest snapshot; older stored rows and IDs remain available for downloads and in-page firmware results until explicitly deleted. Confirmed deletion removes the selected configuration and all matching historical rows in one read/write transaction, and resolves only after commit so hidden duplicates cannot reappear. Cancelling returns to the backup list without a storage operation. The dialog keeps its header outside the scrollable list.
 
 The editor retains up to 50 applied operations, including linked Fn edits, batch remaps, and RGB changes. Loading a new configuration or completing a successful write clears this history. Unapplied input stays with its layer and key and does not enter the applied-operation history.
+
+The Mac F-row planner scans only editable records for single-action F1–F12 mappings and requires support for the complete current Mac row. It excludes physical positions containing a NIZ Fn assignment on any editable layer. The store rechecks the current profile and affected drafts at invocation, then commits the entire plan through `EditorState.applyDefinitions` as one undo operation. It leaves unrelated drafts, browsing state, device sessions and opaque groups intact and sends no HID commands.
 
 ### Progress semantics
 

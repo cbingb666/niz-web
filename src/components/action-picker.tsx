@@ -1,11 +1,13 @@
-import { useId, useLayoutEffect, useRef, type KeyboardEvent } from 'react';
+import { useId, useLayoutEffect, useMemo, useRef, type KeyboardEvent } from 'react';
 import { Check, Search, X } from 'lucide-react';
 import { KEY_NAMES, ENGLISH_KEY_NAMES, KEY_ALIASES, KEY_DESCRIPTIONS, keyDescription, localizedKeyName } from '@/i18n/key-names';
 import { keyAbbreviation, keycapName } from '@/i18n/key-labels';
 import { useI18n } from '@/i18n/use-i18n';
 import { useAppStore } from '@/store/context';
 import { actionGroups, type ActionGroup, type PickerScope } from '@/store/mapping-browser';
-import { isMacCode, macCodeAvailable } from '@/mac-keycodes';
+import { isMacCode, macCodeAvailable, macSystemKeyOrder } from '@/mac-keycodes';
+import { KeyActionIcon } from './key-action-icon';
+import { planMacFunctionKeys } from '@/mac-function-keys';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
@@ -27,10 +29,16 @@ function groupFor(code: number): ActionGroup {
 export function ActionPicker({ value, disabled, selectionDisabled = false, showFnHint = true, label, scope = 'key', onChoose }: {
   value?: number; disabled: boolean; selectionDisabled?: boolean; showFnHint?: boolean; label?: string; scope?: PickerScope; onChoose(code: number): void;
 }) {
-  const { t, locale } = useI18n();
+  const { t, locale, text } = useI18n();
   const id = useId();
   const model = useAppStore(state => state.model);
-  const version = useAppStore(state => state.profile?.version ?? '');
+  const profile = useAppStore(state => state.profile);
+  const version = profile?.version ?? '';
+  const drafts = useAppStore(state => state.draftIndices);
+  const status = useAppStore(state => state.status);
+  const conversion = useMemo(() => profile ? planMacFunctionKeys(profile) : undefined, [profile]);
+  const conversionDrafts = conversion?.edits.some(edit => drafts.includes(edit.index));
+  const converted = typeof status !== 'string' && 'key' in status && status.key === 'mapping.macConverted';
   const { query, group, highlight, scrollTop } = useAppStore(state => state.mappingBrowser.pickers[scope]);
   const recentActions = useAppStore(state => state.mappingBrowser.recentActions);
   const actions = useAppStore(state => state.actions);
@@ -46,14 +54,17 @@ export function ActionPicker({ value, disabled, selectionDisabled = false, showF
     if (/^#\d+$/.test(search)) return code === Number(search.slice(1));
     if (search) return normalizeSearch(`${localizedKeyName(code, locale)} ${keycapName(code)} ${KEY_NAMES[code]} ${ENGLISH_KEY_NAMES[code]} ${(KEY_ALIASES[code] ?? []).join(' ')} ${Object.values(KEY_DESCRIPTIONS[code] ?? {}).join(' ')} ${code === 70 ? '空格' : ''} ${code === 67 || code === 74 ? 'ctrl' : ''}`).includes(search);
     return group === 'common' ? common.includes(code) : group === 'all' || groupFor(code) === group ||
-      (group === 'mac' && [108, 109, 111, 112, 113, 114].includes(code));
+      (group === 'mac' && macSystemKeyOrder.includes(code));
   });
   if (!search && group === 'common') matches.sort((a, b) => common.indexOf(a) - common.indexOf(b));
+  if (!search && group === 'mac') matches.sort((a, b) => macSystemKeyOrder.indexOf(a) - macSystemKeyOrder.indexOf(b));
   if (search) {
     const exact = (code: number) => [localizedKeyName(code, locale), keycapName(code), KEY_NAMES[code], ENGLISH_KEY_NAMES[code], ...(KEY_ALIASES[code] ?? [])].some(name => normalizeSearch(name) === search);
     matches.sort((a, b) => Number(exact(b)) - Number(exact(a)));
   }
   const activeIndex = Math.min(highlight, Math.max(0, matches.length - 1));
+  const showMacNotice = (!search && group === 'mac') || matches.some(isMacCode);
+  const unavailableMacActions = matches.some(code => isMacCode(code) && !macCodeAvailable(code, model.id, version));
   function focusOption(index: number, direction: number) {
     let next = Math.max(0, Math.min(matches.length - 1, index));
     const buttons = options.current?.querySelectorAll<HTMLButtonElement>('button');
@@ -121,18 +132,34 @@ export function ActionPicker({ value, disabled, selectionDisabled = false, showF
       <span className="sr-only" id={`${id}-hint`}>{t('mapping.searchKeys')}</span>
     </div>}
     <div className="action-result-count" role="status">{t('mapping.results', { count: matches.length })}</div>
+    {scope === 'key' && group === 'mac' && !search && conversion && <div className="mac-function-conversion">
+      <Button type="button" variant="outline" aria-describedby={`${id}-convert-hint`}
+        disabled={disabled || !conversion.supported || !conversion.edits.length || conversionDrafts}
+        onClick={actions.convertMacFunctionKeys}>{t('mapping.macConvert')}</Button>
+      <p className="field-hint" id={`${id}-convert-hint`} role="status">
+        {!conversion.supported ? t('mapping.macConvertFirmware') : conversionDrafts ? t('mapping.macConvertDrafts')
+          : converted ? text(status) : conversion.edits.length ? t('mapping.macConvertScope', { count: conversion.edits.length }) : t('mapping.macConvertEmpty')}
+        {conversion.protectedIndices.length > 0 && <> {t('mapping.macConvertFnProtected', { count: conversion.protectedIndices.length })}</>}
+      </p>
+    </div>}
+    {showMacNotice && <details className="mac-action-notice">
+      <summary>{t(unavailableMacActions ? 'mapping.macUnavailable' : 'mapping.macExperimental')}</summary>
+      <p>{t('mapping.macRequirements')}</p>
+      <p>{t('mapping.macLimitations')}</p>
+    </details>}
     {showFnHint && matches.some(code => model.fn.codes.includes(code)) && <p className="fn-scope">{t('mapping.fnScope', { count: model.layers.length })}</p>}
     <div id={`${id}-options`} className="action-options" ref={options} role="group" aria-label={label ?? t('mapping.choose')}
       onScroll={event => update({ scrollTop: event.currentTarget.scrollTop })}>
       {matches.map((code, index) => {
-        const abbreviation = keyAbbreviation(code, locale);
+        const hasIcon = macSystemKeyOrder.includes(code);
+        const abbreviation = hasIcon ? undefined : keyAbbreviation(code, locale);
         const description = keyDescription(code, locale);
         return <Button key={code} type="button" variant="outline" className="action-option"
           data-action-code={code}
           data-editor-escape="true"
           disabled={disabled || selectionDisabled || !macCodeAvailable(code, model.id, version)} tabIndex={index === activeIndex ? 0 : -1} aria-pressed={code === value}
           onFocus={() => update({ highlight: index })} onKeyDown={event => navigateOptions(event, index)} onClick={() => onChoose(code)}>
-          <span className="action-option-name">{localizedKeyName(code, locale)}{code === value && <Check aria-hidden="true" />}</span>
+          <span className="action-option-name">{hasIcon && <KeyActionIcon code={code} />}<span>{localizedKeyName(code, locale)}</span>{code === value && <Check aria-hidden="true" />}</span>
           {(abbreviation || search) && <span className="action-option-meta">
             {abbreviation && <span className="key-abbreviation" aria-hidden="true" title={t('mapping.abbreviation', { name: abbreviation })}>{abbreviation}</span>}
             {search && <span className="action-category">{t(`mapping.${groupFor(code)}`)}</span>}

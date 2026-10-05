@@ -9,7 +9,7 @@ import { FakeDevice, FakeHID, fixture } from './helpers';
 import { renderMessage, translate } from '../src/i18n/core';
 import { keyDescription, localizedKeyName } from '../src/i18n/key-names';
 import type { ModelTool } from '../src/model-tools';
-import { MAC_NATIVE_VERSION, MAC_STOCK_VERSION } from '../src/mac-keycodes';
+import { MAC_NATIVE_VERSION, MAC_STOCK_VERSION, macSystemKeyOrder } from '../src/mac-keycodes';
 
 // Radix measures the checkbox's hidden form input; jsdom does not implement layout observers.
 beforeAll(() => vi.stubGlobal('ResizeObserver', class {
@@ -793,21 +793,63 @@ test.each(['zh-CN', 'en'] as const)('%s Escape cancels recording and clears sear
   }
 });
 
+test.each(['zh-CN', 'en'] as const)('%s Mac choices follow the current F1–F12 row with one shared notice', async locale => {
+  const { store, actions } = application(null, undefined, { locale });
+  const profile = fixture();
+  profile.version = MAC_NATIVE_VERSION;
+  const view = render(<App store={store} />);
+  await act(() => actions.importFile(profileFile(profile)));
+  act(() => actions.updateActionPicker('key', { group: 'mac' }));
+  const choices = Array.from(view.container.querySelectorAll<HTMLElement>('.action-option'));
+  expect(choices.map(choice => Number(choice.dataset.actionCode))).toEqual([
+    208, 209, 222, 224, 225, 226, 109, 111, 108, 112, 114, 113,
+    223, 227, 228, 229, 230, 207,
+  ]);
+  for (const choice of choices) {
+    expect(choice.querySelector('.key-action-icon')).not.toBeNull();
+    expect(choice.querySelector('.action-description')).toBeNull();
+    expect(choice.querySelector('.key-abbreviation')).toBeNull();
+    expect(choice).not.toHaveTextContent(/experimental|实验/);
+  }
+  expect(view.container.querySelectorAll('.mac-action-notice')).toHaveLength(1);
+  const notice = view.container.querySelector('.mac-action-notice')!;
+  expect(notice).not.toHaveAttribute('open');
+  expect(notice.querySelector('summary')).toHaveTextContent(translate(locale, 'mapping.macExperimental'));
+  fireEvent.click(notice.querySelector('summary')!);
+  expect(notice).toHaveAttribute('open');
+  expect(notice).toHaveTextContent(translate(locale, 'mapping.macLimitations'));
+});
+
 test.each(['zh-CN', 'en'] as const)('%s native Mac actions select a single code on V1.5.1-F.1 and preserve NIZ Fn rules', async locale => {
   const { store, actions } = application(null, undefined, { locale });
   const profile = fixture();
   profile.version = '66EC(RGB)BLe;V1.5.1-F.1;V1.0;';
   const view = render(<App store={store} />);
   await act(() => actions.importFile(profileFile(profile)));
-  for (const code of [208, 209, 222, 223, 224, 225, 226, 227, 228, 229, 230]) {
+  for (const code of macSystemKeyOrder) {
     fireEvent.change(screen.getByRole('searchbox'), { target: { value: `#${code}` } });
     const option = view.container.querySelector<HTMLButtonElement>('.action-option')!;
     expect(option).toBeEnabled();
     fireEvent.click(option);
     expect(store.getState().profile!.definition(0).keys).toEqual([code]);
+    for (const container of [view.container.querySelector('.keyboard .key')!, view.container.querySelector('.mapping-preview .keycap-sample')!]) {
+      expect(container.querySelector(`.key-layer[data-layer="0"] [data-key-icon="${code}"]`)).toHaveAttribute('aria-hidden', 'true');
+    }
+    expect(view.container.querySelector('.mapping-assignment')).toHaveTextContent(localizedKeyName(code, locale));
   }
   expect(store.getState().profile!.definition(54).keys).toEqual([156]);
   expect(store.getState().profile!.definition(58).keys).toEqual([166]);
+  await act(() => actions.selectKey(0, 1));
+  fireEvent.change(screen.getByRole('searchbox'), { target: { value: '#222' } });
+  fireEvent.click(view.container.querySelector('.action-option')!);
+  expect(view.container.querySelector('.keyboard .key .key-front [data-key-icon="222"]')).not.toBeNull();
+  expect(view.container.querySelector('.mapping-preview .key-front [data-key-icon="222"]')).not.toBeNull();
+  await act(() => actions.selectKey(0, 2));
+  fireEvent.change(screen.getByRole('searchbox'), { target: { value: '#225' } });
+  fireEvent.click(view.container.querySelector('.action-option')!);
+  expect(view.container.querySelector('.keyboard .key .key-layer[data-layer="2"] [data-key-icon="225"]')).not.toBeNull();
+  await act(() => actions.setLocale(locale === 'en' ? 'zh-CN' : 'en'));
+  expect(view.container.querySelector('.mapping-preview .key-layer[data-layer="2"] [data-key-icon="225"]')).not.toBeNull();
 });
 
 test('unsupported native actions cannot be selected with mouse or Enter', async () => {
@@ -818,6 +860,8 @@ test('unsupported native actions cannot be selected with mouse or Enter', async 
   const search = screen.getByRole('searchbox');
   fireEvent.change(search, { target: { value: '#222' } });
   expect(view.container.querySelector('.action-option')).toBeDisabled();
+  expect(view.container.querySelectorAll('.mac-action-notice')).toHaveLength(1);
+  expect(view.container.querySelector('.mac-action-notice summary')).toHaveTextContent(translate(store.getState().locale, 'mapping.macUnavailable'));
   fireEvent.keyDown(search, { key: 'Enter' });
   expect(store.getState().profile!.definition(0).keys).toEqual(before);
 });

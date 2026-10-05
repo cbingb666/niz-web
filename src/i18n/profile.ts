@@ -2,6 +2,14 @@ import { sequenceText, type Profile } from '../protocol';
 import { countMessage, renderMessage, translate, type Locale } from './core';
 import { localizedKeyName } from './key-names';
 import { keycapName } from './key-labels';
+import { macSystemKeyOrder } from '../mac-keycodes';
+
+/** Only single actions use a glyph; chords and macros retain their text summaries. */
+export function keycapIconCode(profile: Profile, index: number): number | undefined {
+  const definition = profile.definition(index);
+  const code = definition.keys[0];
+  return definition.type === 0 && definition.keys.length === 1 && macSystemKeyOrder.includes(code) ? code : undefined;
+}
 
 /** English legends only; accessible labels and editing keep the full localized name. */
 export function keycapSummary(profile: Profile, index: number): string {

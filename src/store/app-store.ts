@@ -9,6 +9,7 @@ import {
   type Locale,
 } from '../i18n/core';
 import { localizedKeyName } from '../i18n/key-names';
+import { planMacFunctionKeys } from '../mac-function-keys';
 import { deviceName } from '../i18n/device';
 import { initialCalibration, type CalibrationTarget, type CalibrationSnapshot, type CalibrationRun } from '../calibration';
 import { initialFirmware, readFirmwareFile, type FirmwareTarget, type FirmwareSnapshot, type FirmwarePackage } from '../firmware';
@@ -182,6 +183,7 @@ export interface AppActions {
   updateForm(form: Partial<EditorForm>): void;
   saveForm(announce?: boolean): boolean;
   assignKey(code: number): void;
+  convertMacFunctionKeys(): void;
   discardForm(): void;
   undo(): void;
   redo(): void;
@@ -942,6 +944,20 @@ export function createAppStore(dependencies: AppDependencies) {
         }
         try { applyDefinition({ type: 0, keys: [code] }); }
         catch (error) { set({ formError: protocolError(error).description }); }
+      },
+      convertMacFunctionKeys() {
+        if (disposed || isLocked(get()) || get().dialog || !editor.profile) return;
+        try {
+          const plan = planMacFunctionKeys(editor.profile);
+          assert(plan.supported, msg('mapping.macConvertFirmware'));
+          if (!plan.edits.length) return;
+          assert(!plan.edits.some(edit => get().draftIndices.includes(edit.index)), msg('mapping.macConvertDrafts'));
+          editor.applyDefinitions(plan.edits);
+          loadForm();
+          const status = msg('mapping.macConverted', { count: plan.edits.length });
+          set({ status });
+          log(status);
+        } catch (error) { set({ formError: protocolError(error).description }); }
       },
       discardForm() {
         if (isLocked(get())) return;
