@@ -35,9 +35,10 @@ import {
 } from '../protocol';
 import type { BackupRow, Backups } from '../storage';
 import type { ConnectionState, OperationProgress } from '../types/hid';
+import { emptyMappingBrowser, type MappingBrowser, type MappingView, type PickerScope, type ActionPickerState, type MappingScrollAnchor } from './mapping-browser';
 
 export interface EditorForm {
-  view?: 'key' | 'chord' | 'system' | 'advanced';
+  view?: MappingView;
   type: string;
   sequence: string;
   interval: string;
@@ -85,6 +86,7 @@ export interface Activity {
 export type AppPage = 'devices' | 'connect' | 'demo' | 'editor';
 interface EditingSession {
   editor: EditorState;
+  mappingBrowser: MappingBrowser;
   form: EditorForm;
   formDirty: boolean;
   formError: Message;
@@ -112,6 +114,7 @@ export interface FirmwareView {
 }
 export interface AppState {
   page: AppPage;
+  mappingBrowser: MappingBrowser;
   model: KeyboardModel;
   demoModelId: string | null;
   demoReturnPage: 'devices' | 'connect';
@@ -171,6 +174,9 @@ export interface AppActions {
   exportProfile(): void;
   exportDiagnostic(): void;
   selectKey(key: number, layer?: number): boolean;
+  setMappingView(view: MappingView): void;
+  updateActionPicker(scope: PickerScope, patch: Partial<ActionPickerState>): void;
+  setMappingScroll(view: MappingView, scrollTop: number, anchor?: MappingScrollAnchor): void;
   updateForm(form: Partial<EditorForm>): void;
   saveForm(announce?: boolean): boolean;
   assignKey(code: number): void;
@@ -268,8 +274,8 @@ export function createAppStore(dependencies: AppDependencies) {
       if (!id || id === editorDeviceId) return;
       // The first connection retains any offline work already in the editor.
       if (editorDeviceId) {
-        const { form, formDirty, formError, drafts, showCounts, showKeyNumbers } = get();
-        editingSessions.set(editorDeviceId, { editor, form, formDirty, formError, drafts, showCounts, showKeyNumbers });
+        const { form, formDirty, formError, drafts, showCounts, showKeyNumbers, mappingBrowser } = get();
+        editingSessions.set(editorDeviceId, { editor, form, formDirty, formError, drafts, showCounts, showKeyNumbers, mappingBrowser });
         const cached = editingSessions.get(id);
         editor = cached?.editor ?? new EditorState();
         const nextForm = cached?.form ?? emptyForm();
@@ -282,6 +288,7 @@ export function createAppStore(dependencies: AppDependencies) {
           drafts: cached?.drafts ?? {},
           showCounts: cached?.showCounts ?? false,
           showKeyNumbers: cached?.showKeyNumbers ?? false,
+          mappingBrowser: cached?.mappingBrowser ?? emptyMappingBrowser(),
           status: msg('status.initial'),
         });
       }
@@ -336,6 +343,12 @@ export function createAppStore(dependencies: AppDependencies) {
     function loadForm(reset = false) {
       if (reset) set({ drafts: {} });
       const definition = editor.profile?.definition(editor.index);
+      // A newly loaded configuration opens the appropriate editor. Subsequent
+      // key selections keep the user's browsing mode instead of inferring it again.
+      if (reset) set(state => ({ mappingBrowser: { ...state.mappingBrowser,
+        view: definition && definition.type !== 0 ? 'advanced'
+          : definition && definition.keys.length > 1 ? 'chord' : 'key',
+      } }));
       const draft = get().drafts[editor.index];
       set({
         formDirty: !!draft,
@@ -551,6 +564,12 @@ export function createAppStore(dependencies: AppDependencies) {
     function applyDefinition(definition: KeyDefinition) {
       assertNoRelatedDrafts(editor.isFn(definition) || editor.hasFnAt(editor.key));
       editor.applyDefinitions([{ index: editor.index, definition }]);
+      if (definition.type === 0 && definition.keys.length === 1) {
+        const code = definition.keys[0];
+        set(state => ({ mappingBrowser: { ...state.mappingBrowser,
+          recentActions: [code, ...state.mappingBrowser.recentActions.filter(value => value !== code)].slice(0, 6),
+        } }));
+      }
       const drafts = { ...get().drafts };
       delete drafts[editor.index];
       set({ drafts, status: msg('mapping.staged') });
@@ -883,6 +902,25 @@ export function createAppStore(dependencies: AppDependencies) {
         loadForm();
         return true;
       },
+      setMappingView(view) {
+        if (isLocked(get())) return;
+        set(state => ({ mappingBrowser: { ...state.mappingBrowser, view } }));
+      },
+      updateActionPicker(scope, patch) {
+        if (isLocked(get())) return;
+        set(state => ({ mappingBrowser: { ...state.mappingBrowser,
+          pickers: { ...state.mappingBrowser.pickers, [scope]: { ...state.mappingBrowser.pickers[scope], ...patch } },
+          contentAnchors: patch.query !== undefined || patch.group !== undefined
+            ? { ...state.mappingBrowser.contentAnchors, [scope]: undefined } : state.mappingBrowser.contentAnchors,
+        } }));
+      },
+      setMappingScroll(view, scrollTop, anchor) {
+        if (isLocked(get())) return;
+        set(state => ({ mappingBrowser: { ...state.mappingBrowser,
+          contentScroll: { ...state.mappingBrowser.contentScroll, [view]: scrollTop },
+          contentAnchors: { ...state.mappingBrowser.contentAnchors, [view]: anchor },
+        } }));
+      },
       updateForm(patch) {
         if (isLocked(get()) || !editor.profile) return;
         set((state) => {
@@ -1072,6 +1110,7 @@ export function createAppStore(dependencies: AppDependencies) {
     };
     return {
       page: 'devices',
+      mappingBrowser: emptyMappingBrowser(),
       model: editor.model,
       demoModelId: null,
       demoReturnPage: 'devices',

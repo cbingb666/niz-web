@@ -52,6 +52,15 @@ git submodule update --init --recursive
 
 提交代码前运行 `npm run check`。仅修改文档时，核对链接、命令与实际行为，并运行 `git diff --check`。
 
+调整改键滚动行为时，还需验证浏览器布局；jsdom 不计算真实位置。如果已有 Playwright CLI，启动本地服务器后运行：
+
+```sh
+playwright-cli open http://127.0.0.1:5173
+playwright-cli run-code --filename=tests/browser/mapping-scroll.js
+```
+
+脚本打开新的离线演示标签页，在中英文、桌面与窄屏下检查连续分配和切换键位/层后的功能选项坐标。成功结果为 28 项、位移为零。该验证独立于 `npm run check`，不授权或写入硬件。
+
 ## 校准开发
 
 开发服务器和生产构建均默认提供校准，使用正常的 `npm run dev` 或 `npm run build` 即可，不需要环境开关。

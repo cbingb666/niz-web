@@ -52,6 +52,15 @@ You can also use `git clone --recurse-submodules https://github.com/cbingb666/ni
 
 Run `npm run check` before submitting code. For documentation-only changes, check links, commands, and behavior descriptions, then run `git diff --check`.
 
+For mapping-scroll changes, also check browser layout; jsdom does not measure it. With Playwright CLI available and the local server running, use:
+
+```sh
+playwright-cli open http://127.0.0.1:5173
+playwright-cli run-code --filename=tests/browser/mapping-scroll.js
+```
+
+The script opens fresh offline demo tabs and checks option coordinates after repeated assignments and key/layer changes in both languages, at desktop and narrow widths. A successful result reports 28 cases with zero movement. It is separate from `npm run check` and does not authorize or write to hardware.
+
 ## Calibration
 
 Calibration is available by default in the development server and production builds. Use the normal `npm run dev` or `npm run build` command; no environment flag is required.

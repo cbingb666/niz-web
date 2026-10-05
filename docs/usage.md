@@ -47,6 +47,10 @@ Arrow keys also match `arrow`, `left`, `right`, `up`, and `down`, or names such 
 
 Action categories start with **All**, followed by **Common**; **All** is selected by default. Search covers all categories and shows the result count. **Clear search** returns to the category you were browsing. From the search field, press Down to focus the first result, then use arrow keys to browse and Enter to choose. Escape returns to search; pressing it again clears the query.
 
+**Keys and actions** combines ordinary keys and system functions in one list. When you select another key or layer, the panel keeps its editing mode, category, search and visible position in the action list, including after staging an edit. The shortcut main-key picker keeps its own search and category. Returning to a key with unfinished input restores that key's draft editor.
+
+**Recent actions**, below search, shows up to six distinct functions you have successfully staged, newest first. Click one to assign it even when it is outside the current search or category. Each device keeps its own browsing state and recent actions in this page; refreshing clears them. Recent actions follow the same draft, Fn and firmware checks as the full list. All assignments stay local until you confirm a write.
+
 The editor summary shows the selected key position, layer, and current action. It also marks unapplied input and locally staged changes. Use **Devices** in the top bar to return to the device list; your edits are kept. **Import** and **Export** are visible buttons on the right of the bottom bar. When editing offline, use the bottom bar to connect a keyboard or choose one that is already connected.
 
 | Task | Action |

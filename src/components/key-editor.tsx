@@ -1,4 +1,4 @@
-import { useEffect, useId, useState, type KeyboardEvent } from 'react';
+import { useEffect, useId, useLayoutEffect, useRef, useState, type KeyboardEvent } from 'react';
 import { Check, Keyboard, PencilLine, RotateCcw, X } from 'lucide-react';
 import { useI18n } from '@/i18n/use-i18n';
 import { keyDescription, localizedKeyName } from '@/i18n/key-names';
@@ -6,6 +6,7 @@ import { keycapSummary, localizedSummary } from '@/i18n/profile';
 import { parseKey, parseSequence } from '@/protocol';
 import { useAppStore } from '@/store/context';
 import { isLocked } from '@/store/app-store';
+import type { MappingView } from '@/store/mapping-browser';
 import { ActionPicker } from './action-picker';
 import { AdvancedKeyEditor } from './advanced-key-editor';
 import { KeycapSample } from './keycap-sample';
@@ -76,7 +77,7 @@ function ShortcutEditor({ disabled, onAdvanced }: { disabled: boolean; onAdvance
     <div className="modifier-options">{modifiers.map(code => <Label key={code} className="modifier-option"><Checkbox disabled={disabled} checked={keys.includes(code)}
       onCheckedChange={checked => update(checked ? [...keys, code] : keys.filter(key => key !== code))} />{localizedKeyName(code, locale)}</Label>)}</div>
     </fieldset>
-    <ActionPicker label={t('mapping.mainKey')} disabled={disabled} value={mainKeys.length === 1 ? mainKeys[0] : undefined} onChoose={code => update([...new Set([...keys.filter(key => modifiers.includes(key)), code])])} />
+    <ActionPicker scope="chord" label={t('mapping.mainKey')} disabled={disabled} value={mainKeys.length === 1 ? mainKeys[0] : undefined} onChoose={code => update([...new Set([...keys.filter(key => modifiers.includes(key)), code])])} />
     <Button variant="link" size="sm" disabled={disabled} onClick={onAdvanced}>{t('mapping.moreChord')}</Button>
   </div>;
 }
@@ -96,17 +97,46 @@ export function KeyEditor() {
   const version = useAppStore(state => state.session.version);
   const locked = useAppStore(isLocked);
   const actions = useAppStore(state => state.actions);
+  const browserView = useAppStore(state => state.mappingBrowser.view);
   const definition = profile?.definition(layer * model.keyCount + key);
-  const [category, setCategory] = useState(() => {
+  const [category, setCategory] = useState<MappingView>(() => {
+    if (!dirty) return browserView;
     if (form.view) return form.view;
     if (form.type !== '0') return 'advanced';
     const codes = readChord(form.sequence);
     if (codes.length > 1) return 'chord';
-    return codes[0] >= 108 && codes[0] !== 204 ? 'system' : 'key';
+    return 'key';
   });
+  const content = useRef<HTMLDivElement>(null);
+  const inspector = useRef<HTMLElement>(null);
+  const contentScroll = useAppStore(state => state.mappingBrowser.contentScroll[category]);
+  const contentAnchor = useAppStore(state => state.mappingBrowser.contentAnchors[category]);
+  const recentActions = useAppStore(state => state.mappingBrowser.recentActions);
+  useLayoutEffect(() => {
+    const container = content.current;
+    if (!container) return;
+    container.scrollTop = contentScroll;
+    const anchor = contentAnchor && container.querySelector<HTMLElement>(`[data-action-code="${contentAnchor.code}"]`);
+    if (anchor && inspector.current)
+      container.scrollTop += anchor.getBoundingClientRect().top - inspector.current.getBoundingClientRect().top - contentAnchor.offset;
+  }, [category, contentScroll, contentAnchor, recentActions, profile, dirty, formError]);
+  function rememberScroll() {
+    const container = content.current;
+    if (!container || !inspector.current) return;
+    const bounds = container.getBoundingClientRect();
+    const visible = container.scrollTop > 0 && Array.from(container.querySelectorAll<HTMLElement>('[data-action-code]')).find(option => {
+      const rect = option.getBoundingClientRect();
+      return rect.bottom > bounds.top && rect.top < bounds.bottom;
+    });
+    actions.setMappingScroll(category, container.scrollTop, visible ? {
+      code: Number(visible.dataset.actionCode),
+      offset: visible.getBoundingClientRect().top - inspector.current.getBoundingClientRect().top,
+    } : undefined);
+  }
   function selectCategory(value: string) {
-    if (value !== 'key' && value !== 'chord' && value !== 'system' && value !== 'advanced') return;
+    if (value !== 'key' && value !== 'chord' && value !== 'advanced') return;
     setCategory(value);
+    actions.setMappingView(value);
     actions.updateForm({ view: value });
   }
   const disabled = !profile || locked;
@@ -119,9 +149,9 @@ export function KeyEditor() {
   const layerName = text(model.layers[layer]);
   const changed = changes.includes(layer * model.keyCount + key);
   const description = definition?.keys.length === 1 ? keyDescription(definition.keys[0], locale) : undefined;
-  const quickChoice = category === 'key' || category === 'system';
+  const quickChoice = category === 'key';
   const guardedDraft = dirty && (quickChoice || (category === 'chord' && !canEditChord(form.type, form.sequence)));
-  return <aside className="inspector" aria-label={t('editor.section')} tabIndex={0}>
+  return <aside className="inspector" ref={inspector} aria-label={t('editor.section')} tabIndex={0}>
     <div className="inspector-header" tabIndex={0} role="group" aria-label={t('mapping.previewTitle')}>
     <div className="key-editor-heading">
       <h2>{t('mapping.previewTitle')}</h2>
@@ -142,18 +172,20 @@ export function KeyEditor() {
       {dirty ? <PencilLine aria-hidden="true" /> : <Check aria-hidden="true" />}{t(dirty ? 'mapping.draft' : 'mapping.staged')}
     </p>}
     </div>
-    <div className="inspector-content" tabIndex={0} aria-label={t('mapping.categories')}>
+    <div className="inspector-content" ref={content} tabIndex={0} aria-label={t('mapping.categories')}
+      onScroll={rememberScroll}>
     <div className="mapping-editor">
       <Label htmlFor={categoryId}>{t('mapping.categories')}</Label>
       <Select value={category} disabled={disabled} onValueChange={selectCategory}>
         <SelectTrigger id={categoryId} aria-label={t('mapping.categories')}><SelectValue /></SelectTrigger>
-        <SelectContent>{(['key', 'chord', 'system', 'advanced'] as const).map(item => <SelectItem value={item} key={item}>{t(`mapping.${item}`)}</SelectItem>)}</SelectContent>
+        <SelectContent>{(['key', 'chord', 'advanced'] as const).map(item => <SelectItem value={item} key={item}>{t(`mapping.${item}`)}</SelectItem>)}</SelectContent>
       </Select>
       <div className="mapping-editor-content">
-        {(category === 'key' || category === 'system') && <>
+        {category === 'key' && <>
           {guardedDraft && <p className="draft-guard">{t('mapping.finishCurrentDraft')}</p>}
           {hasFn && <p className="fn-scope">{t('mapping.fnScope', { count: model.layers.length })}</p>}
-          <ActionPicker key={category} showFnHint={!hasFn} disabled={disabled} selectionDisabled={dirty} value={definition?.type === 0 && definition.keys.length === 1 ? definition.keys[0] : undefined} onChoose={actions.assignKey} />
+          <ActionPicker showFnHint={!hasFn} disabled={disabled} selectionDisabled={dirty} value={definition?.type === 0 && definition.keys.length === 1 ? definition.keys[0] : undefined}
+            onChoose={code => { rememberScroll(); actions.assignKey(code); }} />
         </>}
         {category === 'chord' && <>
           {guardedDraft && <p className="draft-guard">{t('mapping.finishCurrentDraft')}</p>}
@@ -162,7 +194,7 @@ export function KeyEditor() {
         {category === 'advanced' && <AdvancedKeyEditor formId={formId} />}
       </div>
     </div>
-    {hasFn && category !== 'key' && category !== 'system' && <p className="fn-scope">{t('mapping.fnScope', { count: model.layers.length })}</p>}
+    {hasFn && category !== 'key' && <p className="fn-scope">{t('mapping.fnScope', { count: model.layers.length })}</p>}
     <details className="lighting-section"><summary>{t('lighting.title')}</summary>
       <p className="field-hint">{profile?.lights ? t('lighting.staged') : version && !model.capabilities(version).perKeyRGB ? t('lighting.unsupported') : t('lighting.unavailable')}</p>
       {profile?.lights && <div className="lighting-controls"><Input type="color" aria-label={t('lighting.color')} disabled={locked} value={form.color} onChange={event => actions.updateForm({ color: event.target.value })} />

@@ -188,17 +188,18 @@ test('mapping type select switches all editors while preserving unapplied input'
   expect(screen.queryByRole('tablist')).not.toBeInTheDocument();
   await act(() => actions.demo());
   const original = store.getState().profile!.toJSON();
-  expect(screen.getByRole('combobox', { name: '映射类型' })).toHaveTextContent('按键');
+  expect(screen.getByRole('combobox', { name: '映射类型' })).toHaveTextContent('按键与功能');
   expect(screen.getByRole('combobox', { name: '功能分类' })).toHaveTextContent('全部');
-  await chooseMappingType('系统功能');
-  expect(screen.getByRole('combobox', { name: '功能分类' })).toHaveTextContent('全部');
+  fireEvent.keyDown(screen.getByRole('combobox', { name: '映射类型' }), { key: 'ArrowDown' });
+  expect(screen.getAllByRole('option').map(option => option.textContent)).toEqual(['按键与功能', '快捷键', '宏 / 高级']);
+  fireEvent.keyDown(screen.getByRole('option', { name: '按键与功能' }), { key: 'Enter' });
   expect(screen.getByRole('button', { name: '下一曲' })).toBeInTheDocument();
   await chooseMappingType('快捷键');
   expect(screen.getByRole('combobox', { name: '功能分类' })).toHaveTextContent('全部');
   expect(screen.getByRole('button', { name: '按下快捷键录入' })).toBeInTheDocument();
   await chooseMappingType('宏 / 高级');
   fireEvent.change(screen.getByLabelText(/按键序列/), { target: { value: 'unfinished' } });
-  await chooseMappingType('按键');
+  await chooseMappingType('按键与功能');
   expect(screen.queryByLabelText(/按键序列/)).not.toBeInTheDocument();
   expect(screen.getByRole('searchbox', { name: '选择目标功能' })).toBeInTheDocument();
   await chooseMappingType('宏 / 高级');
@@ -482,6 +483,7 @@ test('layer-specific drafts and changes remain visible alongside other layers', 
   await chooseMappingType('宏 / 高级');
   fireEvent.change(screen.getByLabelText(/按键序列/), { target: { value: 'unfinished' } });
   fireEvent.click(screen.getByRole('button', { name: /^普通层，第 30 键，/ }));
+  await chooseMappingType('按键与功能');
   fireEvent.click(screen.getByRole('button', { name: 'Esc' }));
   expect(screen.getByRole('button', { name: /^普通层，第 30 键，/ })).toHaveClass('changed');
   expect(screen.getByRole('button', { name: /^普通层，第 30 键，/ }).querySelector('.key-change-dot')).not.toBeNull();
@@ -634,7 +636,6 @@ test.each(['zh-CN', 'en'] as const)('%s search crosses categories and clearing r
   const { store, actions } = application(null, undefined, { locale });
   render(<App store={store} />);
   await act(() => actions.demo());
-  await chooseMappingType(translate(locale, 'mapping.system'));
   const search = screen.getByRole('searchbox', { name: translate(locale, 'mapping.choose') });
   const categoryName = translate(locale, 'mapping.group');
   expect(screen.getByRole('combobox', { name: categoryName })).toHaveTextContent(translate(locale, 'mapping.all'));
