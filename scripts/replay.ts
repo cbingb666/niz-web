@@ -4,7 +4,7 @@ import { Profile, unhex, isRecord } from '../src/protocol.ts';
 import { supportedModels } from '../src/devices/index.ts';
 
 const path = process.argv[2];
-if (!path) throw new Error('Usage: npm run replay -- /path/to/local/read-capture.json');
+if (!path) throw new Error('Usage: pnpm run replay /path/to/local/read-capture.json');
 // Input stays outside the Site checkout. Never copy private captures into dist.
 const data: unknown = JSON.parse(await readFile(path, 'utf8'));
 assert(isRecord(data) && ['atom66-read-capture', 'niz-read-capture'].includes(String(data.format)) && Array.isArray(data.reports));

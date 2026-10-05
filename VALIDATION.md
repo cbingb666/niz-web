@@ -445,3 +445,9 @@
 - 未识别功能码、不支持的 Mac 功能和无法重新编码的映射保留目标当前值，双语提示列出层、键位、原映射及保留值，日志保留原因，不增加逐项确认。跳过含 Fn 的键位时保留其联动层。异步文件或备份读取遇到编辑器/连接世代变化时不载入旧结果。
 - `npm run check` 通过类型检查、lint、36 个测试文件 / 442 项测试及独立 HTML 构建；专项迁移测试 15 项通过。FakeHID 验证 JSON 与备份入口导入不发送 USB 命令，之后仍通过确认、当前版本备份、配置写入与回读验证。jsdom 验证中英文跳过提示和继续编辑。产物仅为 `dist/index.html` 和 `dist/_headers`。
 - 本轮没有执行真实浏览器 WebHID、IndexedDB 持久化或实机升级后的配置迁移验收；模拟测试不证明所有固件的实际功能一致。未提交、推送、同步 Sites 或部署。
+
+## 2026-10-05：强制使用 pnpm
+
+- 按用户要求将本地脚本、GitHub Actions、开发文档和项目约定统一为 pnpm 11.0.1。`package.json` 固定包管理器及版本，`devEngines` 和本地 preinstall 检查拒绝其他安装器。删除 `package-lock.json`，保留已有 `pnpm-lock.yaml` 和全部依赖版本；历史验证记录中的 npm 命令不改写。
+- `pnpm install --frozen-lockfile` 通过，锁文件未变化。实际验证 npm 安装（含 `--ignore-scripts`）和 npm 运行脚本均被拒绝，直接使用不匹配的 pnpm 版本也会被拒绝。新增 9 项检查覆盖正确版本、npm/Yarn/Bun、错误版本和 pnpm 11 安装钩子缺少 user agent 的情况。
+- `VITEST_MAX_WORKERS=2 pnpm run check` 通过：TypeScript strict、ESLint、37 个测试文件，449 项通过、2 项跳过，以及独立 HTML 生产构建。`git diff --check` 通过。未执行远端 CI、真实浏览器或硬件验收，未提交、推送、同步或部署。
