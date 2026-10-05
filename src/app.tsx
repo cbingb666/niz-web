@@ -8,6 +8,7 @@ import { KeyboardPanel } from './components/keyboard-panel';
 import { KeyEditor } from './components/key-editor';
 import { AppDialogs } from './components/app-dialogs';
 import { LanguageSwitcher } from './components/language-switcher';
+import { ThemeSwitcher } from './components/theme-switcher';
 import { ProfileActions, ProfileUtilities } from './components/profile-actions';
 import { ConnectedDevice } from './components/connected-device';
 import { PendingChanges } from './components/change-review';
@@ -113,6 +114,7 @@ function Header() {
           aria-label={t('manual.open')} title={t('manual.open')} disabled={locked} onClick={showManuals}>
           <BookOpen aria-hidden="true" />
         </Button>
+        <ThemeSwitcher />
         <LanguageSwitcher />
         <Button variant="ghost" size="icon" aria-label={t('help.open')} disabled={locked} onClick={showHelp}>
           <CircleHelp />

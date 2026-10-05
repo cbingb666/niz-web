@@ -1,6 +1,10 @@
 import type { zhCN } from './zh-CN.ts';
 
 export const en = {
+  'theme.label': 'Theme',
+  'theme.light': 'Light',
+  'theme.dark': 'Dark',
+  'theme.system': 'System',
   'firmware.entry': 'Flash firmware (experimental)',
   'firmware.title': 'Flash firmware',
   'firmware.scope': '66EC RGB BLE V1.5.1 / V1.5.1-F.1 only. Choose the stock firmware or the experimental Mac build. Web firmware flashing is hardware-unverified.',

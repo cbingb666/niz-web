@@ -332,7 +332,7 @@ test('modified dots follow each layer in the keyboard and preview through restor
   expectLayers([0, 2]);
 });
 
-test('count view replaces front-edge mappings with counts and orders key brightness without hardware writes', async () => {
+test('count view replaces front-edge mappings with counts and orders key heat intensity without hardware writes', async () => {
   const device = new FakeDevice();
   device.profile.counters = Array.from({ length: 66 }, (_, index) => [0, 100, 10_000, 0xffffffff][index] ?? 0);
   const { store, actions } = application(new FakeHID([device]));
@@ -356,10 +356,10 @@ test('count view replaces front-edge mappings with counts and orders key brightn
   expect(positions[1].querySelector('.key-front')).toHaveTextContent('100');
   expect(positions[2].querySelector('.key-front')).toHaveTextContent('10,000');
   expect(within(positions[3]).getByLabelText('按键计数：4,294,967,295')).toBeVisible();
-  const brightness = positions.map(position => Number(position.style.getPropertyValue('--count-face').match(/[\d.]+/)![0]));
-  expect(brightness[0]).toBeLessThan(brightness[1]);
-  expect(brightness[1]).toBeLessThan(brightness[2]);
-  expect(brightness[2]).toBeLessThan(brightness[3]);
+  const intensity = positions.map(position => parseFloat(position.style.getPropertyValue('--count-heat')));
+  expect(intensity[0]).toBeLessThan(intensity[1]);
+  expect(intensity[1]).toBeLessThan(intensity[2]);
+  expect(intensity[2]).toBeLessThan(intensity[3]);
   expect(guide).toHaveTextContent('Count');
   fireEvent.click(screen.getByRole('checkbox', { name: '显示计数' }));
   expect(screen.getAllByRole('button', { name: /^右 Fn，第/ })).toHaveLength(66);
@@ -377,7 +377,7 @@ test.each([false, true])('count view handles missing or all-zero counters withou
   await act(() => actions.importFile(profileFile(profile)));
   fireEvent.click(screen.getByRole('checkbox', { name: '显示计数' }));
   const keys = Array.from(view.container.querySelectorAll<HTMLElement>('.key'));
-  expect(new Set(keys.map(key => key.style.getPropertyValue('--count-face')))).toEqual(new Set(['rgb(44 44 44)']));
+  expect(new Set(keys.map(key => key.style.getPropertyValue('--count-heat')))).toEqual(new Set(['0%']));
   expect(keys.every(key => key.querySelector('.key-front')?.textContent === (zeros ? '0' : '—'))).toBe(true);
 });
 

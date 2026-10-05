@@ -12,6 +12,8 @@ Choose the **Manuals** book icon in the top bar to open the manual picker, then 
 
 The manuals require internet access, including when using the standalone HTML. PDF and Word files may cover different revisions; check the label on your keyboard. Missing languages or formats are not replaced with a different variant’s manual.
 
+Use the theme icon in the upper-right corner to choose **System**, **Light**, or **Dark**. Your choice is saved in this browser. **System** is the default and follows appearance changes automatically.
+
 ## Connect and read
 
 Open [NIZ Web](https://cbingb666.github.io/niz-web/) in its own tab in desktop Chrome or Edge. Connect the keyboard with a USB data cable and close other keyboard configuration tools. See [Chrome's WebHID documentation](https://developer.chrome.com/docs/capabilities/hid) for browser requirements.

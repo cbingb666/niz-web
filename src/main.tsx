@@ -8,6 +8,9 @@ import { BackupStore } from './storage';
 import { createAppStore, isLocked } from './store/app-store';
 import { bindRouting } from './routing';
 import './styles.css';
+import { applyTheme, browserTheme } from './lib/theme';
+
+applyTheme(browserTheme());
 
 const environment = browserEnvironment();
 const session = new HIDSession(environment.hid);
