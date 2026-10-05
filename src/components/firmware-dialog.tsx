@@ -8,6 +8,7 @@ import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { KeyboardLockIllustration } from './keyboard-lock-illustration';
 import { AlertDialog, AlertDialogContent, AlertDialogDescription, AlertDialogTitle } from './ui/alert-dialog';
+import { MAC_NATIVE_VERSION } from '@/mac-keycodes';
 
 export function FirmwareDialog({ view }: { view: FirmwareView }) {
   const { t, text } = useI18n();
@@ -66,6 +67,8 @@ export function FirmwareDialog({ view }: { view: FirmwareView }) {
           if (file) void actions.selectFirmwareFile(file);
         }} />
         {view.file && <p className="text-sm break-words">{t('firmware.fileReady', { name: view.file.fileName })}</p>}
+        {view.file && <p className="text-sm">{t('firmware.packageVersion', { version: view.file.version })}</p>}
+        {view.file?.version === MAC_NATIVE_VERSION && <p className="text-sm leading-relaxed">{t('firmware.macNotice')}</p>}
         {!targetConnected && <p className="text-sm">{t('firmware.changed')}</p>}
         {view.pendingInput && <p className="text-sm">{t('firmware.draftsRequired')}</p>}
       </div>}

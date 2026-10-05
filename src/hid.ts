@@ -1,4 +1,5 @@
 import { msg, renderMessage, type Message } from './i18n/core.ts';
+import { isMacCode, macCodeAvailable } from './mac-keycodes';
 import {
   defaultModel,
   supportedModels,
@@ -13,7 +14,7 @@ import {
   type CalibrationAvailability, type CalibrationTarget, type CalibrationRun,
   type CalibrationSnapshot, type CalibrationCapture,
 } from './calibration';
-import { firmwarePackets, firmwareDelay, initialFirmware, stockFirmware,
+import { firmwarePackets, firmwareDelay, initialFirmware, stockFirmware, supportedFirmwareVersion,
   type FirmwarePackage, type FirmwareTarget, type FirmwareSnapshot } from './firmware';
 import type {
   ConfigDevice,
@@ -486,7 +487,7 @@ export class HIDSession extends EventTarget {
   }
   private firmwareAvailability(record: DeviceConnection) {
     if (record.model.id !== stockFirmware.model || record.device.vendorId !== stockFirmware.vendorId ||
-      record.device.productId !== stockFirmware.productId || record.version !== stockFirmware.version) return false;
+      record.device.productId !== stockFirmware.productId || !supportedFirmwareVersion(record.version)) return false;
     try { validateDescriptor(record.device, [record.model]); return true; }
     catch { return false; }
   }
@@ -1076,6 +1077,13 @@ export class HIDSession extends EventTarget {
     const targetReports = target.reports;
     const changed = target.differences(baseline),
       lightsChanged = !equalBytes(target.lights, baseline.lights);
+    for (const index of changed) {
+      if (index < target.model.editableRecords) assert(
+        target.definition(index).keys.every(code => macCodeAvailable(code, target.model.id, target.version) &&
+          (!isMacCode(code) || this.device?.vendorId === 0x0483 && this.device?.productId === 0x542a)),
+        msg('mapping.macFirmwareRequired'),
+      );
+    }
     if (!changed.length && !lightsChanged) return { profile: baseline, backupId: null };
     return this.exclusive(async () => {
       this.assertReady(epoch);

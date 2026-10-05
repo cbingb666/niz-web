@@ -4,16 +4,18 @@ import { KEY_NAMES, ENGLISH_KEY_NAMES, KEY_ALIASES, KEY_DESCRIPTIONS, keyDescrip
 import { keyAbbreviation, keycapName } from '@/i18n/key-labels';
 import { useI18n } from '@/i18n/use-i18n';
 import { useAppStore } from '@/store/context';
+import { isMacCode, macCodeAvailable } from '@/mac-keycodes';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 
 const common = [0, 1, 67, 42, 27, 54, 70, 84, 28, 58, 59];
-const groups = ['all', 'common', 'letters', 'navigation', 'function', 'media', 'mouse', 'lighting', 'device', 'reserved'] as const;
+const groups = ['all', 'common', 'letters', 'navigation', 'function', 'mac', 'media', 'mouse', 'lighting', 'device', 'reserved'] as const;
 type Group = (typeof groups)[number];
 const normalizeSearch = (value: string) => value.toLowerCase().replaceAll('−', '-');
 function groupFor(code: number): Group {
+  if (isMacCode(code)) return 'mac';
   if (code >= 178 && code !== 199 && code !== 204) return 'reserved';
   if (code >= 2 && code <= 13) return 'function';
   if (code >= 108 && code <= 125) return 'media';
@@ -29,6 +31,7 @@ export function ActionPicker({ value, disabled, selectionDisabled = false, showF
   const { t, locale } = useI18n();
   const id = useId();
   const model = useAppStore(state => state.model);
+  const version = useAppStore(state => state.profile?.version ?? '');
   const [query, setQuery] = useState('');
   const [group, setGroup] = useState<Group>('all');
   const [highlight, setHighlight] = useState(0);
@@ -39,7 +42,8 @@ export function ActionPicker({ value, disabled, selectionDisabled = false, showF
     if (code === 200) return false;
     if (/^#\d+$/.test(search)) return code === Number(search.slice(1));
     if (search) return normalizeSearch(`${localizedKeyName(code, locale)} ${keycapName(code)} ${KEY_NAMES[code]} ${ENGLISH_KEY_NAMES[code]} ${(KEY_ALIASES[code] ?? []).join(' ')} ${Object.values(KEY_DESCRIPTIONS[code] ?? {}).join(' ')} ${code === 70 ? '空格' : ''} ${code === 67 || code === 74 ? 'ctrl' : ''}`).includes(search);
-    return group === 'common' ? common.includes(code) : group === 'all' || groupFor(code) === group;
+    return group === 'common' ? common.includes(code) : group === 'all' || groupFor(code) === group ||
+      (group === 'mac' && [108, 109, 111, 112, 113, 114].includes(code));
   });
   if (!search && group === 'common') matches.sort((a, b) => common.indexOf(a) - common.indexOf(b));
   if (search) {
@@ -47,10 +51,13 @@ export function ActionPicker({ value, disabled, selectionDisabled = false, showF
     matches.sort((a, b) => Number(exact(b)) - Number(exact(a)));
   }
   const activeIndex = Math.min(highlight, Math.max(0, matches.length - 1));
-  function focusOption(index: number) {
-    const next = Math.max(0, Math.min(matches.length - 1, index));
+  function focusOption(index: number, direction: number) {
+    let next = Math.max(0, Math.min(matches.length - 1, index));
+    const buttons = options.current?.querySelectorAll<HTMLButtonElement>('button');
+    while (buttons?.[next]?.disabled) next += direction;
+    if (next < 0 || next >= matches.length) return;
     setHighlight(next);
-    const option = options.current?.querySelectorAll<HTMLButtonElement>('button')[next];
+    const option = buttons?.[next];
     option?.focus();
     option?.scrollIntoView?.({ block: 'nearest' });
   }
@@ -63,10 +70,11 @@ export function ActionPicker({ value, disabled, selectionDisabled = false, showF
     if (event.nativeEvent.isComposing) return;
     if ((event.key === 'ArrowDown' || event.key === 'ArrowUp') && !selectionDisabled && matches.length) {
       event.preventDefault();
-      focusOption(event.key === 'ArrowDown' ? 0 : matches.length - 1);
+      focusOption(event.key === 'ArrowDown' ? 0 : matches.length - 1, event.key === 'ArrowDown' ? 1 : -1);
     } else if (event.key === 'Enter') {
       event.preventDefault();
-      if (!disabled && !selectionDisabled && matches[activeIndex] !== undefined) onChoose(matches[activeIndex]);
+      if (!disabled && !selectionDisabled && matches[activeIndex] !== undefined &&
+        macCodeAvailable(matches[activeIndex], model.id, version)) onChoose(matches[activeIndex]);
     } else if (event.key === 'Escape' && query) {
       event.preventDefault(); event.stopPropagation(); clearSearch();
     }
@@ -76,7 +84,8 @@ export function ActionPicker({ value, disabled, selectionDisabled = false, showF
     const offset = event.key === 'ArrowDown' || event.key === 'ArrowRight' ? 1 : event.key === 'ArrowUp' || event.key === 'ArrowLeft' ? -1 : 0;
     if (offset || event.key === 'Home' || event.key === 'End') {
       event.preventDefault();
-      focusOption(event.key === 'Home' ? 0 : event.key === 'End' ? matches.length - 1 : index + offset);
+      focusOption(event.key === 'Home' ? 0 : event.key === 'End' ? matches.length - 1 : index + offset,
+        event.key === 'Home' ? 1 : event.key === 'End' ? -1 : offset);
     } else if (event.key === 'Escape') {
       event.preventDefault(); event.stopPropagation(); searchInput.current?.focus();
     }
@@ -107,7 +116,7 @@ export function ActionPicker({ value, disabled, selectionDisabled = false, showF
         const description = keyDescription(code, locale);
         return <Button key={code} type="button" variant="outline" className="action-option"
           data-editor-escape="true"
-          disabled={disabled || selectionDisabled} tabIndex={index === activeIndex ? 0 : -1} aria-pressed={code === value}
+          disabled={disabled || selectionDisabled || !macCodeAvailable(code, model.id, version)} tabIndex={index === activeIndex ? 0 : -1} aria-pressed={code === value}
           onFocus={() => setHighlight(index)} onKeyDown={event => navigateOptions(event, index)} onClick={() => onChoose(code)}>
           <span className="action-option-name">{localizedKeyName(code, locale)}{code === value && <Check aria-hidden="true" />}</span>
           {(abbreviation || search) && <span className="action-option-meta">

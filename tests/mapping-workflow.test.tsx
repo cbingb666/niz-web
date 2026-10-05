@@ -25,7 +25,7 @@ test.each(['zh-CN', 'en'] as const)('%s brightness descriptions keep the origina
   await act(() => actions.demo());
   for (const query of ['屏幕亮度', 'screen brightness']) {
     fireEvent.change(screen.getByRole('searchbox'), { target: { value: query } });
-    expect(view.container.querySelectorAll('.action-option')).toHaveLength(2);
+    expect(view.container.querySelectorAll('.action-option:not(:disabled)')).toHaveLength(2);
   }
   for (const [code, name] of [[79, 'Scroll Lock'], [80, 'Pause']] as const) {
     const option = screen.getByRole('button', { name: label => label.startsWith(name) });
@@ -759,4 +759,33 @@ test.each(['zh-CN', 'en'] as const)('%s Escape cancels recording and clears sear
     if (mediaDescriptor) Object.defineProperty(window, 'matchMedia', mediaDescriptor);
     else Reflect.deleteProperty(window, 'matchMedia');
   }
+});
+
+test.each(['zh-CN', 'en'] as const)('%s native Mac actions select a single code on V1.5.1-F.1 and preserve NIZ Fn rules', async locale => {
+  const { store, actions } = application(null, undefined, { locale });
+  const profile = fixture();
+  profile.version = '66EC(RGB)BLe;V1.5.1-F.1;V1.0;';
+  const view = render(<App store={store} />);
+  await act(() => actions.importFile(profileFile(profile)));
+  for (const code of [208, 209, 222, 223, 224, 225, 226, 227, 228, 229, 230]) {
+    fireEvent.change(screen.getByRole('searchbox'), { target: { value: `#${code}` } });
+    const option = view.container.querySelector<HTMLButtonElement>('.action-option')!;
+    expect(option).toBeEnabled();
+    fireEvent.click(option);
+    expect(store.getState().profile!.definition(0).keys).toEqual([code]);
+  }
+  expect(store.getState().profile!.definition(54).keys).toEqual([156]);
+  expect(store.getState().profile!.definition(58).keys).toEqual([166]);
+});
+
+test('unsupported native actions cannot be selected with mouse or Enter', async () => {
+  const { store, actions } = application();
+  const view = render(<App store={store} />);
+  await act(() => actions.demo());
+  const before = store.getState().profile!.definition(0).keys;
+  const search = screen.getByRole('searchbox');
+  fireEvent.change(search, { target: { value: '#222' } });
+  expect(view.container.querySelector('.action-option')).toBeDisabled();
+  fireEvent.keyDown(search, { key: 'Enter' });
+  expect(store.getState().profile!.definition(0).keys).toEqual(before);
 });

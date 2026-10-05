@@ -414,3 +414,35 @@ test('the packet limit accepts a final terminator but rejects one extra payload'
   channel.extra = true;
   await assert.rejects(readKeyReports(channel), /数量/);
 });
+
+test('Mac-only edits on unsupported firmware fail before USB traffic or backup', async (t) => {
+  const { device, session } = await connected(t);
+  const { profile } = await session.read();
+  const target = profile.clone();
+  target.setDefinition(0, { type: 0, keys: [222] });
+  const before = device.sent.length;
+  let backups = 0;
+  await assert.rejects(session.write(target, async () => { backups++; return 'backup'; }), /Mac 系统码/);
+  assert.equal(device.sent.length, before);
+  assert.equal(backups, 0);
+});
+
+test('native Mac mappings on the exact tuple use the protected configuration transaction', async (t) => {
+  const original = fixture();
+  original.version = '66EC(RGB)BLe;V1.5.1-F.1;V1.0;';
+  const { device, session } = await connected(t, original);
+  device.productId = 0x542a;
+  const { profile } = await session.read();
+  const target = profile.clone();
+  target.setDefinition(0, { type: 0, keys: [226] });
+  let backups = 0;
+  const result = await session.write(target, async current => {
+    backups++;
+    assert.deepEqual(current.definition(0), profile.definition(0));
+    assert.equal(writes(device).length, 0);
+    return 'mac-backup';
+  });
+  assert.equal(backups, 1);
+  assert.equal(result.backupId, 'mac-backup');
+  assert.deepEqual(result.profile.definition(0).keys, [226]);
+});

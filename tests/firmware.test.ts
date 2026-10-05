@@ -37,3 +37,16 @@ test.skipIf(!existsSync(vendorPackage))('the optional submodule’s real vendor 
   expect(Buffer.from(packets[0].slice(2, 2 + first.length / 2)).toString('hex').toUpperCase()).toBe(first);
   expect(parsed.sha256).toBe(stockFirmware.sha256);
 });
+
+const macPackagePath = 'niz-firmware/firmware/build/mac_native/66EC_RGB_BLE_V1.5.1-F.1.bin';
+test.skipIf(!existsSync(macPackagePath))('the experimental Mac package requires its own digest and target version', async () => {
+  const { macNativeFirmware } = await import('../src/firmware');
+  const bytes = new Uint8Array(await readFile(macPackagePath));
+  const file = { name: 'renamed.bin', size: bytes.length, arrayBuffer: async () => bytes.slice().buffer };
+  const parsed = await readFirmwareFile(file);
+  expect(parsed).toMatchObject({ version: macNativeFirmware.version, sha256: macNativeFirmware.sha256,
+    size: macNativeFirmware.size, records: macNativeFirmware.records });
+  expect(firmwarePackets(parsed)).toHaveLength(macNativeFirmware.records);
+  bytes[30] ^= 1;
+  await expect(readFirmwareFile(file)).rejects.toThrow(/SHA-256/);
+});

@@ -26,6 +26,7 @@ test('exact device eligibility and preview cannot read or flash a configuration'
 });
 
 test.each([{ pid: 0x502a, version: stockFirmware.version },
+  { pid: 0x542a, version: '66EC(RGB)BLe;M1.5.1;V1.0;' },
   { pid: 0x542a, version: '66EC(RGB)BLe;V1.5.0;V1.0;' }])('rejects an unqualified tuple $pid / $version', async ({ pid, version }) => {
   const device = firmwareDevice(); device.productId = pid; device.profile.version = version;
   const { session } = await setup([device]);
@@ -302,4 +303,14 @@ test.each(['unexpected', 'malformed', 'report-id'] as const)('%s input stops bef
   });
   expect(device.flashCount).toBe(1);
   expect(session.firmwareCanVerify(token)).toBe(false);
+});
+
+test('the exact Mac firmware tuple can select a stock recovery package without sending firmware', async () => {
+  const device = firmwareDevice();
+  device.profile.version = '66EC(RGB)BLe;V1.5.1-F.1;V1.0;';
+  const { session, target } = await setup([device]);
+  expect(session.connectedDevices[0].firmwareFlash).toBe(true);
+  expect(target().version).toBe(device.profile.version);
+  expect((await syntheticFirmware()).version).toBe(stockFirmware.version);
+  expect(device.flashCount).toBe(0);
 });

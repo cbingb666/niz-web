@@ -20,6 +20,9 @@ const functionLabels: Readonly<Record<number, string>> = {
   153: 'WinLk', 154: 'MsLk', 157: 'Ms px', 158: 'Ms int', 159: 'Prog',
   167: 'Wire/WL', 173: 'Ms dly', 174: 'Repeat', 175: 'Resp', 176: 'USB Hz',
   177: 'Scan', 200: 'Delay',
+  207: 'Mac Fn', 208: 'Scr−', 209: 'Scr+',
+  222: 'Mission', 223: 'Launch', 224: 'Spotlight', 225: 'Dictate', 226: 'DND',
+  227: 'SysBL−', 228: 'SysBL+', 229: '⏪', 230: '⏩',
 };
 
 /** English legends stay the same in every UI language. */

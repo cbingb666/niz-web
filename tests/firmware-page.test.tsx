@@ -121,7 +121,8 @@ test('transfer completion is not displayed as success, and late disconnect enabl
   await act(() => actions.verifyFirmware());
   expect(screen.getByRole('alertdialog')).toHaveTextContent('Selected device version checked');
   expect(screen.getByRole('alertdialog')).toHaveTextContent('does not prove that every firmware byte matches');
-});
+  // This exercises every stock packet and its UI progress update, not a shortened transfer.
+}, 45_000);
 
 test.each(['en', 'zh-CN'] as const)('%s starts automatic configuration reading only after confirmation and preserves a read error', async locale => {
   const { store, actions, device, backups, container } = await setup(locale);
