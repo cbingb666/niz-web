@@ -18,7 +18,7 @@ export function ManualPicker() {
       <DialogTitle>{t('manual.title')}</DialogTitle>
       <DialogDescription>{t('manual.description')}</DialogDescription>
     </DialogHeader>
-    <Tabs value={modelId} onValueChange={setModelId}>
+    <Tabs className="manual-tabs" value={modelId} onValueChange={setModelId}>
       <TabsList className="manual-models" aria-label={t('manual.chooseModel')}>
         {keyboardManuals.map(model => <TabsTrigger key={model.modelId} value={model.modelId}>{model.name}</TabsTrigger>)}
       </TabsList>

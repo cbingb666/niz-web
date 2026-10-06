@@ -548,6 +548,9 @@ main {
 .backups-dialog { display: flex; flex-direction: column; max-height: 85dvh; overflow: hidden; }
 .backup-list { min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
 .backup-list:focus-visible { outline: 2px solid var(--ring); outline-offset: -2px; }
+.backup-empty { display: flex; flex-direction: column; align-items: center; gap: 20px; padding: 24px 16px 32px; }
+.backup-empty-art { display: block; width: min(100%, 220px); height: auto; color: var(--muted-foreground); }
+.backup-empty p { max-width: 30ch; color: var(--muted-foreground); line-height: 1.6; text-align: start; text-wrap: pretty; }
 .backup-item {
   border-top: 1px solid var(--border);
   padding: 16px 0;
@@ -880,9 +883,12 @@ main {
 .count-scale i { width: 80px; height: 6px; border-radius: 3px; background: linear-gradient(to right, var(--count-face-low), var(--count-face-high)); }
 /* The diagram follows a real 1u key's dimensions, including responsive layout changes. */
 .keycap-guide { flex: none; margin: 0; padding: 0; }
-.manual-models { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); width: 100%; height: auto; }
+.manual-dialog { height: min(640px, 85dvh); max-height: 85dvh; grid-template-rows: auto minmax(0, 1fr) auto; overflow: hidden; }
+.manual-tabs { min-height: 0; overflow: hidden; }
+.manual-models { flex-shrink: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); width: 100%; height: auto; }
 .manual-models > button { min-height: 44px; padding-inline: 6px; }
-.manual-variants { margin-top: 8px; }
+.manual-variants { position: relative; min-height: 0; margin-top: 8px; overflow-y: auto; overscroll-behavior: contain; scrollbar-gutter: stable; }
+.manual-variants:focus-visible { outline: 2px solid var(--ring); outline-offset: -2px; }
 .manual-variant + .manual-variant { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border); }
 .manual-variant h3 { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; font-size: .9375rem; font-weight: 600; }
 .manual-variant h3 > span { color: var(--muted-foreground); font-size: .8125rem; font-weight: 400; }

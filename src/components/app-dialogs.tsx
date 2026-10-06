@@ -10,6 +10,7 @@ import { FirmwareDialog } from './firmware-dialog';
 import { ChangeReview } from './change-review';
 import { ActivityLog } from './activity-log';
 import { DeviceDetails } from './connected-device';
+import { BackupEmptyState } from './backup-empty-state';
 import { ManualPicker } from './manual-picker';
 import { Button } from './ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from './ui/dialog';
@@ -39,7 +40,7 @@ export function AppDialogs() {
         if (!open) actions.closeDialog();
       }}
     >
-      <DialogContent closeLabel={t('common.close')} className={dialog.kind === 'changes' || dialog.kind === 'importMigration' ? 'review-dialog' : dialog.kind === 'activity' ? 'activity-dialog' : dialog.kind === 'backups' ? 'backups-dialog' : undefined}
+      <DialogContent closeLabel={t('common.close')} className={dialog.kind === 'changes' || dialog.kind === 'importMigration' ? 'review-dialog' : dialog.kind === 'activity' ? 'activity-dialog' : dialog.kind === 'backups' ? 'backups-dialog' : dialog.kind === 'manuals' ? 'manual-dialog' : undefined}
         {...(dialog.kind === 'backups' ? { 'aria-labelledby': 'backup-title' } : {})}
         onCloseAutoFocus={event => {
           const trigger = dialog.kind === 'changes' ? 'changes-trigger' : dialog.kind === 'manuals' ? 'manuals-trigger' : dialog.kind === 'activity' ? 'activity-trigger' : dialog.kind === 'backups' ? 'backups-trigger' : dialog.kind === 'device' ? dialog.triggerId : null;
@@ -124,7 +125,7 @@ export function AppDialogs() {
                   </section>
                 ))
               ) : (
-                <p className="muted">{t('backup.empty')}</p>
+                <BackupEmptyState />
               )}
             </div>
           </>
