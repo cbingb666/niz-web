@@ -24,10 +24,7 @@ export const atom66 = defineModel({
   matchesFirmware: (version) => version.startsWith('66EC'),
   capabilities: (version) => ({ counters: true, perKeyRGB: version.includes('RGB') }),
   // Static client evidence only. No firmware has passed hardware qualification.
-  calibration: [
-    { vendorId: 0x0483, productId: 0x522a, version: '66EC(S);V1.4.4;V1.0;', evidence: 'candidate' },
-    { vendorId: 0x0483, productId: 0x502a, version: '66EC(XRGB)BLe;V1.2.5;V1.0;', evidence: 'candidate' },
-  ],
+  calibration: { evidence: 'candidate' },
   rows: widths.map((row) => row.map((width) => ({ label: labels[position++], width }))),
   layers: [msg('layer.normal'), msg('layer.rightFn'), msg('layer.leftFn')],
   groupCounts: [3, 9],

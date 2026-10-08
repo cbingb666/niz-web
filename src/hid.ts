@@ -477,10 +477,7 @@ export class HIDSession extends EventTarget {
     }));
   }
   private calibrationAvailability(record: DeviceConnection): CalibrationAvailability {
-    const match = record.model.calibration?.find(candidate =>
-      candidate.vendorId === record.device.vendorId && candidate.productId === record.device.productId &&
-      candidate.version === record.version);
-    if (!match) return 'unsupported';
+    if (!record.model.calibration) return 'unsupported';
     try { validateDescriptor(record.device, [record.model]); }
     catch { return 'unsupported'; }
     return 'available';

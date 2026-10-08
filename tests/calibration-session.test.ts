@@ -13,7 +13,7 @@ async function connected(options: ConstructorParameters<typeof HIDSession>[1] = 
   return { ...app, hid, devices, device: devices[0], target: () => app.session.calibrationTarget(app.session.connectedDevices[0].id) };
 }
 
-test('default sessions offer calibration for the configured tuple without sending calibration commands', async () => {
+test('default sessions offer calibration for ATOM66 without sending calibration commands', async () => {
   const { session, device } = await connected();
   const id = session.connectedDevices[0].id;
   expect(session.connectedDevices[0].calibration).toBe('available');
@@ -22,8 +22,15 @@ test('default sessions offer calibration for the configured tuple without sendin
   expect(device.sent.map(bytes => bytes[1])).toEqual([0xf9]);
 });
 
-test('66EC-XRGB V1.2.5 completes the calibration sequence without configuration or RGB traffic', async () => {
-  const { session, device, store, target } = await connected({}, [rgbCalibrationDevice()]);
+test.each([
+  { productId: 0x502a, version: '66EC(XRGB)BLe;V1.2.5;V1.0;' },
+  { productId: 0x542a, version: '66EC(RGB)BLe;V1.5.1;V1.0;' },
+  { productId: 0x542a, version: '66EC(RGB)BLe;V1.5.1-F.1;V1.0;' },
+])('$version completes calibration without configuration or RGB traffic', async ({ productId, version }) => {
+  const candidate = rgbCalibrationDevice();
+  candidate.productId = productId;
+  candidate.profile.version = version;
+  const { session, device, store, target } = await connected({}, [candidate]);
   const configuration = device.profile.toJSON();
   expect(session.connectedDevices[0].calibration).toBe('available');
   expect(device.sent.map(bytes => bytes[1])).toEqual([0xf9]);
@@ -41,21 +48,21 @@ test('66EC-XRGB V1.2.5 completes the calibration sequence without configuration 
 test.each([
   { productId: 0x522a, version: '66EC(XRGB)BLe;V1.2.5;V1.0;' },
   { productId: 0x502a, version: '66EC(XRGB)BLe;V1.2.6;V1.0;' },
-])('RGB calibration rejects an unconfigured tuple $productId / $version', async ({ productId, version }) => {
+])('ATOM66 calibration accepts other recognized combinations $productId / $version', async ({ productId, version }) => {
   const device = rgbCalibrationDevice();
   device.productId = productId;
   device.profile.version = version;
   const { session } = await connected({}, [device]);
-  expect(session.connectedDevices[0].calibration).toBe('unsupported');
-  expect(() => session.calibrationTarget(session.connectedDevices[0].id)).toThrow();
+  expect(session.connectedDevices[0].calibration).toBe('available');
+  expect(session.calibrationTarget(session.connectedDevices[0].id)).toMatchObject({ model: 'atom66' });
   expect(device.sent.map(bytes => bytes[1])).toEqual([0xf9]);
 });
 
-test.each(['66EC(S);V1.4.3;V1.0;', '66EC(XRGB);V1.4.4;V1.0;'])('unqualified firmware %s cannot start calibration', async version => {
+test.each(['66EC(S);V1.4.3;V1.0;', '66EC(XRGB);V1.4.4;V1.0;'])('recognized firmware %s can prepare calibration', async version => {
   const profile = fixture(); profile.version = version;
   const { session, device } = await connected({}, [new CalibrationDevice(profile)]);
-  expect(session.connectedDevices[0].calibration).toBe('unsupported');
-  expect(() => session.calibrationTarget(session.connectedDevices[0].id)).toThrow();
+  expect(session.connectedDevices[0].calibration).toBe('available');
+  expect(session.calibrationTarget(session.connectedDevices[0].id)).toMatchObject({ model: 'atom66' });
   expect(calibrationTraffic(device)).toEqual([]);
 });
 
@@ -106,11 +113,11 @@ test('a firmware change after confirmation preparation fails before locking', as
   expect(calibrationTraffic(device)).toEqual([]);
 });
 
-test('shared VID and firmware are insufficient when the product ID is not qualified', async () => {
+test('another recognized ATOM66 USB interface offers calibration', async () => {
   const device = new CalibrationDevice(); device.productId = 0x512a;
   const { session } = await connected({}, [device]);
-  expect(session.connectedDevices[0].calibration).toBe('unsupported');
-  expect(() => session.calibrationTarget(session.connectedDevices[0].id)).toThrow();
+  expect(session.connectedDevices[0].calibration).toBe('available');
+  expect(session.calibrationTarget(session.connectedDevices[0].id)).toMatchObject({ model: 'atom66' });
 });
 
 test('calibrating an inactive device preserves both editors and only invalidates its baseline', async () => {

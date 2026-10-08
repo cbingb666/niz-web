@@ -23,12 +23,7 @@ interface ModelDefinition {
   readonly filters: ReadonlyArray<Parameters<HIDAccess['requestDevice']>[0]['filters'][number]>;
   readonly matchesFirmware: (version: string) => boolean;
   readonly capabilities: (version: string) => KeyboardCapabilities;
-  readonly calibration?: readonly {
-    readonly vendorId: number;
-    readonly productId: number;
-    readonly version: string;
-    readonly evidence: 'candidate' | 'validated';
-  }[];
+  readonly calibration?: { readonly evidence: 'candidate' | 'validated' };
   readonly rows: readonly (readonly PhysicalKey[])[];
   readonly layers: readonly Message[];
   readonly groupCounts: readonly number[];

@@ -2,6 +2,8 @@
 
 **English** · [简体中文](calibration-implementation-plan.zh-CN.md)
 
+Policy update, 2026-10-08: calibration availability now follows the model capability declaration and configuration descriptor, without an additional USB ID or exact firmware whitelist. The exact-tuple restrictions below describe the earlier rollout and are superseded by the [current architecture](architecture.md#calibration). Hardware validation remains outstanding.
+
 Plan date: 2026-09-28. Updated: 2026-09-30. Batches 1–3 are implemented and enabled by default in development and production builds at the user's request; batch 4, real-hardware qualification, remains outstanding. Protocol evidence and file hashes are in the [calibration research](calibration-research.md). Current instructions are in [Contributing](../CONTRIBUTING.md#calibration), and observed validation results belong in [VALIDATION.md (Chinese)](../VALIDATION.md). The sections below describe the current implementation design and acceptance criteria.
 
 ## First delivery

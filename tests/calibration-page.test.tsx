@@ -27,18 +27,24 @@ test('normal application offers calibration by default without reading or calibr
   expect(store.getState().profile).toBeNull();
 });
 
-test('66EC-XRGB V1.2.5 exposes calibration without loading a configuration', async () => {
+test.each([
+  { productId: 0x502a, version: '66EC(XRGB)BLe;V1.2.5;V1.0;', name: '66EC-XRGB' },
+  { productId: 0x542a, version: '66EC(RGB)BLe;V1.5.1;V1.0;', name: '66EC-RGB' },
+])('$name exposes calibration without loading a configuration', async ({ productId, version, name }) => {
   const device = rgbCalibrationDevice();
+  device.productId = productId;
+  device.productName = name;
+  device.profile.version = version;
   const { actions, store } = application(new FakeHID([device]));
   render(<App store={store} usbAvailable />);
   await act(() => actions.start());
-  const card = screen.getByRole('article', { name: '66EC-XRGB' });
+  const card = screen.getByRole('article', { name });
   expect(within(card).getByRole('button', { name: '校准按键' })).toBeVisible();
   const detailsEntry = within(card).getByRole('button', { name: '设备详情' });
   fireEvent.click(detailsEntry);
   const details = screen.getByRole('dialog', { name: '设备详情' });
-  expect(details).toHaveTextContent('0x502A');
-  expect(details).toHaveTextContent('66EC(XRGB)BLe;V1.2.5;V1.0;');
+  expect(details).toHaveTextContent(`0x${productId.toString(16).toUpperCase()}`);
+  expect(details).toHaveTextContent(version);
   await act(async () => { fireEvent.click(within(details).getByRole('button', { name: '关闭' })); });
   await vi.waitFor(() => expect(detailsEntry).toHaveFocus());
   const entry = within(card).getByRole('button', { name: '校准按键' });

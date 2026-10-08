@@ -173,14 +173,7 @@ The built `dist/index.html` contains all runtime resources and translations, so 
 
 ## Key calibration
 
-Calibration is available by default in development and production builds, without an environment flag, for these ATOM66 combinations:
-
-| Device | VID/PID | Exact firmware |
-| --- | --- | --- |
-| `66EC-S` | `0483:522A` | `66EC(S);V1.4.4;V1.0;` |
-| `66EC-XRGB` | `0483:502A` | `66EC(XRGB)BLe;V1.2.5;V1.0;` |
-
-The configuration interface must also match. Other combinations remain unavailable. Calibration on real hardware has not yet been verified, and configuration backups cannot restore calibration data.
+Devices that offer calibration show a **Calibrate keys** action on their card. Calibration on real hardware has not yet been verified, and configuration backups cannot restore calibration data.
 
 On the target device card, choose **Calibrate keys**. This does not select a different editor or read key configurations. Existing edits and drafts remain in the page.
 
@@ -235,4 +228,4 @@ Export your current configuration, then check browser storage space and privacy 
 
 ### Mouse, media, or lighting actions do not work
 
-The app offers vendor function codes; their effect depends on the keyboard model and firmware. Per-key RGB is available only on RGB models. General firmware upgrades, global macro recording, and unverified global device settings are outside this version's scope. The limited experimental reflashing tool is described above. Key calibration is available for the combinations listed above; its real-hardware behavior still needs validation.
+The app offers vendor function codes; their effect depends on the keyboard model and firmware. Per-key RGB is available only on RGB models. General firmware upgrades, global macro recording, and unverified global device settings are outside this version's scope. The limited experimental reflashing tool is described above. The calibration workflow and its validation limits are described above.

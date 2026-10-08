@@ -67,7 +67,7 @@ The script opens fresh offline demo tabs and checks option coordinates after rep
 
 Calibration is available by default in the development server and production builds. Use the normal `pnpm run dev` or `pnpm run build` command; no environment flag is required.
 
-The enabled ATOM66 combinations are `0483:522A` with firmware `66EC(S);V1.4.4;V1.0;`, and `0483:502A` with firmware `66EC(XRGB)BLe;V1.2.5;V1.0;`. Each requires the exact firmware and matching 64-byte configuration reports. Other combinations cannot start calibration. Default availability does not change the evidence status: no firmware is hardware-qualified yet. Connecting only identifies the device; calibration still requires the user to open the tool and confirm **Start calibration**.
+Calibration availability follows the model capability declaration and requires matching 64-byte configuration reports. There is no additional USB ID or exact firmware whitelist for calibration. No firmware is hardware-qualified yet. Connecting only identifies the device; calibration still requires the user to open the tool and confirm **Start calibration**.
 
 See the [user flow and recovery limits](docs/usage.md#key-calibration), [module behavior](docs/architecture.md#calibration), and [implementation plan](docs/calibration-implementation-plan.md). The response deadline is 10 seconds per calibration stage, with a 5-second send limit; these are provisional failure bounds, not measured device timings. FakeHID tests use synthetic responses. Real-device qualification still needs an explicitly initiated hardware session, official-tool traffic comparison, persistence checks, and a tested recovery procedure.
 

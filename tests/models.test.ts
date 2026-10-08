@@ -30,7 +30,7 @@ test('the 2023 ATOM66 RGB interface is offered by authorization and connects wit
   expect(hid.filters).toContainEqual({ vendorId: 0x0483, productId: 0x542a, usagePage: 0x8c, usage: 1 });
   expect(await authorization).not.toBeNull();
   expect(session.model).toBe(defaultModel);
-  expect(session.connectedDevices[0].calibration).toBe('unsupported');
+  expect(session.connectedDevices[0].calibration).toBe('available');
   expect(device.sent.map(packet => packet[1])).toEqual([0xf9]);
   expect(session.hasLiveBaseline).toBe(false);
   expect(identifyModel(device, '68EC(S);V1.4.1;V1.0;')).toBeNull();

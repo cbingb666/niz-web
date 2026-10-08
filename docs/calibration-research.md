@@ -2,6 +2,8 @@
 
 **English** · [简体中文](calibration-research.zh-CN.md)
 
+Policy update, 2026-10-08: calibration availability now follows the model capability declaration and configuration descriptor, without an additional USB ID or exact firmware whitelist. The exact-tuple restrictions below describe the earlier rollout and are superseded by the [current architecture](architecture.md#calibration). Hardware validation remains outstanding.
+
 Research date: 2026-09-28. This note investigates an explicitly initiated calibration workflow in NIZ Web. It is not a hardware validation result or a declaration of support. No keyboard was connected, read, calibrated, reset, or flashed during this investigation; vendor programs were inspected as files and were not executed.
 
 For concrete scope, session behavior, cleanup rules, and delivery batches, see the [implementation plan](calibration-implementation-plan.md).
